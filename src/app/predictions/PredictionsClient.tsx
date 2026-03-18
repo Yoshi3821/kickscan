@@ -1,5 +1,6 @@
 "use client";
 import { useState, useMemo } from "react";
+import Link from "next/link";
 import { getAllPredictions, groups, type MatchPrediction } from "@/data/matches";
 import type { OutrightOdds } from "@/lib/odds";
 import AdBanner from "@/components/AdBanner";
@@ -439,8 +440,11 @@ export default function PredictionsClient({
                           {p.analysis}
                         </p>
 
-                        <div className="mt-3 pt-3 border-t border-gray-800/50 text-[10px] text-gray-600">
-                          📍 {p.venue}, {p.city}
+                        <div className="mt-3 pt-3 border-t border-gray-800/50 flex items-center justify-between">
+                          <span className="text-[10px] text-gray-600">📍 {p.venue}, {p.city}</span>
+                          <Link href={`/match/${p.id}`} className="text-[11px] text-cyan-400 hover:text-cyan-300 transition font-medium">
+                            🧠 Full Analysis →
+                          </Link>
                         </div>
                       </div>
                     ))}

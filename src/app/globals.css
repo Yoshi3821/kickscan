@@ -298,6 +298,12 @@ body {
   .hero-section .hero-player-tag { display: none; }
 }
 
+/* ===== CHAT SLIDE UP ===== */
+@keyframes chatSlideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* ===== SCROLLBAR ===== */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: #06060f; }

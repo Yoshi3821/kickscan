@@ -1,5 +1,6 @@
 "use client";
 import { useState, useMemo } from "react";
+import Link from "next/link";
 import { groups } from "@/data/matches";
 import { getBookmakerUrl, isAffiliate } from "@/config/affiliates";
 import AdBanner from "@/components/AdBanner";
@@ -448,9 +449,14 @@ export default function OddsClient({
                               </tbody>
                             </table>
                           </div>
-                          {/* Last updated for this match */}
-                          <div className="px-6 py-2 text-[10px] text-gray-600 border-t border-gray-800/30">
-                            Last updated: {timeAgo(match.liveOdds!.lastUpdated)}
+                          {/* AI Analysis link + Last updated */}
+                          <div className="px-6 py-2 border-t border-gray-800/30 flex items-center justify-between">
+                            <Link href={`/match/${match.id}`} className="text-xs text-cyan-400 hover:text-cyan-300 transition font-medium">
+                              🧠 View AI Analysis →
+                            </Link>
+                            <span className="text-[10px] text-gray-600">
+                              Last updated: {timeAgo(match.liveOdds!.lastUpdated)}
+                            </span>
                           </div>
                         </div>
                       )}

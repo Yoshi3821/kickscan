@@ -118,29 +118,29 @@ export default function HeroSection() {
         </div>
       </div>
 
-      {/* Mobile: players + trophy in a row at the TOP */}
-      <div className="absolute top-[60px] left-0 right-0 z-[3] flex sm:hidden items-end justify-center gap-0 pointer-events-none px-2">
-        <div className="w-[35%] flex items-end">
+      {/* Mobile: players + trophy in a row at the TOP — BIGGER */}
+      <div className="absolute top-[50px] left-0 right-0 z-[3] flex sm:hidden items-end justify-center gap-0 pointer-events-none px-0">
+        <div className="w-[40%] flex items-end -ml-2">
           <img
             src="/players/messi.png"
             alt="Messi"
-            className="w-full h-auto max-h-[220px] object-contain object-bottom drop-shadow-[0_0_30px_rgba(0,102,255,0.4)]"
+            className="w-full h-auto max-h-[320px] object-contain object-bottom drop-shadow-[0_0_30px_rgba(0,102,255,0.4)]"
             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
           />
         </div>
-        <div className="w-[22%] flex items-end justify-center -mx-2">
+        <div className="w-[24%] flex items-end justify-center -mx-3">
           <img
             src="/trophy.png"
             alt="FIFA World Cup Trophy"
-            className="w-full h-auto max-h-[160px] object-contain object-bottom hero-trophy-float drop-shadow-[0_0_20px_rgba(255,215,0,0.5)]"
+            className="w-full h-auto max-h-[230px] object-contain object-bottom hero-trophy-float drop-shadow-[0_0_20px_rgba(255,215,0,0.5)]"
             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
           />
         </div>
-        <div className="w-[35%] flex items-end justify-end">
+        <div className="w-[40%] flex items-end justify-end -mr-2">
           <img
             src="/players/ronaldo.png"
             alt="Ronaldo"
-            className="w-full h-auto max-h-[220px] object-contain object-bottom drop-shadow-[0_0_30px_rgba(255,45,85,0.4)]"
+            className="w-full h-auto max-h-[320px] object-contain object-bottom drop-shadow-[0_0_30px_rgba(255,45,85,0.4)]"
             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
           />
         </div>

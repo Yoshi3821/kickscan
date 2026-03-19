@@ -1,11 +1,12 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { allMatches } from "@/data/matches";
 import { getMatchAnalysis } from "@/data/analyses";
 import { getPlayersByTier, getCountryColor } from "@/data/players";
-import AdBanner from "@/components/AdBanner";
+import { getVerdict } from "@/data/verdicts";
 import HeroSection from "@/components/HeroSection";
+// LeagueVerdicts now fetched client-side via API
 
 /* ═══════════════════════════════════════════════════════════
    DATA PREPARATION
@@ -14,43 +15,7 @@ import HeroSection from "@/components/HeroSection";
 // Featured matches for Section B (first 6)
 const featuredMatches = allMatches.slice(0, 6);
 
-// Marquee matches for Section C — Mexico vs SA (1), Brazil vs Morocco (13), England vs Croatia (67)
-const marqueeIds = [1, 13, 67];
-const marqueeMatches = marqueeIds.map((id) => {
-  const match = allMatches.find((m) => m.id === id)!;
-  const analysis = getMatchAnalysis(id)!;
-  return { match, analysis };
-});
 
-// Fan sentiment seeded data for Section D
-const fanSentiment = [
-  { matchId: 1, home: 62, draw: 20, away: 18, votes: 14823 },
-  { matchId: 13, home: 55, draw: 22, away: 23, votes: 31204 },
-  { matchId: 19, home: 58, draw: 24, away: 18, votes: 22156 },
-  { matchId: 67, home: 48, draw: 26, away: 26, votes: 19847 },
-];
-
-// Smart View data for Section E
-const smartViewMatches = [
-  {
-    matchId: 13,
-    fans: { home: 55, draw: 22, away: 23 },
-    insight: "⚡ Fans overvalue Brazil. AI sees more danger from Morocco. Market agrees with AI — Morocco's odds are shorter than fan sentiment suggests.",
-  },
-  {
-    matchId: 67,
-    fans: { home: 48, draw: 26, away: 26 },
-    insight: "⚡ Fans split on England-Croatia, but AI gives England a clear edge. Market prices England cheaper than fan consensus — value on the Three Lions.",
-  },
-];
-
-// Market value data for Section F
-const valueMatches = [
-  { matchId: 1, aiPick: "Mexico Win", aiConf: 58, bestOdds: 1.85, bookmaker: "Pinnacle" },
-  { matchId: 13, aiPick: "Brazil Win", aiConf: 52, bestOdds: 2.10, bookmaker: "Bet365" },
-  { matchId: 31, aiPick: "Netherlands Win", aiConf: 49, bestOdds: 2.25, bookmaker: "Betfair" },
-  { matchId: 55, aiPick: "Argentina Win", aiConf: 72, bestOdds: 1.35, bookmaker: "William Hill" },
-];
 
 // Blog posts for Section G
 const blogPosts = [
@@ -99,19 +64,71 @@ function getCountdown() {
   return { days, hours, minutes, seconds };
 }
 
-function confidenceToPercent(conf: string): number {
-  switch (conf) {
-    case "VERY HIGH": return 90;
-    case "HIGH": return 75;
-    case "MEDIUM": return 60;
-    case "LOW": return 40;
-    default: return 50;
-  }
-}
+
 
 /* ═══════════════════════════════════════════════════════════
    PAGE COMPONENT
    ═══════════════════════════════════════════════════════════ */
+
+function LeagueMatchesClient() {
+  const [matches, setMatches] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/league-fixtures")
+      .then(r => r.json())
+      .then(data => { setMatches(data); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">{[1,2,3].map(i => <div key={i} className="bg-white/5 rounded-2xl p-6 h-48 animate-pulse" />)}</div>;
+  if (matches.length === 0) return (
+    <div className="text-center py-8">
+      <p className="text-gray-400 mb-2">⏸️ International break — league matches resume soon</p>
+      <p className="text-xs text-gray-600">Check the Leagues page for the latest schedule</p>
+    </div>
+  );
+
+  const recColors: Record<string, string> = { BET: "bg-green-500/20 text-green-400 border-green-500/30", LEAN: "bg-amber-500/20 text-amber-400 border-amber-500/30", SKIP: "bg-gray-500/20 text-gray-400 border-gray-500/30", AVOID: "bg-red-500/20 text-red-400 border-red-500/30" };
+  const riskColors: Record<string, string> = { LOW: "text-green-400", MEDIUM: "text-yellow-400", HIGH: "text-orange-400", "VERY HIGH": "text-red-400" };
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {matches.map((m: any) => (
+        <a key={m.id} href={typeof m.id === "number" || /^\d+$/.test(String(m.id)) ? `/leagues/${m.id}` : `/leagues`} className="block bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-5 hover:bg-white/[0.08] transition-all">
+          <div className="flex items-center gap-2 mb-3">
+            <img src={m.leagueLogo} alt="" className="w-4 h-4" />
+            <span className="text-[10px] text-gray-400">{m.leagueFlag} {m.leagueName}</span>
+            <span className="ml-auto text-[10px] text-gray-500">{new Date(m.date).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+          </div>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              {m.homeLogo ? (
+                <img src={m.homeLogo} alt="" className="w-7 h-7 rounded" />
+              ) : (
+                <span className="w-7 h-7 rounded bg-white/10 flex items-center justify-center text-[10px] font-bold text-gray-400">{m.homeName?.slice(0,3).toUpperCase()}</span>
+              )}
+              <span className="text-sm font-bold text-white truncate">{m.homeName}</span>
+            </div>
+            <span className="text-xs text-gray-500 px-2 font-bold">vs</span>
+            <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
+              <span className="text-sm font-bold text-white truncate">{m.awayName}</span>
+              {m.awayLogo ? (
+                <img src={m.awayLogo} alt="" className="w-7 h-7 rounded" />
+              ) : (
+                <span className="w-7 h-7 rounded bg-white/10 flex items-center justify-center text-[10px] font-bold text-gray-400">{m.awayName?.slice(0,3).toUpperCase()}</span>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className={`px-2 py-0.5 text-[10px] font-bold border rounded-full ${recColors[m.recommendation] || recColors.SKIP}`}>{m.recommendation}: {m.pick}</span>
+            <span className={`text-[10px] font-bold ${riskColors[m.riskLevel] || "text-gray-400"}`}>{m.riskLevel}</span>
+          </div>
+        </a>
+      ))}
+    </div>
+  );
+}
 
 export default function HomePage() {
   const [countdown, setCountdown] = useState(getCountdown());
@@ -133,34 +150,117 @@ export default function HomePage() {
       {/* ═══════ SECTION A — HERO ═══════ */}
       <HeroSection />
 
-      {/* ═══════ SECTION B — LIVE MATCH INTELLIGENCE ═══════ */}
+      {/* ═══════ WHAT IS KICKSCAN? SECTION ═══════ */}
+      <section className="py-20 px-4 max-w-7xl mx-auto">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3">
+            YOUR AI FOOTBALL INTELLIGENCE PLATFORM
+          </h2>
+          <p className="text-gray-400 text-lg">Match analysis, live scores, and AI verdicts — free for everyone. Predict & Compete with a free account.</p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          {/* Feature Card 1 - AI Verdicts */}
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 text-center hover:bg-white/[0.08] transition-all">
+            <div className="text-4xl mb-4">🎯</div>
+            <h3 className="text-xl font-bold text-white mb-3">AI Verdicts</h3>
+            <p className="text-gray-400 text-sm leading-relaxed">
+              Clear BET or SKIP calls for every match with intelligent reasoning
+            </p>
+          </div>
+
+          {/* Feature Card 2 - Predict & Compete */}
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 text-center hover:bg-white/[0.08] transition-all">
+            <div className="text-4xl mb-4">🎮</div>
+            <h3 className="text-xl font-bold text-white mb-3">Predict & Compete</h3>
+            <p className="text-gray-400 text-sm leading-relaxed">
+              Compete against the AI & your friends in prediction leagues
+            </p>
+          </div>
+
+          {/* Feature Card 3 - Live Scores */}
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 text-center hover:bg-white/[0.08] transition-all">
+            <div className="text-4xl mb-4">📺</div>
+            <h3 className="text-xl font-bold text-white mb-3">Live Scores</h3>
+            <p className="text-gray-400 text-sm leading-relaxed">
+              Real-time scores with 10-second refresh, goal alerts & match events
+            </p>
+          </div>
+
+          {/* Feature Card 4 - Match Analysis */}
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 text-center hover:bg-white/[0.08] transition-all">
+            <div className="text-4xl mb-4">🧠</div>
+            <h3 className="text-xl font-bold text-white mb-3">Match Analysis</h3>
+            <p className="text-gray-400 text-sm leading-relaxed">
+              Deep AI insights with form, H2H, injuries & intelligent angles
+            </p>
+          </div>
+        </div>
+
+        <div className="text-center">
+          <a
+            href="/predict"
+            className="inline-block px-10 py-4 rounded-xl font-bold text-white bg-gradient-to-r from-purple-600 to-cyan-500 hover:from-purple-500 hover:to-cyan-400 transition-all shadow-lg shadow-purple-500/25"
+          >
+            🎮 Start Predicting — Free Account
+          </a>
+        </div>
+      </section>
+
+      {/* ═══════ UPCOMING LEAGUE MATCHES ═══════ */}
+      <section className="py-16 px-4 max-w-7xl mx-auto">
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-full px-4 py-1.5 text-sm text-green-400 font-semibold mb-4">
+            <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-green-400"></span></span>
+            MATCHES THIS WEEK
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3">League Verdicts</h2>
+          <p className="text-gray-400 text-lg">AI-powered verdicts for this week's biggest matches</p>
+        </div>
+        <LeagueMatchesClient />
+        <div className="text-center mt-8">
+          <a href="/leagues" className="inline-block px-8 py-3.5 rounded-xl font-bold text-white bg-gradient-to-r from-green-600 to-blue-500 hover:from-green-500 hover:to-blue-400 transition-all shadow-lg shadow-green-500/25">⚽ View All League Matches →</a>
+        </div>
+      </section>
+
+      {/* ═══════ SECTION B — THE VERDICTS (FEATURED) ═══════ */}
       <section className="py-20 px-4 max-w-7xl mx-auto">
         <div className="text-center mb-12">
           <h2 className="text-3xl sm:text-4xl font-bold mb-3">
             <span className="bg-gradient-to-r from-purple-500 to-cyan-400 bg-clip-text text-transparent">
-              Live Match Intelligence
+              🎯 Today&apos;s Verdicts
             </span>
           </h2>
-          <p className="text-gray-400 text-lg">AI-powered analysis for every World Cup match</p>
+          <p className="text-gray-400 text-lg">AI-powered BET or SKIP calls for every match</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {featuredAnalyses.map(({ match, analysis }) => {
-            const winner = analysis?.predictedResult || "TBD";
-            const winnerFlag = winner.includes(match.home) ? match.homeFlag : winner.includes(match.away) ? match.awayFlag : "🤝";
-            const homeVote = fanSentiment.find((f) => f.matchId === match.id)?.home || (50 + (match.id * 7) % 25);
+          {featuredAnalyses.map(({ match }) => {
+            const verdict = getVerdict(match.id);
+            if (!verdict) return null;
+
+            const recStyles: Record<string, { emoji: string; bg: string; border: string; text: string; barColor: string }> = {
+              BET: { emoji: "✅", bg: "bg-green-500/[0.08]", border: "border-green-500/30", text: "text-green-400", barColor: "from-green-500 to-emerald-400" },
+              LEAN: { emoji: "⚠️", bg: "bg-amber-500/[0.08]", border: "border-amber-500/30", text: "text-amber-400", barColor: "from-amber-500 to-yellow-400" },
+              SKIP: { emoji: "⏭️", bg: "bg-gray-500/[0.08]", border: "border-gray-500/30", text: "text-gray-400", barColor: "from-gray-500 to-gray-400" },
+              AVOID: { emoji: "🚫", bg: "bg-red-500/[0.08]", border: "border-red-500/30", text: "text-red-400", barColor: "from-red-500 to-rose-400" },
+            };
+            const cfg = recStyles[verdict.recommendation];
+            const riskColors: Record<string, string> = { LOW: "text-green-400", MEDIUM: "text-amber-400", HIGH: "text-orange-400", "VERY HIGH": "text-red-400" };
+            const stars = Array.from({ length: 5 }, (_, i) => i < verdict.valueRating);
 
             return (
-              <div
+              <Link
                 key={match.id}
-                className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 hover-gradient-border transition-all group"
+                href={`/match/${match.id}`}
+                className={`block ${cfg.bg} backdrop-blur-xl border ${cfg.border} rounded-2xl p-6 hover:scale-[1.02] transition-all group`}
               >
-                {/* Group badge */}
+                {/* Group + Date */}
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-[10px] bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-full border border-purple-500/30 font-bold tracking-wider">
                     GROUP {match.group}
                   </span>
-                  <span className="text-xs text-gray-500">{match.date} · {match.time}</span>
+                  <span className="text-xs text-gray-500">{match.date}</span>
                 </div>
 
                 {/* Teams */}
@@ -176,105 +276,127 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                {/* AI prediction */}
-                <div className="bg-white/5 rounded-xl p-3 mb-4">
-                  <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">AI Prediction</div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">{winnerFlag}</span>
-                    <span className="text-sm font-semibold text-white">{winner}</span>
-                    <span className="ml-auto text-xs text-gray-400">{analysis?.predictedScore}</span>
+                {/* Verdict badge */}
+                <div className={`${cfg.bg} border ${cfg.border} rounded-xl p-3 mb-4`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xl">{cfg.emoji}</span>
+                    <span className={`text-lg font-black ${cfg.text}`}>{verdict.recommendation}: {verdict.pick}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-0.5">
+                      {stars.map((filled, i) => (
+                        <span key={i} className={`${filled ? "text-amber-400" : "text-gray-700"}`}>★</span>
+                      ))}
+                    </div>
+                    <span className={`font-bold ${riskColors[verdict.riskLevel]}`}>{verdict.riskLevel} risk</span>
                   </div>
                 </div>
 
-                {/* Fan vote bar */}
-                <div className="mb-4">
-                  <div className="flex justify-between text-[10px] text-gray-500 mb-1">
-                    <span>Fan sentiment</span>
-                    <span>{homeVote}% {match.home}</span>
-                  </div>
-                  <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                {/* Confidence */}
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="flex-1 h-2 bg-white/[0.06] rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-purple-500 to-cyan-400 rounded-full transition-all"
-                      style={{ width: `${homeVote}%` }}
+                      className={`h-full rounded-full bg-gradient-to-r ${cfg.barColor}`}
+                      style={{ width: `${verdict.confidencePct}%` }}
                     />
                   </div>
+                  <span className="text-xs font-bold text-gray-400">{verdict.confidencePct}%</span>
                 </div>
 
                 {/* CTA */}
-                <Link
-                  href={`/match/${match.id}`}
-                  className="block text-center py-2.5 rounded-xl text-sm font-semibold text-purple-400 bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20 transition-all"
-                >
-                  Scan Match →
-                </Link>
-              </div>
+                <span className="block text-center py-2.5 rounded-xl text-sm font-semibold text-purple-400 bg-purple-500/10 border border-purple-500/20 group-hover:bg-purple-500/20 transition-all">
+                  Check Verdict →
+                </span>
+              </Link>
             );
           })}
         </div>
+
+        {/* View all verdicts */}
+        <div className="text-center mt-8">
+          <Link
+            href="/verdicts"
+            className="inline-block px-8 py-3.5 rounded-xl font-bold text-white bg-gradient-to-r from-purple-600 to-cyan-500 hover:from-purple-500 hover:to-cyan-400 transition-all shadow-lg shadow-purple-500/25"
+          >
+            🎯 View All 72 Verdicts →
+          </Link>
+        </div>
       </section>
 
-      {/* ═══════ AD BANNER — LEADERBOARD ═══════ */}
-      <AdBanner size="leaderboard" label="between-b-c" className="mb-4" />
-
-      {/* ═══════ SECTION C — FEATURED AI ANALYSIS ═══════ */}
+      {/* ═══════ PREDICT & COMPETE PROMO (TOP 3 LEADERBOARD) ═══════ */}
       <section className="py-20 px-4 max-w-7xl mx-auto">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3">AI Match Intelligence</h2>
-          <p className="text-gray-400 text-lg">Deep analysis for marquee matchups</p>
-        </div>
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl sm:text-4xl font-bold mb-3">
+                <span className="bg-gradient-to-r from-orange-500 to-purple-500 bg-clip-text text-transparent">
+                  🎮 PREDICT & COMPETE — Can You Beat the AI?
+                </span>
+              </h2>
+            </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {marqueeMatches.map(({ match, analysis }) => {
-            const confPct = confidenceToPercent(analysis.confidence);
-            const firstSentence = analysis.summary.split(". ")[0] + ".";
-
-            return (
-              <div
-                key={match.id}
-                className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 hover-gradient-border transition-all"
-              >
-                {/* Match title */}
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="text-2xl">{match.homeFlag}</span>
-                  <span className="text-sm font-bold text-white">{match.home} vs {match.away}</span>
-                  <span className="text-2xl">{match.awayFlag}</span>
-                </div>
-
-                {/* Prediction */}
-                <div className="mb-4">
-                  <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">AI Predicted Winner</div>
-                  <div className="text-lg font-bold text-white">{analysis.predictedResult}</div>
-                  <div className="text-sm text-gray-400">{analysis.predictedScore}</div>
-                </div>
-
-                {/* Confidence bar */}
-                <div className="mb-4">
-                  <div className="flex justify-between text-[10px] text-gray-500 mb-1">
-                    <span>Confidence</span>
-                    <span>{analysis.confidence} ({confPct}%)</span>
+            <div className="mb-8">
+              <h3 className="text-xl font-bold text-center mb-6">🏆 LEADERBOARD</h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg">🥇</span>
+                    <span className="font-bold text-yellow-400">#1 DragonKing</span>
                   </div>
-                  <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-purple-600 to-cyan-500 rounded-full"
-                      style={{ width: `${confPct}%` }}
-                    />
-                  </div>
+                  <span className="text-xl font-bold text-yellow-400">847 pts</span>
                 </div>
-
-                {/* Summary */}
-                <p className="text-sm text-gray-400 mb-4 line-clamp-3">{firstSentence}</p>
-
-                <Link
-                  href={`/match/${match.id}`}
-                  className="block text-center py-2.5 rounded-xl text-sm font-semibold text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 hover:bg-cyan-500/20 transition-all"
-                >
-                  View Full Analysis →
-                </Link>
+                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/30 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg">🧠</span>
+                    <span className="font-bold text-cyan-400">#2 KickScan AI</span>
+                  </div>
+                  <span className="text-xl font-bold text-cyan-400">781 pts</span>
+                </div>
+                <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg">🥉</span>
+                    <span className="font-bold text-gray-300">#3 MessiFanatic</span>
+                  </div>
+                  <span className="text-lg font-bold text-gray-300">723 pts</span>
+                </div>
               </div>
-            );
-          })}
+            </div>
+
+            <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-6 mb-8">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-center text-sm">
+                <div>
+                  <div className="text-lg mb-1">✅</div>
+                  <div className="font-bold">Correct result: 3 pts</div>
+                </div>
+                <div>
+                  <div className="text-lg mb-1">🎯</div>
+                  <div className="font-bold">Correct score: +5 bonus</div>
+                </div>
+                <div>
+                  <div className="text-lg mb-1">⚡</div>
+                  <div className="font-bold">2 Daily Boosters</div>
+                </div>
+                <div>
+                  <div className="text-lg mb-1">🏆</div>
+                  <div className="font-bold">Climb ranks & beat AI</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="text-center">
+              <a
+                href="/predict"
+                className="inline-block px-8 py-4 rounded-xl font-bold text-white bg-gradient-to-r from-orange-600 to-purple-600 hover:from-orange-500 hover:to-purple-500 transition-all shadow-lg shadow-orange-500/25"
+              >
+                Join the Game →
+              </a>
+              <p className="text-xs text-gray-400 mt-2">Free account required to play</p>
+            </div>
+          </div>
         </div>
       </section>
+
+
 
       {/* ═══════ SECTION — STARS TO WATCH ═══════ */}
       <section className="py-20 px-4 max-w-7xl mx-auto">
@@ -340,191 +462,14 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ═══════ SECTION D — FAN SENTIMENT ═══════ */}
-      <section className="py-20 px-4 max-w-7xl mx-auto">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3">What Fans Think 🗳️</h2>
-          <p className="text-gray-400 text-lg">Live fan sentiment across every match</p>
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {fanSentiment.map((fs) => {
-            const match = allMatches.find((m) => m.id === fs.matchId)!;
-            return (
-              <div
-                key={fs.matchId}
-                className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl">{match.homeFlag}</span>
-                    <span className="text-sm font-bold text-white">{match.home} vs {match.away}</span>
-                    <span className="text-xl">{match.awayFlag}</span>
-                  </div>
-                  <span className="text-xs text-gray-500">{fs.votes.toLocaleString()} votes</span>
-                </div>
 
-                {/* Vote bars */}
-                <div className="space-y-2">
-                  {[
-                    { label: match.home, pct: fs.home, color: "from-green-500 to-emerald-400" },
-                    { label: "Draw", pct: fs.draw, color: "from-gray-500 to-gray-400" },
-                    { label: match.away, pct: fs.away, color: "from-blue-500 to-indigo-400" },
-                  ].map((row) => (
-                    <div key={row.label}>
-                      <div className="flex justify-between text-xs text-gray-400 mb-1">
-                        <span>{row.label}</span>
-                        <span>{row.pct}%</span>
-                      </div>
-                      <div className="h-2.5 bg-white/10 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full bg-gradient-to-r ${row.color} rounded-full transition-all`}
-                          style={{ width: `${row.pct}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
 
-                <Link
-                  href={`/match/${fs.matchId}`}
-                  className="block text-center mt-4 py-2 rounded-xl text-sm font-semibold text-gray-300 bg-white/5 border border-white/10 hover:bg-white/10 transition-all"
-                >
-                  Cast Your Vote →
-                </Link>
-              </div>
-            );
-          })}
-        </div>
-      </section>
 
-      {/* ═══════ SECTION E — THE SMART VIEW™ ═══════ */}
-      <section className="py-20 px-4 max-w-7xl mx-auto">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3">The Smart View™</h2>
-          <p className="text-gray-400 text-lg">See what fans think, what AI predicts, and what the market implies</p>
-        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {smartViewMatches.map((sv) => {
-            const match = allMatches.find((m) => m.id === sv.matchId)!;
-            const analysis = getMatchAnalysis(sv.matchId)!;
-            // Market implied probabilities (simulated from typical odds)
-            const marketHome = Math.round(analysis.homeWinPct * 0.95 + 2);
-            const marketAway = Math.round(analysis.awayWinPct * 0.95 + 2);
-            const marketDraw = 100 - marketHome - marketAway;
 
-            return (
-              <div
-                key={sv.matchId}
-                className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6"
-              >
-                {/* Match header */}
-                <div className="flex items-center gap-2 mb-6">
-                  <span className="text-xl">{match.homeFlag}</span>
-                  <span className="text-sm font-bold text-white">{match.home} vs {match.away}</span>
-                  <span className="text-xl">{match.awayFlag}</span>
-                </div>
 
-                {/* Triple comparison */}
-                <div className="grid grid-cols-3 gap-4 mb-6">
-                  {[
-                    { icon: "👥", label: "Fans", data: sv.fans },
-                    { icon: "🧠", label: "AI", data: { home: analysis.homeWinPct, draw: analysis.drawPct, away: analysis.awayWinPct } },
-                    { icon: "💰", label: "Market", data: { home: marketHome, draw: marketDraw, away: marketAway } },
-                  ].map((col) => (
-                    <div key={col.label} className="text-center">
-                      <div className="text-lg mb-1">{col.icon}</div>
-                      <div className="text-xs font-bold text-gray-400 mb-3 uppercase tracking-wider">{col.label}</div>
-                      <div className="space-y-2">
-                        {[
-                          { label: "H", pct: col.data.home, color: "bg-green-500" },
-                          { label: "D", pct: col.data.draw, color: "bg-gray-500" },
-                          { label: "A", pct: col.data.away, color: "bg-blue-500" },
-                        ].map((row) => (
-                          <div key={row.label}>
-                            <div className="flex justify-between text-[10px] text-gray-500 mb-0.5">
-                              <span>{row.label}</span>
-                              <span>{row.pct}%</span>
-                            </div>
-                            <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                              <div
-                                className={`h-full ${row.color} rounded-full`}
-                                style={{ width: `${row.pct}%` }}
-                              />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Smart Insight */}
-                <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-                  <p className="text-sm text-gray-300">{sv.insight}</p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* ═══════ AD BANNER — LARGE ═══════ */}
-      <AdBanner size="large-banner" label="between-e-f" className="mb-4" />
-
-      {/* ═══════ SECTION F — MARKET VALUE SCANNER ═══════ */}
-      <section className="py-20 px-4 max-w-7xl mx-auto">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3">Market Value Scanner</h2>
-          <p className="text-gray-400 text-lg">Where AI disagrees with bookmakers — that&apos;s where value lives</p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {valueMatches.map((vm) => {
-            const match = allMatches.find((m) => m.id === vm.matchId)!;
-            return (
-              <div
-                key={vm.matchId}
-                className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 hover-gradient-border transition-all"
-              >
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="text-lg">{match.homeFlag}</span>
-                  <span className="text-xs font-bold text-white truncate">{match.home} vs {match.away}</span>
-                  <span className="text-lg">{match.awayFlag}</span>
-                </div>
-
-                <div className="mb-3">
-                  <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">AI Pick</div>
-                  <div className="text-sm font-bold text-green-400">{vm.aiPick}</div>
-                </div>
-
-                <div className="flex justify-between mb-3">
-                  <div>
-                    <div className="text-[10px] text-gray-500 uppercase tracking-wider">Confidence</div>
-                    <div className="text-sm font-bold text-white">{vm.aiConf}%</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-[10px] text-gray-500 uppercase tracking-wider">Best Odds</div>
-                    <div className="text-sm font-bold text-amber-400">{vm.bestOdds}</div>
-                  </div>
-                </div>
-
-                <div className="text-[10px] text-gray-500 mb-3">{vm.bookmaker}</div>
-
-                <Link
-                  href={`/match/${vm.matchId}`}
-                  className="block text-center py-2 rounded-xl text-sm font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 transition-all"
-                >
-                  Claim Value →
-                </Link>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* ═══════ SECTION G — LATEST INTEL ═══════ */}
+      {/* ═══════ LATEST INTEL ═══════ */}
       <section className="py-20 px-4 max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-12">
           <div>
@@ -560,7 +505,7 @@ export default function HomePage() {
         </Link>
       </section>
 
-      {/* ═══════ SECTION H — FINAL CTA ═══════ */}
+      {/* ═══════ FINAL CTA ═══════ */}
       <section className="py-24 px-4 bg-gradient-to-b from-[#06060f] via-purple-950/20 to-[#06060f]">
         <div className="max-w-3xl mx-auto text-center">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white mb-4">

@@ -49,26 +49,6 @@ function HeroCountdown() {
   );
 }
 
-/* ──────────────────────── VIEWERS COUNTER ──────────────────────── */
-function ViewersCounter() {
-  const [count, setCount] = useState(2341);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    const id = setInterval(() => {
-      setCount((c) => {
-        const next = c + Math.floor(Math.random() * 7) - 3;
-        return Math.max(2100, Math.min(2600, next));
-      });
-    }, 3000);
-    return () => clearInterval(id);
-  }, []);
-
-  if (!mounted) return <span className="font-bold text-white/80">—</span>;
-  return <span className="font-bold text-white/80">{count.toLocaleString()}</span>;
-}
-
 /* ──────────────────────── HERO SECTION ──────────────────────── */
 export default function HeroSection() {
   return (
@@ -178,38 +158,38 @@ export default function HeroSection() {
         </p>
 
         {/* Main title */}
-        <h1 className="animate-fade-in-up hero-title-gradient text-[2.4rem] sm:text-[3.5rem] md:text-[4.5rem] leading-[1.05] font-black mb-4" style={{ animationDelay: "0.1s", fontFamily: "'Inter', sans-serif" }}>
-          AI PREDICTS<br />THE WINNER
+        <h1 className="animate-fade-in-up hero-title-gradient text-[1.8rem] sm:text-[2.4rem] md:text-[3.5rem] lg:text-[4.5rem] leading-[1.05] font-black mb-4" style={{ animationDelay: "0.1s", fontFamily: "'Inter', sans-serif" }}>
+          AI WORLD CUP<br />INTELLIGENCE ENGINE
         </h1>
 
         {/* Subtitle */}
         <p className="animate-fade-in-up text-base sm:text-lg md:text-xl text-white/60 mb-8 leading-relaxed" style={{ animationDelay: "0.2s" }}>
-          Don&apos;t bet blind. <span className="text-white font-semibold">Use data to win.</span><br className="hidden sm:block" />
-          <span className="text-sm sm:text-base text-white/40">Real-time odds comparison · AI predictions · Arbitrage alerts</span>
+          Don&apos;t guess. <span className="text-white font-semibold">Scan the match.</span><br className="hidden sm:block" />
+          <span className="text-sm sm:text-base text-white/40">Match analysis · Score prediction · Fan sentiment · Market intelligence</span>
         </p>
 
         {/* CTA */}
         <div className="animate-fade-in-up mb-4" style={{ animationDelay: "0.3s" }}>
           <Link
-            href="/odds"
+            href="/matches"
             className="hero-cta-btn inline-flex items-center gap-3 px-8 sm:px-10 py-4 sm:py-5 text-sm sm:text-base font-bold uppercase tracking-wider rounded-xl transition-all duration-300"
           >
-            GET TODAY&apos;S BEST ODDS
+            ANALYZE MATCHES
             <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M5 12h14M12 5l7 7-7 7" />
             </svg>
           </Link>
         </div>
         <p className="animate-fade-in-up text-xs text-white/30 mb-10" style={{ animationDelay: "0.35s" }}>
-          Free forever · No signup required
+          Free match analysis · No signup required
         </p>
 
         {/* Trust badges */}
         <div className="animate-fade-in-up flex flex-wrap justify-center gap-5 sm:gap-8 mb-10" style={{ animationDelay: "0.4s" }}>
           {[
-            { icon: "🛡️", text: "48 Teams Covered" },
-            { icon: "🌐", text: "6 Sportsbooks" },
-            { icon: "🤖", text: "AI-Powered" },
+            { icon: "🧠", text: "72 Matches Analyzed" },
+            { icon: "📊", text: "30+ Bookmakers" },
+            { icon: "🗳️", text: "Fan Sentiment" },
           ].map((b) => (
             <span key={b.text} className="flex items-center gap-1.5 text-xs text-white/35">
               <span>{b.icon}</span> {b.text}
@@ -229,20 +209,10 @@ export default function HeroSection() {
       {/* ═══ BOTTOM STATS BAR ═══ */}
       <div className="absolute bottom-0 left-0 right-0 z-10 hero-bottom-bar">
         <div className="flex flex-wrap justify-center items-center gap-4 sm:gap-8 px-4 py-3 sm:py-4 text-xs text-white/45">
-          <span className="flex items-center gap-1.5">
-            <span className="text-green-400">●</span>
-            <span className="font-bold text-white/70">3</span> live matches
-          </span>
-          <span className="hidden sm:flex items-center gap-1.5">
-            📊 <span className="font-bold text-white/70">12,847</span> odds tracked today
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="hero-live-dot-sm" />
-            <ViewersCounter /> viewing now
-          </span>
-          <span className="hidden sm:flex items-center gap-1.5">
-            🎯 AI accuracy: <span className="font-bold text-white/70">78.4%</span>
-          </span>
+          <span>⚡ Live scores available</span>
+          <span>🏆 104 World Cup matches</span>
+          <span>📊 Updated in real-time</span>
+          <span>🎯 AI-powered verdicts</span>
         </div>
       </div>
     </section>

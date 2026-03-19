@@ -4,10 +4,10 @@ import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 
 const links = [
-  { href: "/verdicts", label: "🎯 Verdicts", isNew: true },
+  { href: "/verdicts", label: "🎯 WC Verdicts", isNew: true },
   { href: "/leagues", label: "⚽ Leagues" },
   { href: "/predict", label: "🎮 Predict", isHot: true },
-  { href: "/matches", label: "Matches" },
+  { href: "/matches", label: "WC Fixtures" },
   { href: "/live-scores", label: "Live Scores", badge: true },
   { href: "/players", label: "⭐ Players" },
 ];

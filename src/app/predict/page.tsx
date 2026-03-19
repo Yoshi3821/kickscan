@@ -84,6 +84,7 @@ function PredictPageContent() {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [usernameStatus, setUsernameStatus] = useState<string>(""); // "", "checking", "available", "taken", "invalid"
+  const [selectedAvatar, setSelectedAvatar] = useState<string>("⚽");
   const [activeTab, setActiveTab] = useState<Competition>('league');
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [leagueMatches, setLeagueMatches] = useState<LeagueMatch[]>([]);
@@ -145,6 +146,7 @@ function PredictPageContent() {
         const userData = JSON.parse(savedUser);
         if (userData.id && userData.token) {
           validateSession(userData.id, userData.token);
+          if (userData.avatar) setSelectedAvatar(userData.avatar);
         }
       } catch (err) {
         localStorage.removeItem("kickscan_user");
@@ -378,7 +380,8 @@ function PredictPageContent() {
         const userData = {
           id: data.user.id,
           username: data.user.username,
-          token: data.token
+          token: data.token,
+          avatar: selectedAvatar
         };
         
         setUserId(data.user.id);
@@ -489,25 +492,6 @@ function PredictPageContent() {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem("kickscan_user");
-    window.dispatchEvent(new Event("kickscan_auth_change"));
-    setUser(null);
-    setUserId("");
-    setToken("");
-    setPredictions({});
-    setBoostersRemaining(2);
-    setUsername("");
-    setEmail("");
-    setPassword("");
-    setLoginUsername("");
-    setLoginPassword("");
-    setError("");
-    setUserGroups([]);
-    setSelectedGroup(null);
-    setSelectedGroupLeaderboard([]);
-  };
-
   if (!user) {
     return (
       <main className="min-h-screen bg-[#06060f] text-white">
@@ -557,6 +541,27 @@ function PredictPageContent() {
                     )}
                   </div>
                   
+                  {/* Avatar Picker */}
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-2">Choose your avatar</label>
+                    <div className="flex flex-wrap gap-2">
+                      {["⚽", "🦁", "🐉", "🦅", "🎯", "🔥", "⭐", "🏆", "👑", "🐺", "🦈", "💎"].map((emoji) => (
+                        <button
+                          key={emoji}
+                          type="button"
+                          onClick={() => setSelectedAvatar(emoji)}
+                          className={`w-10 h-10 rounded-xl text-xl flex items-center justify-center transition ${
+                            selectedAvatar === emoji
+                              ? "bg-purple-500/30 border-2 border-purple-500 scale-110"
+                              : "bg-white/5 border border-white/10 hover:bg-white/10"
+                          }`}
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   <input
                     type="email"
                     placeholder="Email"
@@ -785,7 +790,7 @@ function PredictPageContent() {
             <div className="flex items-center gap-6">
               <div className="text-center">
                 <div className="text-sm text-gray-400">Player</div>
-                <div className="text-lg font-bold">👤 {user.username}</div>
+                <div className="text-lg font-bold">{selectedAvatar} {user.username}</div>
               </div>
               <div className="text-center">
                 <div className="text-sm text-gray-400">Points</div>
@@ -806,17 +811,9 @@ function PredictPageContent() {
                 <div className="text-lg font-bold text-orange-400">🔥 {user.currentStreak}</div>
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="text-center">
-                <div className="text-sm text-gray-400">Boosters Today</div>
-                <div className="text-lg font-bold text-purple-400">⚡ {boostersRemaining}</div>
-              </div>
-              <button
-                onClick={logout}
-                className="px-4 py-2 rounded-xl text-sm bg-gray-500/20 text-gray-400 hover:bg-gray-500/30 transition"
-              >
-                Logout
-              </button>
+            <div className="text-center">
+              <div className="text-sm text-gray-400">Boosters Today</div>
+              <div className="text-lg font-bold text-purple-400">⚡ {boostersRemaining}</div>
             </div>
           </div>
         </div>

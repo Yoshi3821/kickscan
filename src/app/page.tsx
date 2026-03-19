@@ -159,7 +159,7 @@ export default function HomePage() {
           <p className="text-gray-400 text-lg">Match analysis, live scores, and AI verdicts — free for everyone. Predict & Compete with a free account.</p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-12">
           {/* Feature Card 1 - AI Verdicts */}
           <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 text-center hover:bg-white/[0.08] transition-all">
             <div className="text-4xl mb-4">🎯</div>
@@ -174,11 +174,20 @@ export default function HomePage() {
             <div className="text-4xl mb-4">🎮</div>
             <h3 className="text-xl font-bold text-white mb-3">Predict & Compete</h3>
             <p className="text-gray-400 text-sm leading-relaxed">
-              Compete against the AI & your friends in prediction leagues
+              Predict match results, earn points, and beat the AI
             </p>
           </div>
 
-          {/* Feature Card 3 - Live Scores */}
+          {/* Feature Card 3 - Private Groups */}
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 text-center hover:bg-white/[0.08] transition-all">
+            <div className="text-4xl mb-4">👥</div>
+            <h3 className="text-xl font-bold text-white mb-3">Private Groups</h3>
+            <p className="text-gray-400 text-sm leading-relaxed">
+              Create private leagues with friends — compete, rank & win together
+            </p>
+          </div>
+
+          {/* Feature Card 4 - Live Scores */}
           <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 text-center hover:bg-white/[0.08] transition-all">
             <div className="text-4xl mb-4">📺</div>
             <h3 className="text-xl font-bold text-white mb-3">Live Scores</h3>
@@ -187,7 +196,7 @@ export default function HomePage() {
             </p>
           </div>
 
-          {/* Feature Card 4 - Match Analysis */}
+          {/* Feature Card 5 - Match Analysis */}
           <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 text-center hover:bg-white/[0.08] transition-all">
             <div className="text-4xl mb-4">🧠</div>
             <h3 className="text-xl font-bold text-white mb-3">Match Analysis</h3>

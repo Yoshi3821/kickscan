@@ -249,8 +249,8 @@ export default function ProfilePage() {
                   <div className="text-sm text-gray-400">Global Rank</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-gray-400">{user.correctResults}</div>
-                  <div className="text-sm text-gray-400">Correct ({winRate}%)</div>
+                  <div className="text-2xl font-bold text-cyan-400">👥 {groups.length}</div>
+                  <div className="text-sm text-gray-400">Groups Joined</div>
                 </div>
               </div>
             </div>

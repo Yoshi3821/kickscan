@@ -13,6 +13,54 @@ const ODDS_LEAGUES = [
   { key: "soccer_uefa_champs_league", name: "Champions League", flag: "🇪🇺", logo: "https://media.api-sports.io/football/leagues/2.png" },
 ];
 
+// Fetch all league odds in one batch (called once, cached 2h)
+async function fetchBatchOdds(): Promise<Map<string, { home: number; draw: number; away: number }>> {
+  const oddsMap = new Map<string, { home: number; draw: number; away: number }>();
+  
+  const results = await Promise.allSettled(
+    ODDS_LEAGUES.map(async (league) => {
+      const res = await fetch(
+        `https://api.the-odds-api.com/v4/sports/${league.key}/odds?apiKey=${ODDS_API_KEY}&regions=uk,eu&markets=h2h&oddsFormat=decimal`,
+        { next: { revalidate: 7200 } }
+      );
+      if (!res.ok) return [];
+      return res.json();
+    })
+  );
+  
+  for (const result of results) {
+    if (result.status !== "fulfilled" || !Array.isArray(result.value)) continue;
+    for (const match of result.value) {
+      // Average odds across all bookmakers
+      let homeTotal = 0, drawTotal = 0, awayTotal = 0, count = 0;
+      for (const bm of (match.bookmakers || [])) {
+        const h2h = bm.markets?.find((m: any) => m.key === "h2h");
+        if (!h2h) continue;
+        const homePrice = h2h.outcomes?.find((o: any) => o.name === match.home_team)?.price;
+        const awayPrice = h2h.outcomes?.find((o: any) => o.name === match.away_team)?.price;
+        const drawPrice = h2h.outcomes?.find((o: any) => o.name === "Draw")?.price;
+        if (homePrice && awayPrice && drawPrice) {
+          homeTotal += homePrice;
+          drawTotal += drawPrice;
+          awayTotal += awayPrice;
+          count++;
+        }
+      }
+      if (count > 0) {
+        // Key by normalized team names for matching
+        const key = `${match.home_team}|||${match.away_team}`.toLowerCase();
+        oddsMap.set(key, {
+          home: Math.round((homeTotal / count) * 100) / 100,
+          draw: Math.round((drawTotal / count) * 100) / 100,
+          away: Math.round((awayTotal / count) * 100) / 100,
+        });
+      }
+    }
+  }
+  
+  return oddsMap;
+}
+
 async function getOddsApiFallback(): Promise<any[]> {
   const allMatches: any[] = [];
   
@@ -71,12 +119,22 @@ async function getOddsApiFallback(): Promise<any[]> {
 
 export async function GET() {
   try {
+    // Fetch odds in parallel (one batch call, cached 2h)
+    const oddsMapPromise = fetchBatchOdds().catch(() => new Map());
+    
     // Try API-Football first
     const fixtures = await getAllLeagueFixtures(12);
+    const oddsMap = await oddsMapPromise;
+    
     if (fixtures.length > 0) {
       const results = fixtures.slice(0, 6).map((fixture) => {
         const verdict = generateAutoVerdict(fixture, null, null, [], [], []);
         const league = LEAGUES.find(l => l.id === fixture.league.id);
+        
+        // Match odds by team names
+        const oddsKey = `${fixture.home.name}|||${fixture.away.name}`.toLowerCase();
+        const matchOdds = oddsMap.get(oddsKey) || null;
+        
         return {
           id: fixture.id,
           leagueName: fixture.league.name,
@@ -93,6 +151,7 @@ export async function GET() {
           riskLevel: verdict.riskLevel,
           confidencePct: verdict.confidencePct,
           predictedScore: verdict.predictedScore,
+          avgOdds: matchOdds,
         };
       });
       return NextResponse.json(results);
@@ -100,7 +159,12 @@ export async function GET() {
     
     // Fallback: use The Odds API
     const fallback = await getOddsApiFallback();
-    return NextResponse.json(fallback);
+    // Attach odds to fallback matches too
+    const fallbackWithOdds = fallback.map((m: any) => {
+      const oddsKey = `${m.homeName}|||${m.awayName}`.toLowerCase();
+      return { ...m, avgOdds: oddsMap.get(oddsKey) || null };
+    });
+    return NextResponse.json(fallbackWithOdds);
   } catch {
     // Last resort fallback
     try {

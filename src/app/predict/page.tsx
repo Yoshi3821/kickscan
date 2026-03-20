@@ -39,6 +39,12 @@ interface LeaderboardEntry {
   isAI: boolean;
 }
 
+interface AvgOdds {
+  home: number;
+  draw: number;
+  away: number;
+}
+
 interface LeagueMatch {
   id: string | number;
   homeName: string;
@@ -49,6 +55,7 @@ interface LeagueMatch {
   leagueName: string;
   leagueFlag: string;
   leagueLogo: string;
+  avgOdds?: AvgOdds | null;
 }
 
 interface Group {
@@ -786,7 +793,7 @@ function PredictPageContent() {
             </div>
 
             {/* Right Column - Leaderboard */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2" id="leaderboard">
               <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
                 <h3 className="text-2xl font-bold text-center mb-6">🏆 GLOBAL LEADERBOARD</h3>
                 
@@ -925,6 +932,10 @@ function PredictPageContent() {
                 <div className="text-sm text-gray-400">Streak</div>
                 <div className="text-lg font-bold text-orange-400">🔥 {user.currentStreak}</div>
               </div>
+            </div>
+            <div className="text-center">
+              <div className="text-sm text-gray-400">Groups</div>
+              <div className="text-lg font-bold text-cyan-400">👥 {userGroups.length}</div>
             </div>
             <div className="text-center">
               <div className="text-sm text-gray-400">Boosters Today</div>
@@ -1168,6 +1179,7 @@ function PredictPageContent() {
                         onPredict={handlePrediction}
                         kickoffISO={match.date}
                         liveScore={liveScores[`league_${match.id}`] || null}
+                        avgOdds={match.avgOdds || null}
                       />
                     ))}
                   </div>
@@ -1207,7 +1219,7 @@ function PredictPageContent() {
             </div>
 
             {/* Leaderboard */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+            <div id="leaderboard" className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
               <h3 className="text-lg font-bold mb-4">
                 {activeTab === 'league' ? '🏟️ Season Leaderboard' : '🏆 WC 2026 Leaderboard'}
               </h3>
@@ -1368,8 +1380,9 @@ interface MatchCardProps {
   prediction?: Prediction;
   boostersRemaining: number;
   onPredict: (matchId: string, result: "home" | "draw" | "away", score: string, useBooster: boolean, homeTeam?: string, awayTeam?: string) => void;
-  kickoffISO?: string; // ISO date string for lock logic
+  kickoffISO?: string;
   liveScore?: { home: number; away: number; minute: number; status: string } | null;
+  avgOdds?: AvgOdds | null;
 }
 
 function MatchCard({ 
@@ -1386,7 +1399,8 @@ function MatchCard({
   boostersRemaining,
   onPredict,
   kickoffISO,
-  liveScore
+  liveScore,
+  avgOdds
 }: MatchCardProps) {
   const [selectedResult, setSelectedResult] = useState<"home" | "draw" | "away">(
     prediction?.predicted_result || "home"
@@ -1466,6 +1480,35 @@ function MatchCard({
           <div className="text-sm font-medium text-white">{away}</div>
         </div>
       </div>
+
+      {/* Avg Market Odds — shown when available and match hasn't started */}
+      {avgOdds && !isStarted && !isLive && !isFinished && (
+        <div className="mb-4 px-3 py-2.5 bg-white/[0.03] border border-white/[0.06] rounded-xl">
+          <div className="text-[10px] text-gray-500 text-center mb-1.5 uppercase tracking-wider font-medium">Avg Market Odds</div>
+          <div className="flex items-center justify-center gap-4 text-sm">
+            <div className={`text-center ${avgOdds.home <= avgOdds.away && avgOdds.home <= avgOdds.draw ? 'text-green-400 font-bold' : 'text-gray-400'}`}>
+              <div className="text-xs text-gray-500 mb-0.5">Home</div>
+              <div>{avgOdds.home.toFixed(2)}</div>
+            </div>
+            <div className={`text-center ${avgOdds.draw <= avgOdds.home && avgOdds.draw <= avgOdds.away ? 'text-green-400 font-bold' : 'text-gray-400'}`}>
+              <div className="text-xs text-gray-500 mb-0.5">Draw</div>
+              <div>{avgOdds.draw.toFixed(2)}</div>
+            </div>
+            <div className={`text-center ${avgOdds.away <= avgOdds.home && avgOdds.away <= avgOdds.draw ? 'text-green-400 font-bold' : 'text-gray-400'}`}>
+              <div className="text-xs text-gray-500 mb-0.5">Away</div>
+              <div>{avgOdds.away.toFixed(2)}</div>
+            </div>
+          </div>
+          {(() => {
+            const fav = avgOdds.home < avgOdds.away ? home : avgOdds.away < avgOdds.home ? away : null;
+            return fav ? (
+              <div className="text-[10px] text-gray-500 text-center mt-1.5">
+                Market favorite: <span className="text-green-400 font-medium">{fav}</span>
+              </div>
+            ) : null;
+          })()}
+        </div>
+      )}
 
       {/* Live / Finished / Started Match Card — shown after kickoff */}
       {(isStarted || isLive || isFinished) && prediction ? (

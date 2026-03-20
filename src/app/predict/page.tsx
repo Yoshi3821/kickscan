@@ -966,63 +966,65 @@ function PredictPageContent() {
   return (
     <main className="min-h-screen bg-[#06060f] text-white">
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-3">🎮 Predict & Compete</h1>
-          <p className="text-xl text-gray-400">Predict match results, earn points, beat the AI</p>
+        {/* Header — compact on mobile */}
+        <div className="text-center mb-5">
+          <h1 className="text-3xl md:text-4xl font-bold mb-2">🎮 Predict & Compete</h1>
+          <p className="text-base md:text-xl text-gray-400">Predict match results, earn points, beat the AI</p>
         </div>
 
-        {/* User Stats Bar */}
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 mb-8">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-6">
-              <div className="text-center">
-                <div className="text-sm text-gray-400">Player</div>
-                <div className="text-lg font-bold">{selectedAvatar} {user.username}</div>
-              </div>
-              <div className="text-center">
-                <div className="text-sm text-gray-400">Points</div>
-                <div className="text-lg font-bold text-green-400">🏆 {user.totalPoints}</div>
-              </div>
-              <div className="text-center">
-                <div className="text-sm text-gray-400">Rank</div>
-                <div className="text-lg font-bold text-purple-400">#{user.rank || 0}</div>
-              </div>
-              <div className="text-center">
-                <div className="text-sm text-gray-400">Win Rate</div>
-                <div className="text-lg font-bold">
-                  🎯 {user.predictions > 0 ? Math.round((user.correctResults / user.predictions) * 100) : 0}%
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="text-sm text-gray-400">Streak</div>
-                <div className="text-lg font-bold text-orange-400">🔥 {user.currentStreak}</div>
-              </div>
+        {/* User Stats Bar — grid layout for mobile */}
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 md:p-6 mb-5">
+          {/* Player name row */}
+          <div className="flex items-center justify-between mb-3 pb-3 border-b border-white/5">
+            <div className="text-base font-bold">{selectedAvatar} {user.username}</div>
+            <div className="flex items-center gap-1.5 text-xs text-gray-500">
+              <span>🕐 {getTimezoneLabel(userTz)}</span>
+              <button
+                onClick={() => setShowTzPicker(!showTzPicker)}
+                className="text-purple-400 hover:text-purple-300 transition"
+              >
+                ✎
+              </button>
+            </div>
+          </div>
+          {/* Stats grid — 4 cols on mobile, 7 on desktop */}
+          <div className="grid grid-cols-4 md:grid-cols-7 gap-2 md:gap-4">
+            <div className="text-center">
+              <div className="text-lg md:text-xl font-bold text-green-400">{user.totalPoints}</div>
+              <div className="text-[10px] md:text-xs text-gray-500">Points</div>
             </div>
             <div className="text-center">
-              <div className="text-sm text-gray-400">Groups</div>
-              <div className="text-lg font-bold text-cyan-400">👥 {userGroups.length}</div>
+              <div className="text-lg md:text-xl font-bold text-purple-400">#{user.rank || 0}</div>
+              <div className="text-[10px] md:text-xs text-gray-500">Rank</div>
             </div>
             <div className="text-center">
-              <div className="text-sm text-gray-400">Boosters Today</div>
-              <div className="text-lg font-bold text-purple-400">⚡ {boostersRemaining}</div>
+              <div className="text-lg md:text-xl font-bold text-white">
+                {user.predictions > 0 ? Math.round((user.correctResults / user.predictions) * 100) : 0}%
+              </div>
+              <div className="text-[10px] md:text-xs text-gray-500">Win Rate</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg md:text-xl font-bold text-orange-400">{user.currentStreak}</div>
+              <div className="text-[10px] md:text-xs text-gray-500">Streak</div>
+            </div>
+            <div className="text-center hidden md:block">
+              <div className="text-lg md:text-xl font-bold text-cyan-400">{userGroups.length}</div>
+              <div className="text-[10px] md:text-xs text-gray-500">Groups</div>
+            </div>
+            <div className="text-center hidden md:block">
+              <div className="text-lg md:text-xl font-bold text-purple-400">{boostersRemaining}</div>
+              <div className="text-[10px] md:text-xs text-gray-500">Boosters</div>
+            </div>
+            <div className="text-center hidden md:block">
+              <div className="text-lg md:text-xl font-bold text-blue-400">{user.predictions}</div>
+              <div className="text-[10px] md:text-xs text-gray-500">Picks</div>
             </div>
           </div>
         </div>
 
-        {/* Timezone indicator */}
-        <div className="flex items-center justify-center gap-2 mb-4 text-xs text-gray-500">
-          <span>🕐 Times shown in {getTimezoneLabel(userTz)}</span>
-          <button
-            onClick={() => setShowTzPicker(!showTzPicker)}
-            className="text-purple-400 hover:text-purple-300 transition underline"
-          >
-            Change
-          </button>
-        </div>
+        {/* Timezone picker (expandable) */}
         {showTzPicker && (
-          <div className="max-w-sm mx-auto mb-6 bg-white/5 border border-white/10 rounded-xl p-4">
-            <label className="block text-xs text-gray-400 mb-2">Select your timezone</label>
+          <div className="max-w-sm mx-auto mb-4 bg-white/5 border border-white/10 rounded-xl p-3">
             <select
               value={userTz}
               onChange={(e) => {
@@ -1041,12 +1043,12 @@ function PredictPageContent() {
           </div>
         )}
 
-        {/* Competition Tabs */}
-        <div className="mb-8">
-          <div className="flex gap-2 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-2 w-fit mx-auto">
+        {/* Competition Tabs — compact on mobile */}
+        <div className="mb-5">
+          <div className="flex gap-1.5 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-1.5 w-fit mx-auto">
             <button
               onClick={() => setActiveTab('league')}
-              className={`px-6 py-3 rounded-xl font-bold transition-all ${
+              className={`px-4 md:px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${
                 activeTab === 'league'
                   ? 'bg-green-500/20 text-green-400 border border-green-500/30'
                   : 'text-gray-300 hover:bg-white/10'
@@ -1056,7 +1058,7 @@ function PredictPageContent() {
             </button>
             <button
               onClick={() => setActiveTab('wc2026')}
-              className={`px-6 py-3 rounded-xl font-bold transition-all ${
+              className={`px-4 md:px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${
                 activeTab === 'wc2026'
                   ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
                   : 'text-gray-300 hover:bg-white/10'
@@ -1528,38 +1530,38 @@ function MatchCard({
   };
 
   return (
-    <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+    <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 md:p-6">
       {/* Match Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          {leagueFlag && <span className="text-sm">{leagueFlag}</span>}
-          <span className="text-sm text-gray-400 font-bold">{league}</span>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-1.5">
+          {leagueFlag && <span className="text-xs">{leagueFlag}</span>}
+          <span className="text-xs text-gray-400 font-bold">{league}</span>
         </div>
-        <span className="text-sm text-gray-500">{date} {time}</span>
+        <span className="text-xs text-gray-500">{date} {time}</span>
       </div>
 
-      {/* Teams */}
-      <div className="flex items-center justify-between mb-6">
+      {/* Teams — compact on mobile */}
+      <div className="flex items-center justify-between mb-4">
         <div className="text-center flex-1">
-          <div className="text-2xl mb-2">
+          <div className="text-xl md:text-2xl mb-1">
             {homeFlag.startsWith('http') ? (
-              <img src={homeFlag} alt="" className="w-8 h-8 mx-auto" />
+              <img src={homeFlag} alt="" className="w-7 h-7 md:w-8 md:h-8 mx-auto" />
             ) : (
               homeFlag
             )}
           </div>
-          <div className="text-sm font-medium text-white">{home}</div>
+          <div className="text-xs md:text-sm font-medium text-white truncate px-1">{home}</div>
         </div>
-        <div className="text-xs text-gray-500 font-bold px-3">VS</div>
+        <div className="text-[10px] text-gray-600 font-bold px-2">VS</div>
         <div className="text-center flex-1">
-          <div className="text-2xl mb-2">
+          <div className="text-xl md:text-2xl mb-1">
             {awayFlag.startsWith('http') ? (
-              <img src={awayFlag} alt="" className="w-8 h-8 mx-auto" />
+              <img src={awayFlag} alt="" className="w-7 h-7 md:w-8 md:h-8 mx-auto" />
             ) : (
               awayFlag
             )}
           </div>
-          <div className="text-sm font-medium text-white">{away}</div>
+          <div className="text-xs md:text-sm font-medium text-white truncate px-1">{away}</div>
         </div>
       </div>
 
@@ -1614,7 +1616,7 @@ function MatchCard({
                 </div>
               </div>
             )}
-            {/* AI Prediction */}
+            {/* AI Prediction + link to full verdict */}
             {signals.aiPick && (
               <div className="flex items-center gap-3">
                 <span className="text-gray-400 text-sm w-14 flex-shrink-0">🧠 AI</span>
@@ -1628,6 +1630,13 @@ function MatchCard({
                 {signals.aiConfidence && (
                   <span className="text-gray-500 text-xs">({signals.aiConfidence}%)</span>
                 )}
+                <a
+                  href={matchId.startsWith('league_') ? `/leagues/${matchId.replace('league_', '')}` : matchId.startsWith('wc_') ? `/match/${matchId.replace('wc_', '')}` : '#'}
+                  className="ml-auto text-purple-400 hover:text-purple-300 text-xs font-medium transition flex items-center gap-0.5"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  View <span className="text-sm">→</span>
+                </a>
               </div>
             )}
             {/* Market Prediction */}

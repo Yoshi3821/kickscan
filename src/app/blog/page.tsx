@@ -1,5 +1,5 @@
 import Link from "next/link";
-import AdBanner from "@/components/AdBanner";
+
 
 const categories = ["All", "Latest Updates", "Team News", "Tournament Headlines", "Guide", "Analysis", "Predictions"] as const;
 
@@ -170,9 +170,7 @@ export default function BlogPage() {
           <div className="space-y-4">
             {rest.map((post, index) => (
               <div key={post.slug}>
-              {index === 2 && (
-                <AdBanner size="medium-rect" label="blog-mid" className="my-6" />
-              )}
+
               <Link
                 href={`/blog/${post.slug}`}
                 className="block bg-gray-900/50 border border-gray-800/50 rounded-xl p-5 hover:border-gray-700 transition group"

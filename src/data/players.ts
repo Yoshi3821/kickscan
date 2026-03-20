@@ -20,7 +20,27 @@ export interface Player {
   tags: string[];
   goldenBootOdds: string;
   matchIds: number[];
+  image?: string;
 }
+
+export const playerImages: Record<string, string> = {
+  "messi": "https://upload.wikimedia.org/wikipedia/commons/b/b4/Lionel-Messi-Argentina-2022-FIFA-World-Cup_%28cropped%29.jpg",
+  "ronaldo": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Cristiano_Ronaldo_0876.jpg/500px-Cristiano_Ronaldo_0876.jpg",
+  "mbappe": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/66/Picture_with_Mbapp%C3%A9_%28cropped_and_rotated%29.jpg/500px-Picture_with_Mbapp%C3%A9_%28cropped_and_rotated%29.jpg",
+  "haaland": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/71/Erling_Haaland_June_2025.jpg/500px-Erling_Haaland_June_2025.jpg",
+  "vinicius-jr": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c6/2023_05_06_Final_de_la_Copa_del_Rey_-_52879242230_%28cropped%29.jpg/500px-2023_05_06_Final_de_la_Copa_del_Rey_-_52879242230_%28cropped%29.jpg",
+  "bellingham": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/25th_Laureus_World_Sports_Awards_-_Red_Carpet_-_Jude_Bellingham_-_240422_190551-2_%28cropped%29.jpg/500px-25th_Laureus_World_Sports_Awards_-_Red_Carpet_-_Jude_Bellingham_-_240422_190551-2_%28cropped%29.jpg",
+  "salah": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Mohamed_Salah_2018.jpg/500px-Mohamed_Salah_2018.jpg",
+  "yamal": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Lamine_Yamal_in_2025.jpg/500px-Lamine_Yamal_in_2025.jpg",
+  "saka": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/1_bukayo_saka_arsenal_2025_%28cropped%29.jpg/500px-1_bukayo_saka_arsenal_2025_%28cropped%29.jpg",
+  "pedri": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/13/Pedri.jpg/500px-Pedri.jpg",
+  "hakimi": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Achraf_Hakimi_vs_Niger%2C_5_Sept_2025.jpg/500px-Achraf_Hakimi_vs_Niger%2C_5_Sept_2025.jpg",
+  "son": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b0/BFA_2023_-2_Heung-Min_Son_%28cropped%29.jpg/500px-BFA_2023_-2_Heung-Min_Son_%28cropped%29.jpg",
+  "davies": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/ff/Alphonso_Davies_in_2022.jpg/500px-Alphonso_Davies_in_2022.jpg",
+  "pulisic": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/USMNT_vs._Trinidad_and_Tobago_%2848125059622%29_%28cropped%29.jpg/500px-USMNT_vs._Trinidad_and_Tobago_%2848125059622%29_%28cropped%29.jpg",
+  "wirtz": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Florian_Wirtz_04012026_%283%29_%28extracted%29.jpg/500px-Florian_Wirtz_04012026_%283%29_%28extracted%29.jpg",
+  "alvarez": "",
+};
 
 export const countryColors: Record<string, string> = {
   Argentina: "#75AADB",
@@ -501,7 +521,11 @@ export const allPlayers: Player[] = [
 // ═══════════════════════════════════════
 
 export function getPlayerBySlug(slug: string): Player | undefined {
-  return allPlayers.find((p) => p.slug === slug);
+  const p = allPlayers.find((p) => p.slug === slug);
+  if (p && !p.image && playerImages[p.slug]) {
+    p.image = playerImages[p.slug];
+  }
+  return p;
 }
 
 export function getPlayersForMatch(home: string, away: string): Player[] {

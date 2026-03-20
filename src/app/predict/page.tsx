@@ -89,6 +89,7 @@ function PredictPageContent() {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [usernameStatus, setUsernameStatus] = useState<string>(""); // "", "checking", "available", "taken", "invalid"
+  const [emailError, setEmailError] = useState<string>("");
   const [selectedAvatar, setSelectedAvatar] = useState<string>("⚽");
   const [activeTab, setActiveTab] = useState<Competition>('league');
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
@@ -127,7 +128,8 @@ function PredictPageContent() {
       return;
     }
 
-    const isValid = /^[a-zA-Z0-9_]{3,20}$/.test(username.trim());
+    const normalized = username.trim().replace(/\s+/g, ' ');
+    const isValid = /^[a-zA-Z0-9_ ]{3,20}$/.test(normalized) && normalized.length >= 3;
     if (!isValid) {
       setUsernameStatus("invalid");
       return;
@@ -380,6 +382,40 @@ function PredictPageContent() {
     }
   };
 
+  const handleLeaveGroup = async (groupId: string, groupName: string) => {
+    if (!confirm(`Are you sure you want to leave "${groupName}"? You'll lose access to this group's leaderboard.`)) {
+      return;
+    }
+
+    setGroupsLoading(true);
+    try {
+      const response = await fetch('/api/groups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'leave',
+          userId,
+          groupId
+        })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setUserGroups(prev => prev.filter(g => g.id !== groupId));
+        if (selectedGroup?.id === groupId) {
+          setSelectedGroup(null);
+          setSelectedGroupLeaderboard([]);
+        }
+      } else {
+        alert(data.error || "Failed to leave group");
+      }
+    } catch (err) {
+      alert("Network error. Please try again.");
+    } finally {
+      setGroupsLoading(false);
+    }
+  };
+
   const handleViewGroupLeaderboard = async (group: Group) => {
     try {
       const response = await fetch(`/api/groups?groupId=${group.id}`);
@@ -401,6 +437,12 @@ function PredictPageContent() {
   const handleRegister = async () => {
     if (!username.trim() || !email.trim() || !password.trim()) {
       setError("All fields are required");
+      return;
+    }
+
+    const trimmedEmail = email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setEmailError("Please enter a valid email (e.g. name@email.com)");
       return;
     }
 
@@ -497,7 +539,7 @@ function PredictPageContent() {
     }
   };
 
-  const handlePrediction = async (matchId: string, result: "home" | "draw" | "away", score: string, useBooster: boolean = false) => {
+  const handlePrediction = async (matchId: string, result: "home" | "draw" | "away", score: string, useBooster: boolean = false, homeTeam?: string, awayTeam?: string) => {
     if (!userId || !token) return;
     
     if (!/^\d+-\d+$/.test(score)) {
@@ -515,7 +557,9 @@ function PredictPageContent() {
           matchId,
           predictedResult: result,
           predictedScore: score,
-          useBooster
+          useBooster,
+          homeTeam,
+          awayTeam
         })
       });
 
@@ -577,7 +621,7 @@ function PredictPageContent() {
                       maxLength={20}
                     />
                     {usernameStatus === "invalid" && username.trim() && (
-                      <p className="text-red-400 text-xs mt-1">3-20 characters, letters, numbers & underscores only</p>
+                      <p className="text-red-400 text-xs mt-1">3-20 characters. Letters, numbers, spaces & underscores.</p>
                     )}
                     {usernameStatus === "taken" && (
                       <p className="text-red-400 text-xs mt-1">Username already taken</p>
@@ -611,13 +655,33 @@ function PredictPageContent() {
                     </div>
                   </div>
 
-                  <input
-                    type="email"
-                    placeholder="Email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 transition"
-                  />
+                  <div>
+                    <input
+                      type="email"
+                      placeholder="Email"
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        if (emailError) setEmailError("");
+                      }}
+                      onBlur={() => {
+                        const trimmed = email.trim();
+                        if (trimmed && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+                          setEmailError("Please enter a valid email (e.g. name@email.com)");
+                        } else {
+                          setEmailError("");
+                        }
+                      }}
+                      className={`w-full px-4 py-3 rounded-xl bg-white/5 border text-white placeholder-gray-500 focus:outline-none transition ${
+                        emailError
+                          ? "border-red-500/50 focus:border-red-500/70"
+                          : "border-white/10 focus:border-purple-500/50"
+                      }`}
+                    />
+                    {emailError && (
+                      <p className="text-red-400 text-xs mt-1">{emailError}</p>
+                    )}
+                  </div>
                   
                   <div>
                     <input
@@ -636,7 +700,7 @@ function PredictPageContent() {
                   
                   <button
                     onClick={handleRegister}
-                    disabled={loading || usernameStatus === "taken" || usernameStatus === "invalid"}
+                    disabled={loading || usernameStatus === "taken" || usernameStatus === "invalid" || !!emailError}
                     className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-purple-600 to-cyan-500 hover:from-purple-500 hover:to-cyan-400 transition-all disabled:opacity-50"
                   >
                     {loading ? "Creating..." : "🚀 Create Account"}
@@ -945,16 +1009,24 @@ function PredictPageContent() {
                         {userGroups.filter(g => g.competition === 'wc2026').map((group) => (
                           <div key={group.id} className="bg-white/5 border border-white/10 rounded-xl p-4">
                             <div className="flex items-center justify-between">
-                              <div>
+                              <div className="cursor-pointer flex-1" onClick={() => handleViewGroupLeaderboard(group)}>
                                 <div className="font-bold">🏆 {group.name}</div>
                                 <div className="text-sm text-gray-400">{group.memberCount} members</div>
                               </div>
-                              <button
-                                onClick={() => handleViewGroupLeaderboard(group)}
-                                className="px-4 py-2 rounded-xl text-sm bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition"
-                              >
-                                View Leaderboard
-                              </button>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => handleViewGroupLeaderboard(group)}
+                                  className="px-4 py-2 rounded-xl text-sm bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition"
+                                >
+                                  View
+                                </button>
+                                <button
+                                  onClick={() => handleLeaveGroup(group.id, group.name)}
+                                  className="px-3 py-2 rounded-xl text-sm bg-red-500/20 text-red-400 hover:bg-red-500/30 transition"
+                                >
+                                  Leave
+                                </button>
+                              </div>
                             </div>
                           </div>
                         ))}
@@ -1185,18 +1257,16 @@ function PredictPageContent() {
                       {userGroups.filter(g => g.competition === 'wc2026').map((group) => (
                         <div
                           key={group.id}
-                          className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10 text-sm"
+                          onClick={() => handleViewGroupLeaderboard(group)}
+                          className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10 text-sm cursor-pointer hover:bg-white/10 transition"
                         >
                           <div>
                             <div className="font-bold">{group.name}</div>
                             <div className="text-xs text-gray-400">{group.memberCount} members</div>
                           </div>
-                          <button
-                            onClick={() => handleViewGroupLeaderboard(group)}
-                            className="px-3 py-1 rounded-lg bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition text-xs"
-                          >
-                            View
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <span className="text-purple-400 text-xs">Open →</span>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -1254,6 +1324,28 @@ function PredictPageContent() {
                     <div className="font-bold text-green-400">{member.points} pts</div>
                   </div>
                 ))}
+              {/* Group Actions */}
+              <div className="mt-6 pt-4 border-t border-white/10 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-gray-400">
+                    Share code: <span className="font-mono font-bold text-white">{selectedGroup.code}</span>
+                  </div>
+                  <button
+                    onClick={() => copyToClipboard(selectedGroup.code)}
+                    className="px-3 py-1 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 transition text-xs"
+                  >
+                    Copy
+                  </button>
+                </div>
+                <button
+                  onClick={() => {
+                    handleLeaveGroup(selectedGroup.id, selectedGroup.name);
+                  }}
+                  className="w-full py-2 rounded-xl text-sm bg-red-500/20 text-red-400 hover:bg-red-500/30 transition border border-red-500/30"
+                >
+                  Leave Group
+                </button>
+              </div>
               </div>
             </div>
           </div>
@@ -1275,7 +1367,7 @@ interface MatchCardProps {
   leagueFlag?: string;
   prediction?: Prediction;
   boostersRemaining: number;
-  onPredict: (matchId: string, result: "home" | "draw" | "away", score: string, useBooster: boolean) => void;
+  onPredict: (matchId: string, result: "home" | "draw" | "away", score: string, useBooster: boolean, homeTeam?: string, awayTeam?: string) => void;
   kickoffISO?: string; // ISO date string for lock logic
   liveScore?: { home: number; away: number; minute: number; status: string } | null;
 }
@@ -1335,7 +1427,7 @@ function MatchCard({
     }
     
     setIsSubmitting(true);
-    await onPredict(matchId, selectedResult, score, useBooster);
+    await onPredict(matchId, selectedResult, score, useBooster, home, away);
     setIsSubmitting(false);
   };
 

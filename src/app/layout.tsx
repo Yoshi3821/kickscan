@@ -7,20 +7,21 @@ import Footer from "@/components/Footer";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "KickScan.io — AI-Powered World Cup 2026 Betting Intelligence",
+  title: "KickScan — AI World Cup Intelligence Engine | Match Verdicts & Live Odds",
   description:
-    "Live odds comparison, AI match predictions, and arbitrage alerts for all 104 FIFA World Cup 2026 matches. Compare bookmaker odds across Bet365, 1xBet, Betway, and Pinnacle.",
+    "AI-powered match verdicts and live odds for FIFA World Cup 2026. Smart betting intelligence, league analysis, and live scores for all 104 matches.",
   keywords: [
     "World Cup 2026 odds",
     "World Cup betting",
-    "odds comparison",
-    "football betting",
-    "arbitrage betting",
-    "AI predictions",
+    "AI match verdicts",
+    "football betting intelligence",
+    "live scores",
+    "World Cup 2026 predictions",
     "FIFA World Cup 2026",
-    "World Cup 2026 schedule",
-    "live scores World Cup",
+    "football leagues",
+    "match analysis",
   ],
+  viewport: "width=device-width, initial-scale=1, maximum-scale=5",
 };
 
 export default function RootLayout({

@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
-import { allPlayers, getCountryColor } from "@/data/players";
+import { allPlayers, getCountryColor, playerImages } from "@/data/players";
 
 const filterOptions = [
   { label: "All", tag: null },
@@ -51,7 +51,7 @@ export default function PlayersPage() {
         </div>
 
         {/* Player Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredPlayers.map((player) => {
             const color = getCountryColor(player.country);
             return (
@@ -73,7 +73,17 @@ export default function PlayersPage() {
                   </span>
                 )}
 
-                {/* Flag + Number */}
+                {/* Player Image + Flag + Number */}
+                {playerImages[player.slug] && (
+                  <div className="w-full h-48 rounded-xl overflow-hidden mb-4 bg-white/5">
+                    <img
+                      src={playerImages[player.slug]}
+                      alt={player.name}
+                      className="w-full h-full object-cover object-top"
+                      loading="lazy"
+                    />
+                  </div>
+                )}
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-3xl">{player.flag}</span>
                   <span className="text-sm font-bold text-gray-500">#{player.number}</span>

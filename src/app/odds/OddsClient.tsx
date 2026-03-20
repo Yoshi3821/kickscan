@@ -3,7 +3,7 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { groups } from "@/data/matches";
 import { getBookmakerUrl, isAffiliate } from "@/config/affiliates";
-import AdBanner from "@/components/AdBanner";
+
 
 interface Bookmaker {
   key: string;
@@ -231,8 +231,6 @@ export default function OddsClient({
         </div>
       </div>
 
-      {/* Ad: Leaderboard after header */}
-      <AdBanner size="leaderboard" label="odds-top" className="my-8" />
 
       {/* Matches by group */}
       <div className="space-y-8">
@@ -258,9 +256,7 @@ export default function OddsClient({
 
                   return (
                     <div key={match.id}>
-                    {matchIndex > 0 && matchIndex % 4 === 0 && (
-                      <AdBanner size="medium-rect" label={`odds-mid-${matchIndex}`} className="my-6" />
-                    )}
+
                     <div
                       className={`bg-gray-900/50 border rounded-xl overflow-hidden transition ${
                         isLive
@@ -469,8 +465,6 @@ export default function OddsClient({
           ))}
       </div>
 
-      {/* Ad: Leaderboard at bottom */}
-      <AdBanner size="leaderboard" label="odds-bottom" className="my-8" />
 
       {filtered.length === 0 && (
         <div className="text-center py-20 text-gray-500">

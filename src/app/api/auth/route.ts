@@ -23,7 +23,13 @@ function hashPassword(password: string): string {
 }
 
 function isValidUsername(username: string): boolean {
-  return /^[a-zA-Z0-9_]{3,20}$/.test(username);
+  // Allow letters, numbers, underscores, and spaces. 3-20 chars (after trim).
+  const trimmed = username.trim().replace(/\s+/g, ' ');
+  return /^[a-zA-Z0-9_ ]{3,20}$/.test(trimmed) && trimmed.length >= 3;
+}
+
+function normalizeUsername(username: string): string {
+  return username.trim().replace(/\s+/g, ' ');
 }
 
 function isValidEmail(email: string): boolean {
@@ -52,15 +58,18 @@ export async function POST(request: NextRequest) {
         }, { status: 400 });
       }
 
-      if (!isValidUsername(username)) {
+      const normalizedName = normalizeUsername(username);
+      
+      if (!isValidUsername(normalizedName)) {
         return NextResponse.json({ 
-          error: "Username must be 3-20 characters, alphanumeric and underscores only" 
+          error: "Display name must be 3-20 characters. Letters, numbers, spaces, and underscores only." 
         }, { status: 400 });
       }
 
-      if (!isValidEmail(email)) {
+      const trimmedEmail = email.trim().toLowerCase();
+      if (!isValidEmail(trimmedEmail)) {
         return NextResponse.json({ 
-          error: "Invalid email format" 
+          error: "Please enter a valid email address (e.g. name@email.com)" 
         }, { status: 400 });
       }
 
@@ -74,7 +83,7 @@ export async function POST(request: NextRequest) {
       const { data: existingUser } = await supabaseAdmin
         .from('users')
         .select('id')
-        .eq('username', username.toLowerCase())
+        .eq('username', normalizedName.toLowerCase())
         .single();
 
       if (existingUser) {
@@ -85,7 +94,7 @@ export async function POST(request: NextRequest) {
       const { data: existingEmail } = await supabaseAdmin
         .from('users')
         .select('id')
-        .eq('email', email.toLowerCase())
+        .eq('email', trimmedEmail)
         .single();
 
       if (existingEmail) {
@@ -100,8 +109,8 @@ export async function POST(request: NextRequest) {
       const { data: newUser, error } = await supabaseAdmin
         .from('users')
         .insert({
-          username: username.toLowerCase(),
-          email: email.toLowerCase(),
+          username: normalizedName.toLowerCase(),
+          email: trimmedEmail,
           password_hash: passwordHash,
           total_points: 0,
           total_predictions: 0,
@@ -191,7 +200,7 @@ export async function POST(request: NextRequest) {
       const { data: existingUser } = await supabaseAdmin
         .from('users')
         .select('id')
-        .eq('username', username.toLowerCase())
+        .eq('username', normalizeUsername(username).toLowerCase())
         .single();
 
       return NextResponse.json({ available: !existingUser });

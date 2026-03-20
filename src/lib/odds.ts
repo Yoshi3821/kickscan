@@ -1,8 +1,17 @@
 import { allMatches, getFlag } from "@/data/matches";
 
-const API_KEY = "3867fcd18cb17e163f3cb5242d92ba45";
+const API_KEY = "2d76c480178eddba35634870e3420803";
 const MATCH_ODDS_URL = `https://api.the-odds-api.com/v4/sports/soccer_fifa_world_cup/odds?apiKey=${API_KEY}&regions=uk,eu,us&markets=h2h&oddsFormat=decimal`;
 const WINNER_ODDS_URL = `https://api.the-odds-api.com/v4/sports/soccer_fifa_world_cup_winner/odds?apiKey=${API_KEY}&regions=uk,eu&markets=outrights&oddsFormat=decimal`;
+
+// League sport keys for The Odds API
+const LEAGUE_SPORTS = {
+  39: 'soccer_epl', // Premier League
+  2: 'soccer_uefa_champs_league', // Champions League
+  140: 'soccer_spain_la_liga', // La Liga
+  135: 'soccer_italy_serie_a', // Serie A
+  78: 'soccer_germany_bundesliga', // Bundesliga
+} as const;
 
 // Preferred bookmakers in priority order
 const PREFERRED_BOOKMAKERS = [
@@ -302,4 +311,83 @@ export function matchApiToLocal(
     const live = liveByTeams.get(key);
     return { match, liveOdds: live || null };
   });
+}
+
+// Fetch league odds from The Odds API
+export async function fetchLeagueOdds(leagueId: number): Promise<LiveMatchOdds[]> {
+  const sportKey = LEAGUE_SPORTS[leagueId as keyof typeof LEAGUE_SPORTS];
+  if (!sportKey) {
+    console.log(`No sport key found for league ${leagueId}`);
+    return [];
+  }
+
+  try {
+    const url = `https://api.the-odds-api.com/v4/sports/${sportKey}/odds?apiKey=${API_KEY}&regions=uk,eu,us&markets=h2h&oddsFormat=decimal`;
+    
+    const res = await fetch(url, {
+      next: { revalidate: 3600 }, // 1 hour cache
+    });
+
+    if (!res.ok) {
+      console.error(`League Odds API error for ${sportKey}: ${res.status} ${res.statusText}`);
+      return [];
+    }
+
+    const data = await res.json();
+
+    return data.map((match: any) => {
+      const bookmakers = selectTopBookmakers(match.bookmakers);
+
+      // Fix home/away mapping using team names from API
+      const correctedBookmakers = bookmakers.map((bm) => {
+        const originalBm = match.bookmakers.find((ob: any) => ob.key === bm.key);
+        const h2h = originalBm?.markets.find((m: any) => m.key === "h2h");
+        const outcomes = h2h?.outcomes || [];
+
+        const homePrice = outcomes.find((o: any) => o.name === match.home_team)?.price || 0;
+        const awayPrice = outcomes.find((o: any) => o.name === match.away_team)?.price || 0;
+        const drawPrice = outcomes.find((o: any) => o.name === "Draw")?.price || 0;
+
+        return {
+          ...bm,
+          home: homePrice,
+          draw: drawPrice,
+          away: awayPrice,
+        };
+      });
+
+      const lastUpdated = match.bookmakers.reduce((latest: string, bm: any) => {
+        return bm.last_update > latest ? bm.last_update : latest;
+      }, "") || new Date().toISOString();
+
+      return {
+        id: match.id,
+        homeTeam: match.home_team,
+        awayTeam: match.away_team,
+        commenceTime: match.commence_time,
+        bookmakers: correctedBookmakers,
+        lastUpdated,
+      };
+    });
+  } catch (error) {
+    console.error(`Failed to fetch league odds for ${sportKey}:`, error);
+    return [];
+  }
+}
+
+// Fetch all league odds
+export async function fetchAllLeagueOdds(): Promise<Record<number, LiveMatchOdds[]>> {
+  const leagueOdds: Record<number, LiveMatchOdds[]> = {};
+  
+  for (const [leagueId, sportKey] of Object.entries(LEAGUE_SPORTS)) {
+    try {
+      const odds = await fetchLeagueOdds(Number(leagueId));
+      leagueOdds[Number(leagueId)] = odds;
+    } catch (error) {
+      console.error(`Failed to fetch odds for league ${leagueId}:`, error);
+      leagueOdds[Number(leagueId)] = [];
+    }
+  }
+  
+  return leagueOdds;
 }

@@ -1,10 +1,10 @@
 "use client";
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { MatchAnalysis } from "@/lib/ai-engine";
+import type { Verdict } from "@/lib/verdict-engine";
 import { getBookmakerUrl } from "@/config/affiliates";
 import { getPlayersForMatch, getCountryColor } from "@/data/players";
 import Link from "next/link";
-import AdBanner from "@/components/AdBanner";
 
 /* ─── Types ─── */
 interface Bookmaker {
@@ -33,6 +33,7 @@ interface Props {
   match: MatchData;
   analysis: MatchAnalysis;
   bookmakers: Bookmaker[];
+  verdict: Verdict | null;
 }
 
 interface VoteData {
@@ -145,24 +146,7 @@ function generateAngles(analysis: MatchAnalysis, home: string, away: string) {
 /* ─── Scroll fade-in hook ─── */
 function useFadeIn() {
   const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(true);
-  useEffect(() => {
-    setVisible(false);
-    const el = ref.current;
-    if (!el) { setVisible(true); return; }
-    const timer = setTimeout(() => {
-      const obs = new IntersectionObserver(
-        ([entry]) => { if (entry.isIntersecting) { setVisible(true); obs.disconnect(); } },
-        { threshold: 0.05 }
-      );
-      obs.observe(el);
-      // Fallback: make visible after 2 seconds regardless
-      const fallback = setTimeout(() => setVisible(true), 2000);
-      return () => { obs.disconnect(); clearTimeout(fallback); };
-    }, 50);
-    return () => clearTimeout(timer);
-  }, []);
-  return { ref, className: `transition-all duration-700 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}` };
+  return { ref, className: "" };
 }
 
 /* ─── Sub-components ─── */
@@ -271,11 +255,223 @@ function getFactorEmoji(factor: string): string {
   return "📌";
 }
 
+/* ─── Verdict Panel Component ─── */
+function VerdictPanel({ verdict }: { verdict: Verdict }) {
+  const recConfig = {
+    BET: {
+      emoji: "✅",
+      bg: "bg-green-500/[0.08]",
+      border: "border-green-500/30",
+      text: "text-green-400",
+      glow: "shadow-[0_0_30px_rgba(34,197,94,0.12)]",
+      barColor: "from-green-500 to-emerald-400",
+      topBar: "from-green-500 via-emerald-400 to-green-500",
+    },
+    LEAN: {
+      emoji: "⚠️",
+      bg: "bg-amber-500/[0.08]",
+      border: "border-amber-500/30",
+      text: "text-amber-400",
+      glow: "shadow-[0_0_30px_rgba(245,158,11,0.12)]",
+      barColor: "from-amber-500 to-yellow-400",
+      topBar: "from-amber-500 via-yellow-400 to-amber-500",
+    },
+    SKIP: {
+      emoji: "⏭️",
+      bg: "bg-gray-500/[0.08]",
+      border: "border-gray-500/30",
+      text: "text-gray-400",
+      glow: "shadow-[0_0_30px_rgba(107,114,128,0.12)]",
+      barColor: "from-gray-500 to-gray-400",
+      topBar: "from-gray-500 via-gray-400 to-gray-500",
+    },
+    AVOID: {
+      emoji: "🚫",
+      bg: "bg-red-500/[0.08]",
+      border: "border-red-500/30",
+      text: "text-red-400",
+      glow: "shadow-[0_0_30px_rgba(239,68,68,0.12)]",
+      barColor: "from-red-500 to-rose-400",
+      topBar: "from-red-500 via-rose-400 to-red-500",
+    },
+  };
+  
+  const riskConfig = {
+    LOW: { color: "bg-green-500/20 text-green-400 border-green-500/30", dot: "bg-green-400" },
+    MEDIUM: { color: "bg-amber-500/20 text-amber-400 border-amber-500/30", dot: "bg-amber-400" },
+    HIGH: { color: "bg-orange-500/20 text-orange-400 border-orange-500/30", dot: "bg-orange-400" },
+    "VERY HIGH": { color: "bg-red-500/20 text-red-400 border-red-500/30", dot: "bg-red-400" },
+  };
+
+  const cfg = recConfig[verdict.recommendation];
+  const risk = riskConfig[verdict.riskLevel];
+
+  const stars = Array.from({ length: 5 }, (_, i) => i < verdict.valueRating);
+
+  return (
+    <div className={`${cfg.glow} rounded-2xl overflow-hidden`}>
+      {/* Gradient top bar — thicker (4px) */}
+      <div className={`h-1 bg-gradient-to-r ${cfg.topBar}`} />
+      
+      <div className={`${cfg.bg} backdrop-blur-xl border ${cfg.border} border-t-0 rounded-b-2xl`}>
+        <div className="p-6 md:p-8">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl md:text-2xl font-black text-white flex items-center gap-2">
+              <span className="text-2xl">🎯</span> THE VERDICT
+            </h2>
+            <span className={`text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full border ${cfg.border} ${cfg.bg} ${cfg.text}`}>
+              AI Analysis
+            </span>
+          </div>
+
+          {/* Main recommendation card */}
+          <div className={`${cfg.bg} border ${cfg.border} rounded-xl p-5 md:p-6 mb-6`}>
+            {/* Big pick */}
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-3xl">{cfg.emoji}</span>
+              <div>
+                <div className={`text-2xl md:text-3xl font-black ${cfg.text}`}>
+                  {verdict.recommendation}: {verdict.pick}
+                </div>
+              </div>
+            </div>
+
+            {/* Value + Risk + Confidence row */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Value stars */}
+              <div>
+                <div className="text-xs text-gray-500 uppercase tracking-wider mb-1.5">Value</div>
+                <div className="flex items-center gap-1">
+                  {stars.map((filled, i) => (
+                    <span key={i} className={`text-lg ${filled ? "text-amber-400" : "text-gray-600"}`}>
+                      ★
+                    </span>
+                  ))}
+                  <span className="text-sm text-gray-300 ml-2 font-medium">{verdict.valueLabel}</span>
+                </div>
+              </div>
+
+              {/* Risk level */}
+              <div>
+                <div className="text-xs text-gray-500 uppercase tracking-wider mb-1.5">Risk</div>
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${risk.color}`}>
+                  <span className={`w-2 h-2 rounded-full ${risk.dot}`} />
+                  {verdict.riskLevel}
+                </span>
+              </div>
+
+              {/* Confidence bar */}
+              <div>
+                <div className="text-xs text-gray-500 uppercase tracking-wider mb-1.5">Confidence</div>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 h-3 bg-white/[0.06] rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full bg-gradient-to-r ${cfg.barColor} transition-all duration-1000`}
+                      style={{ width: `${verdict.confidencePct}%` }}
+                    />
+                  </div>
+                  <span className={`text-sm font-bold ${cfg.text}`}>{verdict.confidencePct}%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* WHY section */}
+          {verdict.reasoning && (
+            <div className="mb-5">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-sm font-black text-white uppercase tracking-wider">WHY</span>
+              </div>
+              <p className="text-gray-300 text-sm md:text-base leading-relaxed italic">
+                &ldquo;{verdict.reasoning}&rdquo;
+              </p>
+            </div>
+          )}
+
+          {/* Key Insight */}
+          {verdict.keyInsight && (
+            <div className="bg-white/[0.04] border border-white/[0.08] rounded-xl p-4 mb-5">
+              <div className="flex items-start gap-2">
+                <span className="text-lg shrink-0">💡</span>
+                <p className="text-sm text-gray-200 font-medium">{verdict.keyInsight}</p>
+              </div>
+            </div>
+          )}
+
+          {/* WATCH OUT */}
+          {verdict.watchOut && (
+            <div className="bg-amber-500/[0.06] border border-amber-500/20 rounded-xl p-4 mb-6">
+              <div className="flex items-start gap-2">
+                <span className="text-lg shrink-0">⚠️</span>
+                <div>
+                  <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">Watch Out</span>
+                  <p className="text-sm text-gray-300 mt-1">{verdict.watchOut}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Safer / Risky plays side by side */}
+          <div className="grid grid-cols-2 gap-3 mb-6">
+            {/* Safer Play */}
+            <div className="bg-white/[0.04] border border-white/[0.08] rounded-xl p-4">
+              <div className="flex items-center gap-1.5 mb-2">
+                <span>🛡️</span>
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Safer Play</span>
+              </div>
+              <div className="text-sm font-bold text-white mb-1">{verdict.saferAlt.pick}</div>
+              <div className="text-xs text-gray-400">@ {verdict.saferAlt.odds}</div>
+              <div className="text-xs text-green-400 mt-1 font-medium">AI: {verdict.saferAlt.aiProb}%</div>
+            </div>
+
+            {/* Risky Play */}
+            <div className="bg-white/[0.04] border border-white/[0.08] rounded-xl p-4">
+              <div className="flex items-center gap-1.5 mb-2">
+                <span>🎲</span>
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Risky Play</span>
+              </div>
+              <div className="text-sm font-bold text-white mb-1">{verdict.riskyPlay.pick}</div>
+              <div className="text-xs text-gray-400">@ {verdict.riskyPlay.odds}</div>
+              <div className="text-xs text-amber-400 mt-1 font-medium">AI: {verdict.riskyPlay.aiProb}%</div>
+            </div>
+          </div>
+
+          {/* AI vs Market probabilities */}
+          <div className="flex items-center justify-between text-xs text-gray-500 mb-4 px-1">
+            <span>AI probability: <span className="text-white font-bold">{verdict.aiProb}%</span></span>
+            <span>Market implied: <span className="text-white font-bold">{verdict.marketProb}%</span></span>
+            <span>Value gap: <span className={`font-bold ${verdict.valueGap > 0 ? "text-green-400" : "text-red-400"}`}>{verdict.valueGap > 0 ? "+" : ""}{verdict.valueGap}%</span></span>
+          </div>
+
+          {/* Best Odds CTA */}
+          <div className="bg-gradient-to-r from-purple-600/10 via-pink-600/5 to-cyan-600/10 border border-white/[0.08] rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="text-center sm:text-left">
+              <span className="text-sm text-gray-400">💰 Best odds: </span>
+              <span className="text-white font-bold">{verdict.pick} @ {verdict.bestOdds.odds.toFixed(2)}</span>
+              <span className="text-gray-500 text-sm"> via {verdict.bestOdds.bookmaker}</span>
+            </div>
+            <a
+              href={getBookmakerUrl(verdict.bestOdds.bookmaker)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`inline-flex items-center gap-2 ${cfg.bg} border ${cfg.border} ${cfg.text} font-bold py-2.5 px-6 rounded-xl transition-all duration-300 hover:scale-105 text-sm whitespace-nowrap`}
+            >
+              🏆 Claim Odds →
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Main Component ─── */
-export default function MatchClient({ match, analysis, bookmakers }: Props) {
+export default function MatchClient({ match, analysis, bookmakers, verdict }: Props) {
   const [voteData, setVoteData] = useState<VoteData | null>(null);
   const [voting, setVoting] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [user, setUser] = useState<any>(null);
 
   const fetchVotes = useCallback(async () => {
     try {
@@ -288,7 +484,21 @@ export default function MatchClient({ match, analysis, bookmakers }: Props) {
     }
   }, [match.id]);
 
-  useEffect(() => { setMounted(true); fetchVotes(); }, [fetchVotes]);
+  useEffect(() => { 
+    setMounted(true); 
+    fetchVotes();
+    
+    // Check for logged in user
+    const savedUser = localStorage.getItem("kickscan_user");
+    if (savedUser) {
+      try {
+        const userData = JSON.parse(savedUser);
+        setUser(userData);
+      } catch (err) {
+        // Invalid user data
+      }
+    }
+  }, [fetchVotes]);
 
   const handleVote = async (vote: "home" | "draw" | "away") => {
     if (voting) return;
@@ -364,7 +574,7 @@ export default function MatchClient({ match, analysis, bookmakers }: Props) {
           {/* Teams */}
           <div className="relative flex items-center justify-center gap-6 md:gap-12 mb-8">
             <div className="flex flex-col items-center gap-3 flex-1">
-              <span className="text-6xl md:text-8xl drop-shadow-lg">{match.homeFlag}</span>
+              <span className="text-4xl sm:text-5xl md:text-6xl lg:text-8xl drop-shadow-lg">{match.homeFlag}</span>
               <span className="text-xl md:text-3xl font-black text-white tracking-wide">{match.home.toUpperCase()}</span>
             </div>
 
@@ -375,7 +585,7 @@ export default function MatchClient({ match, analysis, bookmakers }: Props) {
             </div>
 
             <div className="flex flex-col items-center gap-3 flex-1">
-              <span className="text-6xl md:text-8xl drop-shadow-lg">{match.awayFlag}</span>
+              <span className="text-4xl sm:text-5xl md:text-6xl lg:text-8xl drop-shadow-lg">{match.awayFlag}</span>
               <span className="text-xl md:text-3xl font-black text-white tracking-wide">{match.away.toUpperCase()}</span>
             </div>
           </div>
@@ -403,6 +613,30 @@ export default function MatchClient({ match, analysis, bookmakers }: Props) {
           <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-purple-500/50 to-transparent" />
         </div>
       </GlassPanel>
+
+      {/* ═══ THE VERDICT — FIRST AND MOST IMPORTANT ═══ */}
+      {verdict && <VerdictPanel verdict={verdict} />}
+
+      {/* ═══ SIGNUP PROMPT FOR NON-LOGGED IN USERS ═══ */}
+      {!user && (
+        <GlassPanel delay={25}>
+          <div className="relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 via-pink-600/10 to-cyan-600/20 pointer-events-none" />
+            <div className="relative p-8 text-center">
+              <h3 className="text-2xl font-bold text-white mb-3">🎮 Think you know the result?</h3>
+              <p className="text-gray-400 mb-6">
+                Predict this match and compete on the global leaderboard!
+              </p>
+              <a
+                href="/predict"
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white font-bold py-3.5 px-8 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/25"
+              >
+                Create Account — It's Free →
+              </a>
+            </div>
+          </div>
+        </GlassPanel>
+      )}
 
       {/* ═══ PANEL B — FAN VOTE ═══ */}
       <GlassPanel delay={50}>
@@ -514,9 +748,6 @@ export default function MatchClient({ match, analysis, bookmakers }: Props) {
         </div>
       </GlassPanel>
 
-      {/* ─── Ad: after Intelligence Comparison ─── */}
-      <AdBanner size="medium-rect" label="post-comparison" className="my-6" />
-
       {/* ═══ PANEL D — AI PREDICTION ═══ */}
       <GlassPanel delay={150}>
         <div className="p-6">
@@ -537,7 +768,7 @@ export default function MatchClient({ match, analysis, bookmakers }: Props) {
             {/* Predicted score */}
             <div className="text-center flex-1">
               <div className="text-xs text-gray-500 uppercase tracking-widest mb-2">Predicted Score</div>
-              <div className="text-5xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400">
+              <div className="text-3xl sm:text-5xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400">
                 {analysis.predictedScore.replace("-", " — ")}
               </div>
             </div>
@@ -634,8 +865,6 @@ export default function MatchClient({ match, analysis, bookmakers }: Props) {
         </GlassPanel>
       )}
 
-      {/* ─── Ad: after Analysis ─── */}
-      <AdBanner size="leaderboard" label="post-analysis" className="my-6" />
 
       {/* ═══ KEY PLAYER SPOTLIGHT ═══ */}
       {(() => {

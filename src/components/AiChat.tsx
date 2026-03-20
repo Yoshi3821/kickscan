@@ -190,7 +190,7 @@ export default function AiChat({ matchId, home, away, homeFlag, awayFlag, analys
       {/* Floating button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed right-6 bottom-6 z-50 w-14 h-14 rounded-full bg-gradient-to-r from-purple-600 to-cyan-500 text-white flex items-center justify-center shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 hover:scale-110 transition-all duration-300 group"
+        className="fixed right-4 bottom-4 sm:right-6 sm:bottom-6 z-50 w-14 h-14 rounded-full bg-gradient-to-r from-purple-600 to-cyan-500 text-white flex items-center justify-center shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 hover:scale-110 transition-all duration-300 group"
         aria-label="Open AI Chat"
       >
         {isOpen ? (
@@ -225,8 +225,8 @@ export default function AiChat({ matchId, home, away, homeFlag, awayFlag, analys
             className={`fixed z-50 flex flex-col overflow-hidden
               bg-[#0d0d1a]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-purple-500/10
               transition-all duration-300 ease-out
-              /* Mobile: full-width bottom sheet */
-              bottom-0 left-0 right-0 h-[90vh]
+              /* Mobile: nearly full width with margin */
+              bottom-2 left-4 right-4 h-[90vh] w-[calc(100vw-2rem)]
               /* Desktop: positioned above fab */
               md:bottom-24 md:right-6 md:left-auto md:w-[380px] md:h-[500px] md:rounded-2xl
             `}
@@ -323,7 +323,7 @@ export default function AiChat({ matchId, home, away, homeFlag, awayFlag, analys
             {/* Input */}
             <form
               onSubmit={handleSubmit}
-              className="px-4 py-3 border-t border-white/10 shrink-0"
+              className="px-4 py-3 pb-6 border-t border-white/10 shrink-0"
             >
               <div className="flex gap-2">
                 <input

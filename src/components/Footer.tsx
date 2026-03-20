@@ -22,16 +22,16 @@ export default function Footer() {
           <div>
             <h4 className="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-4">Tools</h4>
             <ul className="space-y-2.5 text-sm text-gray-400">
-              <li><Link href="/odds" className="hover:text-green-400 transition">Odds Comparison</Link></li>
-              <li><Link href="/predictions" className="hover:text-green-400 transition">AI Predictions</Link></li>
-              <li><Link href="/arb-alerts" className="hover:text-green-400 transition">Arbitrage Alerts</Link></li>
+              <li><Link href="/verdicts" className="hover:text-green-400 transition">Verdicts</Link></li>
+              <li><Link href="/leagues" className="hover:text-green-400 transition">Leagues</Link></li>
               <li><Link href="/live-scores" className="hover:text-green-400 transition">Live Scores</Link></li>
+              <li><Link href="/players" className="hover:text-green-400 transition">Players</Link></li>
             </ul>
           </div>
           <div>
             <h4 className="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-4">Tournament</h4>
             <ul className="space-y-2.5 text-sm text-gray-400">
-              <li><Link href="/groups" className="hover:text-green-400 transition">All Groups</Link></li>
+              <li><Link href="/matches" className="hover:text-green-400 transition">All Matches</Link></li>
               <li><Link href="/blog" className="hover:text-green-400 transition">Blog & Analysis</Link></li>
               <li><span className="text-gray-600">Schedule (Coming Soon)</span></li>
               <li><span className="text-gray-600">Knockout Bracket (Coming Soon)</span></li>

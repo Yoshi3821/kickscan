@@ -3,7 +3,6 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { getAllPredictions, groups, type MatchPrediction } from "@/data/matches";
 import type { OutrightOdds } from "@/lib/odds";
-import AdBanner from "@/components/AdBanner";
 
 // Hardcoded fallback predictions (used when no live data)
 const fallbackPredictions = [
@@ -314,9 +313,6 @@ export default function PredictionsClient({
               </table>
             </div>
           </div>
-
-          {/* Ad: Leaderboard after outright winner table */}
-          <AdBanner size="leaderboard" label="predictions-after-outright" className="my-8" />
 
           {/* AI Insight */}
           <div className="bg-gradient-to-r from-green-900/20 to-gray-900 border border-green-400/20 rounded-xl p-8">

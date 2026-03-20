@@ -1,5 +1,6 @@
 import { allMatches } from "@/data/matches";
 import { getMatchAnalysis } from "@/data/analyses";
+import { getVerdict } from "@/data/verdicts";
 import { fetchMatchOdds, matchApiToLocal } from "@/lib/odds";
 import MatchClient from "./MatchClient";
 import AiChat from "@/components/AiChat";
@@ -43,6 +44,7 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
   }
 
   const analysis = getMatchAnalysis(matchId);
+  const verdict = getVerdict(matchId);
 
   if (!analysis) {
     return (
@@ -97,7 +99,7 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
         </Link>
       </div>
 
-      <MatchClient match={match} analysis={analysis} bookmakers={bookmakers} />
+      <MatchClient match={match} analysis={analysis} bookmakers={bookmakers} verdict={verdict} />
 
       <AiChat
         matchId={matchId}

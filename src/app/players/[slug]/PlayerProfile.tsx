@@ -92,11 +92,24 @@ export default function PlayerProfile({ slug }: { slug: string }) {
             style={{ backgroundColor: color }}
           />
 
-          <div className="relative">
+          <div className="relative flex flex-col md:flex-row gap-8 items-start">
+            {/* Player Photo */}
+            {player.image && (
+              <div className="shrink-0 w-48 h-48 md:w-56 md:h-56 rounded-2xl overflow-hidden border-2 border-white/10 bg-white/5 shadow-2xl">
+                <img
+                  src={player.image}
+                  alt={player.name}
+                  className="w-full h-full object-cover object-top"
+                  loading="eager"
+                />
+              </div>
+            )}
+
+            <div className="flex-1">
             {/* Flag + Number */}
             <div className="flex items-center gap-4 mb-4">
-              <span className="text-7xl md:text-8xl">{player.flag}</span>
-              <span className="text-5xl md:text-6xl font-black text-white/10">
+              <span className="text-5xl md:text-6xl">{player.flag}</span>
+              <span className="text-4xl md:text-5xl font-black text-white/10">
                 #{player.number}
               </span>
             </div>
@@ -135,6 +148,7 @@ export default function PlayerProfile({ slug }: { slug: string }) {
                 </span>
               ))}
             </div>
+          </div>
           </div>
         </div>
 

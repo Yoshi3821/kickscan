@@ -105,6 +105,7 @@ function PredictPageContent() {
   const [loginPassword, setLoginPassword] = useState<string>("");
   
   const [loading, setLoading] = useState<boolean>(false);
+  const [authChecking, setAuthChecking] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
   const [usernameStatus, setUsernameStatus] = useState<string>(""); // "", "checking", "available", "taken", "invalid"
   const [emailError, setEmailError] = useState<string>("");
@@ -125,7 +126,12 @@ function PredictPageContent() {
   const [selectedGroupLeaderboard, setSelectedGroupLeaderboard] = useState<GroupMember[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [groupsLoading, setGroupsLoading] = useState(false);
-  const [userTz, setUserTz] = useState<string>("America/New_York");
+  const [userTz, setUserTz] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      try { return getUserTimezone(); } catch { return "America/New_York"; }
+    }
+    return "America/New_York";
+  });
   const [showTzPicker, setShowTzPicker] = useState(false);
 
   // Live scores for match cards
@@ -205,12 +211,17 @@ function PredictPageContent() {
       try {
         const userData = JSON.parse(savedUser);
         if (userData.id && userData.token) {
-          validateSession(userData.id, userData.token);
+          validateSession(userData.id, userData.token).finally(() => setAuthChecking(false));
           if (userData.avatar) setSelectedAvatar(userData.avatar);
+        } else {
+          setAuthChecking(false);
         }
       } catch (err) {
         localStorage.removeItem("kickscan_user");
+        setAuthChecking(false);
       }
+    } else {
+      setAuthChecking(false);
     }
     
     fetchLeaderboard();
@@ -624,6 +635,28 @@ function PredictPageContent() {
       alert("Network error. Please try again.");
     }
   };
+
+  // Show skeleton while checking auth — prevents guest UI flash for logged-in users
+  if (authChecking) {
+    return (
+      <main className="min-h-screen bg-[#06060f] text-white">
+        <div className="max-w-6xl mx-auto px-4 py-12">
+          <div className="text-center mb-12">
+            <div className="h-12 bg-white/10 rounded-xl w-80 mx-auto mb-4 animate-pulse" />
+            <div className="h-6 bg-white/5 rounded-lg w-64 mx-auto animate-pulse" />
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-1">
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-8 h-64 animate-pulse" />
+            </div>
+            <div className="lg:col-span-2">
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-6 h-96 animate-pulse" />
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   if (!user) {
     return (
@@ -1170,7 +1203,7 @@ function PredictPageContent() {
                 <div className="space-y-4 mb-8">
                   {allMatches.slice(0, 8).map((match) => (
                     <MatchCard
-                      key={`wc_${match.id}`}
+                      key={`wc_${match.id}_${userTz}`}
                       matchId={`wc_${match.id}`}
                       home={match.home}
                       away={match.away}
@@ -1197,7 +1230,7 @@ function PredictPageContent() {
                   <div className="space-y-4 mb-8">
                     {leagueMatches.slice(0, 10).map((match) => (
                       <MatchCard
-                        key={`league_${match.id}`}
+                        key={`league_${match.id}_${userTz}`}
                         matchId={`league_${match.id}`}
                         home={match.homeName}
                         away={match.awayName}
@@ -1704,79 +1737,88 @@ function MatchCard({
           )}
         </div>
       ) : (
-        /* Normal editable state */
-        <div className="space-y-4">
-          {/* Lock countdown */}
-          {minutesToLock !== null && minutesToLock <= 60 && minutesToLock > 0 && (
-            <div className="text-center text-xs text-amber-400">
-              ⏱️ Prediction locks in {minutesToLock} min
-            </div>
-          )}
+        /* Normal editable state — "Your Prediction" section */
+        <div className="bg-gradient-to-b from-purple-500/[0.06] to-transparent border border-purple-500/15 rounded-2xl p-4 space-y-4">
+          {/* Section header */}
+          <div className="text-center">
+            <div className="text-xs text-purple-400 font-bold uppercase tracking-wider mb-0.5">Your Prediction</div>
+            {minutesToLock !== null && minutesToLock <= 60 && minutesToLock > 0 && (
+              <div className="text-[10px] text-amber-400">
+                ⏱️ Locks in {minutesToLock} min
+              </div>
+            )}
+          </div>
 
-          {/* Result Prediction */}
+          {/* Result Prediction — unified control group */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Predict Result:</label>
-            <div className="flex gap-2">
+            <div className="text-xs text-gray-500 mb-1.5 text-center">Pick result</div>
+            <div className="flex gap-1.5 bg-white/[0.03] rounded-xl p-1">
               <button
                 onClick={() => setSelectedResult("home")}
-                className={`flex-1 py-2 px-3 rounded-xl text-sm font-bold transition ${
+                className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all ${
                   selectedResult === "home"
-                    ? "bg-green-500/20 text-green-400 border border-green-500/30"
-                    : "bg-white/5 text-gray-300 hover:bg-white/10"
+                    ? "bg-green-500/20 text-green-400 border border-green-500/30 shadow-sm shadow-green-500/10"
+                    : "text-gray-400 hover:bg-white/5 hover:text-gray-300"
                 }`}
               >
-                Home Win
+                {home.length > 12 ? home.slice(0, 10) + "…" : home}
               </button>
               <button
                 onClick={() => setSelectedResult("draw")}
-                className={`flex-1 py-2 px-3 rounded-xl text-sm font-bold transition ${
+                className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all ${
                   selectedResult === "draw"
-                    ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
-                    : "bg-white/5 text-gray-300 hover:bg-white/10"
+                    ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 shadow-sm shadow-yellow-500/10"
+                    : "text-gray-400 hover:bg-white/5 hover:text-gray-300"
                 }`}
               >
                 Draw
               </button>
               <button
                 onClick={() => setSelectedResult("away")}
-                className={`flex-1 py-2 px-3 rounded-xl text-sm font-bold transition ${
+                className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all ${
                   selectedResult === "away"
-                    ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
-                    : "bg-white/5 text-gray-300 hover:bg-white/10"
+                    ? "bg-blue-500/20 text-blue-400 border border-blue-500/30 shadow-sm shadow-blue-500/10"
+                    : "text-gray-400 hover:bg-white/5 hover:text-gray-300"
                 }`}
               >
-                Away Win
+                {away.length > 12 ? away.slice(0, 10) + "…" : away}
               </button>
             </div>
           </div>
 
-          {/* Score Prediction */}
+          {/* Score Prediction — team names tied to inputs */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Predict Score:</label>
-            <div className="flex items-center gap-2 justify-center">
-              <input
-                type="number"
-                min="0"
-                max="9"
-                value={homeScore}
-                onChange={(e) => setHomeScore(e.target.value)}
-                className="w-16 h-12 text-center text-xl font-bold bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-purple-500/50"
-              />
-              <span className="text-xl font-bold text-gray-400">-</span>
-              <input
-                type="number"
-                min="0"
-                max="9"
-                value={awayScore}
-                onChange={(e) => setAwayScore(e.target.value)}
-                className="w-16 h-12 text-center text-xl font-bold bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-purple-500/50"
-              />
+            <div className="text-xs text-gray-500 mb-1.5 text-center">Predict score</div>
+            <div className="flex items-center justify-center gap-3">
+              <div className="text-center">
+                <div className="text-[10px] text-gray-500 mb-1 truncate max-w-[80px]">{home}</div>
+                <input
+                  type="number"
+                  min="0"
+                  max="9"
+                  value={homeScore}
+                  onChange={(e) => setHomeScore(e.target.value)}
+                  className="w-14 h-12 text-center text-xl font-bold bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-purple-500/50 transition"
+                />
+              </div>
+              <span className="text-lg font-bold text-gray-600 mt-4">—</span>
+              <div className="text-center">
+                <div className="text-[10px] text-gray-500 mb-1 truncate max-w-[80px]">{away}</div>
+                <input
+                  type="number"
+                  min="0"
+                  max="9"
+                  value={awayScore}
+                  onChange={(e) => setAwayScore(e.target.value)}
+                  className="w-14 h-12 text-center text-xl font-bold bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-purple-500/50 transition"
+                />
+              </div>
             </div>
           </div>
 
-          {/* Booster Toggle */}
-          <div className="flex items-center justify-center gap-2">
-            <label className="flex items-center gap-2 cursor-pointer">
+          {/* Booster — inside same action area */}
+          <div className="flex items-center justify-center">
+            <label className="flex items-center gap-2 cursor-pointer bg-white/[0.03] rounded-xl px-4 py-2">
               <input
                 type="checkbox"
                 checked={useBooster}
@@ -1787,39 +1829,39 @@ function MatchCard({
               <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition ${
                 useBooster 
                   ? "bg-purple-500 border-purple-500" 
-                  : "border-gray-400 hover:border-purple-400"
+                  : "border-gray-500 hover:border-purple-400"
               } ${boostersRemaining === 0 ? "opacity-50 cursor-not-allowed" : ""}`}>
                 {useBooster && <span className="text-white text-xs">✓</span>}
               </div>
               <span className={`text-sm font-medium transition ${
-                useBooster ? "text-purple-400" : "text-gray-300"
+                useBooster ? "text-purple-400" : "text-gray-400"
               } ${boostersRemaining === 0 ? "opacity-50" : ""}`}>
-                ⚡ Use Booster {boostersRemaining === 0 ? "(None left)" : `(${boostersRemaining} left)`}
+                ⚡ Booster {boostersRemaining === 0 ? "(0 left)" : `(${boostersRemaining} left)`}
               </span>
             </label>
           </div>
 
-          {/* Submit Button */}
+          {/* Submit — belongs to the action card */}
           <button
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-purple-600 to-cyan-500 hover:from-purple-500 hover:to-cyan-400 transition-all disabled:opacity-50"
+            className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-purple-600 to-cyan-500 hover:from-purple-500 hover:to-cyan-400 transition-all disabled:opacity-50 shadow-lg shadow-purple-500/20"
           >
             {isSubmitting ? "Saving..." : (prediction ? "Update Prediction" : "Submit Prediction")}
           </button>
 
-          {/* Current Prediction Display */}
+          {/* Current Prediction indicator */}
           {prediction && (
-            <div className="text-center text-sm space-y-2">
-              <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-green-500/20 text-green-400 rounded-full border border-green-500/30">
-                ✅ Your prediction: {
+            <div className="text-center text-sm">
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-green-500/10 text-green-400 rounded-full text-xs border border-green-500/20">
+                ✅ {
                   prediction.predicted_result === "home" ? `${home} Win` :
                   prediction.predicted_result === "away" ? `${away} Win` : "Draw"
                 } {prediction.predicted_score}
                 {prediction.boosted && <span>⚡</span>}
               </span>
-              <div className="text-xs text-gray-500">
-                Can be changed until 5 min before kickoff
+              <div className="text-[10px] text-gray-600 mt-1">
+                Editable until 5 min before kickoff
               </div>
             </div>
           )}

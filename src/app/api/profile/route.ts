@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     // Fetch all predictions for this user
     const { data: predictions, error: predError } = await supabaseAdmin
       .from("predictions")
-      .select("match_id, predicted_result, predicted_score, boosted, settled, actual_result, actual_score, points_earned, created_at")
+      .select("match_id, predicted_result, predicted_score, boosted, settled, actual_result, actual_score, points_earned, created_at, home_team, away_team")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
@@ -54,13 +54,24 @@ export async function GET(request: NextRequest) {
     // Filter predictions: hide current picks for matches not yet started
     const now = Date.now();
     const visiblePredictions = (predictions || []).map((pred: any) => {
+      // Generate match_label from team names or WC data
+      let match_label = pred.match_id;
+      if (pred.home_team && pred.away_team) {
+        match_label = `${pred.home_team} vs ${pred.away_team}`;
+      } else if (pred.match_id.startsWith("wc_")) {
+        const wcId = parseInt(pred.match_id.replace("wc_", ""));
+        const match = allMatches.find((m) => m.id === wcId);
+        if (match) match_label = `${match.home} vs ${match.away}`;
+      }
+
       const isVisible = isPredictionVisible(pred.match_id, now);
       if (isVisible) {
-        return pred;
+        return { ...pred, match_label };
       }
       // Hide the actual pick, show only that a prediction exists
       return {
         match_id: pred.match_id,
+        match_label,
         predicted_result: null,
         predicted_score: null,
         boosted: null,

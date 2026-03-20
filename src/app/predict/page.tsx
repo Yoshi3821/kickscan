@@ -139,6 +139,28 @@ function PredictPageContent() {
     return () => window.removeEventListener("kickscan_tz_change", handleTzChange);
   }, []);
 
+  // Scroll to #leaderboard anchor on mount (for nav link)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash === '#leaderboard') {
+      // Retry scroll until element exists (handles async render)
+      const scrollToLeaderboard = () => {
+        const el = document.getElementById('leaderboard');
+        if (el) {
+          el.scrollIntoView({ behavior: 'instant', block: 'start' });
+          return true;
+        }
+        return false;
+      };
+      // Try immediately, then retry a few times
+      if (!scrollToLeaderboard()) {
+        const retries = [100, 300, 600, 1000];
+        retries.forEach((ms) => {
+          setTimeout(scrollToLeaderboard, ms);
+        });
+      }
+    }
+  }, []);
+
   // Username validation with debounce
   useEffect(() => {
     if (!username.trim()) {
@@ -1510,62 +1532,60 @@ function MatchCard({
 
       {/* Avg Market Odds — shown when available and match hasn't started */}
       {avgOdds && !isStarted && !isLive && !isFinished && (
-        <div className="mb-4 px-3 py-2.5 bg-white/[0.03] border border-white/[0.06] rounded-xl">
-          <div className="text-[10px] text-gray-500 text-center mb-1.5 uppercase tracking-wider font-medium">Avg Market Odds</div>
-          <div className="flex items-center justify-center gap-4 text-sm">
-            <div className={`text-center ${avgOdds.home <= avgOdds.away && avgOdds.home <= avgOdds.draw ? 'text-green-400 font-bold' : 'text-gray-400'}`}>
-              <div className="text-xs text-gray-500 mb-0.5">Home</div>
-              <div>{avgOdds.home.toFixed(2)}</div>
+        <div className="mb-3 px-4 py-3 bg-white/[0.03] border border-white/[0.06] rounded-xl">
+          <div className="text-xs text-gray-500 text-center mb-2 uppercase tracking-wider font-semibold">Avg Market Odds</div>
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div className={`py-1.5 rounded-lg ${avgOdds.home <= avgOdds.away && avgOdds.home <= avgOdds.draw ? 'bg-green-500/10 border border-green-500/20' : 'bg-white/[0.03]'}`}>
+              <div className="text-[10px] text-gray-500 mb-0.5">Home</div>
+              <div className={`text-lg font-bold ${avgOdds.home <= avgOdds.away && avgOdds.home <= avgOdds.draw ? 'text-green-400' : 'text-gray-300'}`}>{avgOdds.home.toFixed(2)}</div>
             </div>
-            <div className={`text-center ${avgOdds.draw <= avgOdds.home && avgOdds.draw <= avgOdds.away ? 'text-green-400 font-bold' : 'text-gray-400'}`}>
-              <div className="text-xs text-gray-500 mb-0.5">Draw</div>
-              <div>{avgOdds.draw.toFixed(2)}</div>
+            <div className={`py-1.5 rounded-lg ${avgOdds.draw <= avgOdds.home && avgOdds.draw <= avgOdds.away ? 'bg-green-500/10 border border-green-500/20' : 'bg-white/[0.03]'}`}>
+              <div className="text-[10px] text-gray-500 mb-0.5">Draw</div>
+              <div className={`text-lg font-bold ${avgOdds.draw <= avgOdds.home && avgOdds.draw <= avgOdds.away ? 'text-green-400' : 'text-gray-300'}`}>{avgOdds.draw.toFixed(2)}</div>
             </div>
-            <div className={`text-center ${avgOdds.away <= avgOdds.home && avgOdds.away <= avgOdds.draw ? 'text-green-400 font-bold' : 'text-gray-400'}`}>
-              <div className="text-xs text-gray-500 mb-0.5">Away</div>
-              <div>{avgOdds.away.toFixed(2)}</div>
+            <div className={`py-1.5 rounded-lg ${avgOdds.away <= avgOdds.home && avgOdds.away <= avgOdds.draw ? 'bg-green-500/10 border border-green-500/20' : 'bg-white/[0.03]'}`}>
+              <div className="text-[10px] text-gray-500 mb-0.5">Away</div>
+              <div className={`text-lg font-bold ${avgOdds.away <= avgOdds.home && avgOdds.away <= avgOdds.draw ? 'text-green-400' : 'text-gray-300'}`}>{avgOdds.away.toFixed(2)}</div>
             </div>
           </div>
           {(() => {
             const fav = avgOdds.home < avgOdds.away ? home : avgOdds.away < avgOdds.home ? away : null;
             return fav ? (
-              <div className="text-[10px] text-gray-500 text-center mt-1.5">
-                Market favorite: <span className="text-green-400 font-medium">{fav}</span>
+              <div className="text-xs text-gray-500 text-center mt-2">
+                Market favorite: <span className="text-green-400 font-semibold">{fav}</span>
               </div>
             ) : null;
           })()}
         </div>
       )}
 
-      {/* Match Signals — fan vote, AI pick, market favorite */}
+      {/* KickScan Prediction — AI pick, market prediction, fan vote */}
       {signals && !isStarted && !isLive && !isFinished && (
-        <div className="mb-4 px-3 py-2.5 bg-white/[0.03] border border-white/[0.06] rounded-xl">
-          <div className="text-[10px] text-gray-500 text-center mb-2 uppercase tracking-wider font-medium">Match Signals</div>
-          <div className="space-y-1.5 text-xs">
+        <div className="mb-3 px-4 py-3 bg-purple-500/[0.04] border border-purple-500/[0.12] rounded-xl">
+          <div className="text-xs text-purple-400 text-center mb-2.5 uppercase tracking-wider font-semibold">KickScan Prediction</div>
+          <div className="space-y-2">
             {/* Fan Vote */}
             {signals.fanVote && (
-              <div className="flex items-center gap-2">
-                <span className="text-gray-500 w-12 flex-shrink-0">🗳️ Fans</span>
-                <div className="flex-1 flex items-center gap-1">
-                  <div className="flex-1 h-4 bg-white/5 rounded-full overflow-hidden flex">
-                    <div className="bg-green-500/40 h-full flex items-center justify-center text-[9px] text-green-300 font-bold" style={{ width: `${signals.fanVote.home}%` }}>
-                      {signals.fanVote.home > 15 ? `${signals.fanVote.home}%` : ''}
-                    </div>
-                    <div className="bg-yellow-500/40 h-full flex items-center justify-center text-[9px] text-yellow-300 font-bold" style={{ width: `${signals.fanVote.draw}%` }}>
-                      {signals.fanVote.draw > 15 ? `${signals.fanVote.draw}%` : ''}
-                    </div>
-                    <div className="bg-blue-500/40 h-full flex items-center justify-center text-[9px] text-blue-300 font-bold" style={{ width: `${signals.fanVote.away}%` }}>
-                      {signals.fanVote.away > 15 ? `${signals.fanVote.away}%` : ''}
-                    </div>
+              <div className="flex items-center gap-3">
+                <span className="text-gray-400 text-sm w-14 flex-shrink-0">🗳️ Fans</span>
+                <div className="flex-1 h-5 bg-white/5 rounded-full overflow-hidden flex">
+                  <div className="bg-green-500/40 h-full flex items-center justify-center text-[10px] text-green-300 font-bold" style={{ width: `${signals.fanVote.home}%` }}>
+                    {signals.fanVote.home > 15 ? `${signals.fanVote.home}%` : ''}
+                  </div>
+                  <div className="bg-yellow-500/40 h-full flex items-center justify-center text-[10px] text-yellow-300 font-bold" style={{ width: `${signals.fanVote.draw}%` }}>
+                    {signals.fanVote.draw > 15 ? `${signals.fanVote.draw}%` : ''}
+                  </div>
+                  <div className="bg-blue-500/40 h-full flex items-center justify-center text-[10px] text-blue-300 font-bold" style={{ width: `${signals.fanVote.away}%` }}>
+                    {signals.fanVote.away > 15 ? `${signals.fanVote.away}%` : ''}
                   </div>
                 </div>
               </div>
             )}
-            {/* AI Pick */}
+            {/* AI Prediction */}
             {signals.aiPick && (
-              <div className="flex items-center gap-2">
-                <span className="text-gray-500 w-12 flex-shrink-0">🧠 AI</span>
-                <span className={`font-semibold ${
+              <div className="flex items-center gap-3">
+                <span className="text-gray-400 text-sm w-14 flex-shrink-0">🧠 AI</span>
+                <span className={`text-sm font-bold ${
                   signals.aiVerdict === 'BET' ? 'text-green-400' :
                   signals.aiVerdict === 'LEAN' ? 'text-amber-400' :
                   signals.aiVerdict === 'SKIP' ? 'text-gray-400' : 'text-red-400'
@@ -1573,15 +1593,15 @@ function MatchCard({
                   {signals.aiPick}
                 </span>
                 {signals.aiConfidence && (
-                  <span className="text-gray-600 text-[10px]">({signals.aiConfidence}%)</span>
+                  <span className="text-gray-500 text-xs">({signals.aiConfidence}%)</span>
                 )}
               </div>
             )}
-            {/* Market Favorite */}
+            {/* Market Prediction */}
             {signals.marketFavorite && (
-              <div className="flex items-center gap-2">
-                <span className="text-gray-500 w-12 flex-shrink-0">📊 Mkt</span>
-                <span className="font-semibold text-cyan-400">{signals.marketFavorite}</span>
+              <div className="flex items-center gap-3">
+                <span className="text-gray-400 text-sm w-14 flex-shrink-0">📊 Mkt</span>
+                <span className="text-sm font-bold text-cyan-400">{signals.marketFavorite}</span>
               </div>
             )}
           </div>

@@ -6,6 +6,7 @@ import { getMatchAnalysis } from "@/data/analyses";
 import { getPlayersByTier, getCountryColor } from "@/data/players";
 import { getVerdict } from "@/data/verdicts";
 import HeroSection from "@/components/HeroSection";
+import { getUserTimezone, formatDateTime } from "@/lib/timezone";
 // LeagueVerdicts now fetched client-side via API
 
 /* ═══════════════════════════════════════════════════════════
@@ -99,7 +100,7 @@ function LeagueMatchesClient() {
           <div className="flex items-center gap-2 mb-3">
             <img src={m.leagueLogo} alt="" className="w-4 h-4" />
             <span className="text-[10px] text-gray-400">{m.leagueFlag} {m.leagueName}</span>
-            <span className="ml-auto text-[10px] text-gray-500">{new Date(m.date).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+            <span className="ml-auto text-[10px] text-gray-500">{formatDateTime(m.date, getUserTimezone())}</span>
           </div>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2 flex-1 min-w-0">

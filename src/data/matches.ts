@@ -382,3 +382,45 @@ export function getAllPredictions(): MatchPrediction[] {
 
 export const groups = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"];
 export const matchDates = [...new Set(allMatches.map(m => m.date))].sort();
+
+/**
+ * Convert WC match date/time strings to ISO timestamp.
+ * e.g. "June 11" + "3:00 PM ET" → "2026-06-11T19:00:00Z"
+ * ET = UTC-4 (EDT, June = daylight saving)
+ */
+export function getKickoffISO(date: string, time: string): string {
+  const months: Record<string, string> = {
+    "January": "01", "February": "02", "March": "03", "April": "04",
+    "May": "05", "June": "06", "July": "07", "August": "08",
+    "September": "09", "October": "10", "November": "11", "December": "12"
+  };
+
+  const parts = date.split(" ");
+  const month = months[parts[0]] || "06";
+  const day = parts[1].padStart(2, "0");
+
+  // Parse time like "3:00 PM ET" or "12:00 AM ET"
+  const timeClean = time.replace(" ET", "").trim();
+  const match = timeClean.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (!match) return `2026-${month}-${day}T00:00:00Z`;
+
+  let hours = parseInt(match[1]);
+  const minutes = match[2];
+  const ampm = match[3].toUpperCase();
+
+  if (ampm === "PM" && hours !== 12) hours += 12;
+  if (ampm === "AM" && hours === 12) hours = 0;
+
+  // ET (EDT) = UTC-4, so add 4 hours to get UTC
+  hours += 4;
+  let dayNum = parseInt(day);
+  if (hours >= 24) {
+    hours -= 24;
+    dayNum += 1;
+  }
+
+  const utcDay = String(dayNum).padStart(2, "0");
+  const utcHours = String(hours).padStart(2, "0");
+
+  return `2026-${month}-${utcDay}T${utcHours}:${minutes}:00Z`;
+}

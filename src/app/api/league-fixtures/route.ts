@@ -13,6 +13,79 @@ const ODDS_LEAGUES = [
   { key: "soccer_uefa_champs_league", name: "Champions League", flag: "🇪🇺", logo: "https://media.api-sports.io/football/leagues/2.png" },
 ];
 
+// Team name aliases: Odds API name → canonical short name for fuzzy matching
+const TEAM_ALIASES: Record<string, string> = {
+  "brighton and hove albion": "brighton",
+  "tsg hoffenheim": "hoffenheim",
+  "1899 hoffenheim": "hoffenheim",
+  "wolverhampton wanderers": "wolves",
+  "wolverhampton": "wolves",
+  "tottenham hotspur": "tottenham",
+  "nottingham forest": "nott forest",
+  "west ham united": "west ham",
+  "newcastle united": "newcastle",
+  "manchester united": "man united",
+  "manchester city": "man city",
+  "leeds united": "leeds",
+  "leicester city": "leicester",
+  "aston villa": "aston villa",
+  "borussia dortmund": "dortmund",
+  "borussia monchengladbach": "monchengladbach",
+  "borussia mönchengladbach": "monchengladbach",
+  "bayer 04 leverkusen": "leverkusen",
+  "bayer leverkusen": "leverkusen",
+  "bayern munich": "bayern",
+  "bayern münchen": "bayern",
+  "fc bayern münchen": "bayern",
+  "eintracht frankfurt": "frankfurt",
+  "rb leipzig": "rb leipzig",
+  "vfb stuttgart": "stuttgart",
+  "vfl wolfsburg": "wolfsburg",
+  "sc freiburg": "freiburg",
+  "fsv mainz 05": "mainz",
+  "1. fc köln": "koln",
+  "fc köln": "koln",
+  "1. fc heidenheim": "heidenheim",
+  "fc st. pauli": "st. pauli",
+  "atletico madrid": "atletico",
+  "atlético madrid": "atletico",
+  "atlético de madrid": "atletico",
+  "real sociedad": "real sociedad",
+  "real betis": "real betis",
+  "athletic bilbao": "athletic",
+  "athletic club": "athletic",
+  "celta vigo": "celta",
+  "rc celta": "celta",
+  "rayo vallecano": "rayo",
+  "deportivo alavés": "alaves",
+  "deportivo alaves": "alaves",
+  "internazionale": "inter",
+  "inter milan": "inter",
+  "ac milan": "milan",
+  "as roma": "roma",
+  "ss lazio": "lazio",
+  "ssc napoli": "napoli",
+  "hellas verona": "verona",
+  "paris saint-germain": "psg",
+  "paris saint germain": "psg",
+  "olympique marseille": "marseille",
+  "olympique lyonnais": "lyon",
+  "olympique de marseille": "marseille",
+  "as monaco": "monaco",
+};
+
+function normalizeTeamName(name: string): string {
+  const lower = name.toLowerCase().trim();
+  if (TEAM_ALIASES[lower]) return TEAM_ALIASES[lower];
+  // Strip common suffixes/prefixes
+  return lower
+    .replace(/^fc\s+/, "")
+    .replace(/\s+fc$/, "")
+    .replace(/\s+cf$/, "")
+    .replace(/\s+sc$/, "")
+    .trim();
+}
+
 // Fetch all league odds in one batch (called once, cached 2h)
 async function fetchBatchOdds(): Promise<Map<string, { home: number; draw: number; away: number }>> {
   const oddsMap = new Map<string, { home: number; draw: number; away: number }>();
@@ -47,13 +120,16 @@ async function fetchBatchOdds(): Promise<Map<string, { home: number; draw: numbe
         }
       }
       if (count > 0) {
-        // Key by normalized team names for matching
-        const key = `${match.home_team}|||${match.away_team}`.toLowerCase();
-        oddsMap.set(key, {
+        const odds = {
           home: Math.round((homeTotal / count) * 100) / 100,
           draw: Math.round((drawTotal / count) * 100) / 100,
           away: Math.round((awayTotal / count) * 100) / 100,
-        });
+        };
+        // Store under both exact and normalized keys for flexible matching
+        const exactKey = `${match.home_team}|||${match.away_team}`.toLowerCase();
+        const normKey = `${normalizeTeamName(match.home_team)}|||${normalizeTeamName(match.away_team)}`;
+        oddsMap.set(exactKey, odds);
+        if (normKey !== exactKey) oddsMap.set(normKey, odds);
       }
     }
   }
@@ -131,9 +207,10 @@ export async function GET() {
         const verdict = generateAutoVerdict(fixture, null, null, [], [], []);
         const league = LEAGUES.find(l => l.id === fixture.league.id);
         
-        // Match odds by team names
-        const oddsKey = `${fixture.home.name}|||${fixture.away.name}`.toLowerCase();
-        const matchOdds = oddsMap.get(oddsKey) || null;
+        // Match odds by team names (try exact first, then normalized)
+        const exactKey = `${fixture.home.name}|||${fixture.away.name}`.toLowerCase();
+        const normKey = `${normalizeTeamName(fixture.home.name)}|||${normalizeTeamName(fixture.away.name)}`;
+        const matchOdds = oddsMap.get(exactKey) || oddsMap.get(normKey) || null;
         
         return {
           id: fixture.id,
@@ -161,8 +238,9 @@ export async function GET() {
     const fallback = await getOddsApiFallback();
     // Attach odds to fallback matches too
     const fallbackWithOdds = fallback.map((m: any) => {
-      const oddsKey = `${m.homeName}|||${m.awayName}`.toLowerCase();
-      return { ...m, avgOdds: oddsMap.get(oddsKey) || null };
+      const exactKey = `${m.homeName}|||${m.awayName}`.toLowerCase();
+      const normKey = `${normalizeTeamName(m.homeName)}|||${normalizeTeamName(m.awayName)}`;
+      return { ...m, avgOdds: oddsMap.get(exactKey) || oddsMap.get(normKey) || null };
     });
     return NextResponse.json(fallbackWithOdds);
   } catch {

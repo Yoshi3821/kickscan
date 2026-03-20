@@ -38,7 +38,22 @@ export async function GET(request: NextRequest) {
     const competition = searchParams.get('competition');
 
     if (competition === 'wc2026') {
-      // WC 2026 leaderboard - calculate from predictions table
+      // WC 2026 leaderboard - show ALL registered users (even with 0 pts)
+      // This creates pre-tournament engagement
+      
+      // Get all registered users
+      const { data: allUsers, error: usersError } = await supabaseAdmin
+        .from('users')
+        .select('id, username, created_at')
+        .order('created_at', { ascending: true })
+        .limit(100);
+
+      if (usersError) {
+        console.error("Error fetching users for WC leaderboard:", usersError);
+        return NextResponse.json({ error: "Database error" }, { status: 500 });
+      }
+
+      // Get WC prediction stats
       const { data: wcStats, error } = await supabaseAdmin
         .from('predictions')
         .select(`
@@ -50,44 +65,44 @@ export async function GET(request: NextRequest) {
         .not('points_earned', 'is', null);
 
       if (error) {
-        console.error("Error fetching WC leaderboard:", error);
-        return NextResponse.json({ error: "Database error" }, { status: 500 });
+        console.error("Error fetching WC predictions:", error);
       }
 
-      // Group by user and sum points
+      // Build points map from WC predictions
       const userPoints = new Map();
       (wcStats || []).forEach((prediction: any) => {
         const userId = prediction.user_id;
-        const username = prediction.users.username;
         const points = prediction.points_earned || 0;
 
         if (!userPoints.has(userId)) {
-          userPoints.set(userId, { 
-            username, 
-            totalPoints: 0, 
-            predictions: 0,
-            correctResults: 0 
-          });
+          userPoints.set(userId, { totalPoints: 0, predictions: 0, correctResults: 0 });
         }
 
-        const user = userPoints.get(userId);
-        user.totalPoints += points;
-        user.predictions += 1;
-        if (points > 0) user.correctResults += 1;
+        const stats = userPoints.get(userId);
+        stats.totalPoints += points;
+        stats.predictions += 1;
+        if (points > 0) stats.correctResults += 1;
       });
 
-      // Convert to leaderboard format and sort
-      const leaderboard: LeaderboardEntry[] = Array.from(userPoints.values())
-        .sort((a, b) => b.totalPoints - a.totalPoints)
-        .map((user, index) => ({
-          rank: index + 1,
-          username: user.username,
-          totalPoints: user.totalPoints,
-          predictions: user.predictions,
-          winRate: user.predictions > 0 ? Math.round((user.correctResults / user.predictions) * 100) : 0,
-          streak: 0, // Not calculated for competition-specific
-          isAI: user.username === "kickscan ai"
-        }));
+      // Merge all users with their WC stats (0 pts if no predictions)
+      const leaderboard: LeaderboardEntry[] = (allUsers || [])
+        .map((user: any) => {
+          const stats = userPoints.get(user.id) || { totalPoints: 0, predictions: 0, correctResults: 0 };
+          return {
+            rank: 0,
+            username: user.username,
+            totalPoints: stats.totalPoints,
+            predictions: stats.predictions,
+            winRate: stats.predictions > 0 ? Math.round((stats.correctResults / stats.predictions) * 100) : 0,
+            streak: 0,
+            isAI: user.username === "kickscan ai"
+          };
+        })
+        .sort((a: LeaderboardEntry, b: LeaderboardEntry) => {
+          if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
+          return a.username.localeCompare(b.username); // Alphabetical tiebreak
+        })
+        .map((entry: LeaderboardEntry, index: number) => ({ ...entry, rank: index + 1 }));
 
       return NextResponse.json({
         leaderboard: injectAI(leaderboard),

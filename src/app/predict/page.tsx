@@ -56,6 +56,17 @@ interface LeagueMatch {
   leagueFlag: string;
   leagueLogo: string;
   avgOdds?: AvgOdds | null;
+  recommendation?: string;
+  pick?: string;
+  confidencePct?: number;
+}
+
+interface MatchSignals {
+  aiPick?: string;
+  aiConfidence?: number;
+  aiVerdict?: string; // BET/LEAN/SKIP/AVOID
+  marketFavorite?: string;
+  fanVote?: { home: number; draw: number; away: number };
 }
 
 interface Group {
@@ -1180,6 +1191,17 @@ function PredictPageContent() {
                         kickoffISO={match.date}
                         liveScore={liveScores[`league_${match.id}`] || null}
                         avgOdds={match.avgOdds || null}
+                        signals={(() => {
+                          const s: MatchSignals = {};
+                          if (match.pick) { s.aiPick = match.pick; }
+                          if (match.confidencePct) { s.aiConfidence = match.confidencePct; }
+                          if (match.recommendation) { s.aiVerdict = match.recommendation; }
+                          if (match.avgOdds) {
+                            const o = match.avgOdds;
+                            s.marketFavorite = o.home < o.away ? `${match.homeName} Win` : o.away < o.home ? `${match.awayName} Win` : "Even";
+                          }
+                          return Object.keys(s).length > 0 ? s : null;
+                        })()}
                       />
                     ))}
                   </div>
@@ -1220,10 +1242,13 @@ function PredictPageContent() {
 
             {/* Leaderboard */}
             <div id="leaderboard" className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-              <h3 className="text-lg font-bold mb-4">
-                {activeTab === 'league' ? '🏟️ Season Leaderboard' : '🏆 WC 2026 Leaderboard'}
+              <h3 className="text-lg font-bold mb-1">
+                {activeTab === 'league' ? '🌐 Global Leaderboard' : '🏆 World Cup 2026'}
               </h3>
-              <div className="space-y-2 max-h-96 overflow-y-auto">
+              <p className="text-[10px] text-gray-500 mb-4">
+                {activeTab === 'league' ? 'All competitions combined' : 'Tournament starts June 11 — register now to secure your spot'}
+              </p>
+              <div className="space-y-2 max-h-[600px] overflow-y-auto">
                 {leaderboard.map((entry) => (
                   <div
                     key={entry.username}
@@ -1383,6 +1408,7 @@ interface MatchCardProps {
   kickoffISO?: string;
   liveScore?: { home: number; away: number; minute: number; status: string } | null;
   avgOdds?: AvgOdds | null;
+  signals?: MatchSignals | null;
 }
 
 function MatchCard({ 
@@ -1400,7 +1426,8 @@ function MatchCard({
   onPredict,
   kickoffISO,
   liveScore,
-  avgOdds
+  avgOdds,
+  signals
 }: MatchCardProps) {
   const [selectedResult, setSelectedResult] = useState<"home" | "draw" | "away">(
     prediction?.predicted_result || "home"
@@ -1507,6 +1534,57 @@ function MatchCard({
               </div>
             ) : null;
           })()}
+        </div>
+      )}
+
+      {/* Match Signals — fan vote, AI pick, market favorite */}
+      {signals && !isStarted && !isLive && !isFinished && (
+        <div className="mb-4 px-3 py-2.5 bg-white/[0.03] border border-white/[0.06] rounded-xl">
+          <div className="text-[10px] text-gray-500 text-center mb-2 uppercase tracking-wider font-medium">Match Signals</div>
+          <div className="space-y-1.5 text-xs">
+            {/* Fan Vote */}
+            {signals.fanVote && (
+              <div className="flex items-center gap-2">
+                <span className="text-gray-500 w-12 flex-shrink-0">🗳️ Fans</span>
+                <div className="flex-1 flex items-center gap-1">
+                  <div className="flex-1 h-4 bg-white/5 rounded-full overflow-hidden flex">
+                    <div className="bg-green-500/40 h-full flex items-center justify-center text-[9px] text-green-300 font-bold" style={{ width: `${signals.fanVote.home}%` }}>
+                      {signals.fanVote.home > 15 ? `${signals.fanVote.home}%` : ''}
+                    </div>
+                    <div className="bg-yellow-500/40 h-full flex items-center justify-center text-[9px] text-yellow-300 font-bold" style={{ width: `${signals.fanVote.draw}%` }}>
+                      {signals.fanVote.draw > 15 ? `${signals.fanVote.draw}%` : ''}
+                    </div>
+                    <div className="bg-blue-500/40 h-full flex items-center justify-center text-[9px] text-blue-300 font-bold" style={{ width: `${signals.fanVote.away}%` }}>
+                      {signals.fanVote.away > 15 ? `${signals.fanVote.away}%` : ''}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            {/* AI Pick */}
+            {signals.aiPick && (
+              <div className="flex items-center gap-2">
+                <span className="text-gray-500 w-12 flex-shrink-0">🧠 AI</span>
+                <span className={`font-semibold ${
+                  signals.aiVerdict === 'BET' ? 'text-green-400' :
+                  signals.aiVerdict === 'LEAN' ? 'text-amber-400' :
+                  signals.aiVerdict === 'SKIP' ? 'text-gray-400' : 'text-red-400'
+                }`}>
+                  {signals.aiPick}
+                </span>
+                {signals.aiConfidence && (
+                  <span className="text-gray-600 text-[10px]">({signals.aiConfidence}%)</span>
+                )}
+              </div>
+            )}
+            {/* Market Favorite */}
+            {signals.marketFavorite && (
+              <div className="flex items-center gap-2">
+                <span className="text-gray-500 w-12 flex-shrink-0">📊 Mkt</span>
+                <span className="font-semibold text-cyan-400">{signals.marketFavorite}</span>
+              </div>
+            )}
+          </div>
         </div>
       )}
 

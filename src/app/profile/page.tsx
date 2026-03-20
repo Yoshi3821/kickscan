@@ -27,6 +27,9 @@ interface Prediction {
   points_earned: number;
   home_team?: string;
   away_team?: string;
+  actual_result?: string | null;
+  actual_score?: string | null;
+  competition?: string;
 }
 
 interface Group {
@@ -260,41 +263,80 @@ export default function ProfilePage() {
               <h2 className="text-xl font-bold mb-4">📋 MY PREDICTIONS (recent)</h2>
               {predictions.length > 0 ? (
                 <div className="space-y-3">
-                  {predictions.map((prediction) => (
-                    <div key={prediction.id} className="p-4 bg-white/5 border border-white/10 rounded-xl">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="font-bold text-sm text-white">
-                          {prediction.home_team && prediction.away_team && prediction.home_team !== "Unknown"
-                            ? `${prediction.home_team} vs ${prediction.away_team}`
-                            : prediction.match_id.startsWith('wc_') ? `WC Match #${prediction.match_id.replace('wc_', '')}`
-                            : prediction.match_id.startsWith('league_') ? `League Match #${prediction.match_id.replace('league_', '')}`
-                            : `Match ${prediction.match_id}`}
+                  {predictions.map((prediction) => {
+                    const homeName = prediction.home_team && prediction.home_team !== "Unknown" ? prediction.home_team : null;
+                    const awayName = prediction.away_team && prediction.away_team !== "Unknown" ? prediction.away_team : null;
+                    const matchLabel = homeName && awayName
+                      ? `${homeName} vs ${awayName}`
+                      : prediction.match_id.startsWith('wc_') ? `WC Match #${prediction.match_id.replace('wc_', '')}`
+                      : prediction.match_id.startsWith('league_') ? `League Match #${prediction.match_id.replace('league_', '')}`
+                      : `Match ${prediction.match_id}`;
+                    
+                    const pickLabel = prediction.predicted_result === "home"
+                      ? `${homeName || "Home"} Win`
+                      : prediction.predicted_result === "away"
+                      ? `${awayName || "Away"} Win`
+                      : "Draw";
+
+                    return (
+                      <div key={prediction.id} className={`p-4 border rounded-xl ${
+                        prediction.settled
+                          ? prediction.points_earned > 0
+                            ? "bg-green-500/[0.06] border-green-500/20"
+                            : "bg-red-500/[0.06] border-red-500/20"
+                          : "bg-white/5 border-white/10"
+                      }`}>
+                        {/* Match title + competition */}
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="font-bold text-sm text-white">{matchLabel}</div>
+                          {prediction.competition && (
+                            <span className="text-[10px] text-gray-500 bg-white/5 px-2 py-0.5 rounded-full">
+                              {prediction.competition}
+                            </span>
+                          )}
                         </div>
-                        <div className="text-right">
-                          {prediction.settled ? (
+
+                        {/* User's pick + predicted score */}
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-base">{getResultIcon(prediction.predicted_result)}</span>
+                          <div className="text-sm">
+                            <span className="text-gray-300">Pick: </span>
+                            <span className="font-semibold text-white">{pickLabel}</span>
+                            <span className="text-gray-500 mx-1.5">·</span>
+                            <span className="text-gray-300">Score: </span>
+                            <span className="font-semibold text-white">{prediction.predicted_score}</span>
+                            {prediction.boosted && (
+                              <span className="ml-2 text-purple-400 text-xs">⚡ Boosted</span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Post-match result (if settled) */}
+                        {prediction.settled ? (
+                          <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                            <div className="text-xs">
+                              {prediction.actual_score && (
+                                <span className="text-gray-400">
+                                  Final score: <span className="text-white font-bold">{prediction.actual_score}</span>
+                                </span>
+                              )}
+                            </div>
                             <div className={`text-sm font-bold ${
                               prediction.points_earned > 0 ? "text-green-400" : "text-red-400"
                             }`}>
-                              {prediction.points_earned > 0 ? `+${prediction.points_earned} pts` : "0 pts"}
+                              {prediction.points_earned > 0 ? (
+                                <>✅ +{prediction.points_earned} pts</>
+                              ) : (
+                                <>❌ Wrong</>
+                              )}
                             </div>
-                          ) : (
-                            <div className="text-sm text-gray-400">⏳ Pending</div>
-                          )}
-                        </div>
+                          </div>
+                        ) : (
+                          <div className="text-xs text-gray-500 pt-1">⏳ Awaiting result</div>
+                        )}
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-gray-400">
-                        <span className="text-base">{getResultIcon(prediction.predicted_result)}</span>
-                        <span>
-                          {prediction.predicted_result === "home" 
-                            ? `${prediction.home_team || "Home"} Win` 
-                            : prediction.predicted_result === "away" 
-                            ? `${prediction.away_team || "Away"} Win` 
-                            : "Draw"} — {prediction.predicted_score}
-                        </span>
-                        {prediction.boosted && <span>⚡ Boosted</span>}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="text-center text-gray-400 py-4">

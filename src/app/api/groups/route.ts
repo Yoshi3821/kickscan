@@ -235,10 +235,11 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Group not found' }, { status: 404 });
       }
 
-      // Get group members with their WC predictions
+      // Get group members with join timestamp
       const { data: members, error: membersError } = await supabase
         .from('group_members')
         .select(`
+          created_at,
           users (
             id,
             username,
@@ -253,15 +254,23 @@ export async function GET(request: NextRequest) {
 
       // Calculate points for each member based on competition
       const matchPrefix = group.competition === 'wc2026' ? 'wc_' : 'league_';
+      const isLeague = group.competition === 'league';
       
       const leaderboard = await Promise.all(
         (members || []).map(async (member: any) => {
-          const { data: predictions } = await supabase
+          // For league groups: only count predictions made after member joined (fairness)
+          let query = supabase
             .from('predictions')
-            .select('points_earned')
+            .select('points_earned, created_at')
             .eq('user_id', member.users.id)
             .like('match_id', `${matchPrefix}%`)
             .not('points_earned', 'is', null);
+
+          if (isLeague && member.created_at) {
+            query = query.gte('created_at', member.created_at);
+          }
+
+          const { data: predictions } = await query;
 
           const totalPoints = predictions?.reduce((sum, p) => sum + (p.points_earned || 0), 0) || 0;
 

@@ -1227,6 +1227,124 @@ function PredictPageContent() {
             {/* League Tab Content */}
             {activeTab === 'league' && (
               <>
+                {/* Private Groups for League */}
+                <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 md:p-6 mb-6">
+                  <h3 className="text-lg font-bold mb-4 text-green-400">👥 League Private Groups</h3>
+                  
+                  {/* My League Groups */}
+                  {userGroups.filter(g => g.competition === 'league').length > 0 && (
+                    <div className="mb-4">
+                      <div className="space-y-2">
+                        {userGroups.filter(g => g.competition === 'league').map((group) => (
+                          <div key={group.id} className="bg-white/5 border border-white/10 rounded-xl p-3">
+                            <div className="flex items-center justify-between">
+                              <div className="cursor-pointer flex-1" onClick={() => handleViewGroupLeaderboard(group)}>
+                                <div className="font-bold text-sm">🏟️ {group.name}</div>
+                                <div className="text-xs text-gray-500">{group.memberCount} members</div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => handleViewGroupLeaderboard(group)}
+                                  className="px-3 py-1.5 rounded-lg text-xs bg-green-500/20 text-green-400 hover:bg-green-500/30 transition"
+                                >
+                                  View
+                                </button>
+                                <button
+                                  onClick={() => handleLeaveGroup(group.id, group.name)}
+                                  className="px-2.5 py-1.5 rounded-lg text-xs bg-red-500/20 text-red-400 hover:bg-red-500/30 transition"
+                                >
+                                  Leave
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="grid md:grid-cols-2 gap-3">
+                    {/* Create League Group */}
+                    <div className="bg-white/5 border border-white/10 rounded-xl p-3">
+                      <h5 className="font-bold text-sm mb-2">🏟️ Create League Group</h5>
+                      {!showCreateGroup || activeTab !== 'league' ? (
+                        <button
+                          onClick={() => { setShowCreateGroup(true); setActiveTab('league'); }}
+                          className="w-full py-2 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 transition text-sm"
+                        >
+                          Create Group
+                        </button>
+                      ) : (
+                        <div className="space-y-2">
+                          <input
+                            type="text"
+                            placeholder="Group Name"
+                            value={newGroupName}
+                            onChange={(e) => setNewGroupName(e.target.value)}
+                            className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-green-500/50 text-sm"
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              onClick={handleCreateGroup}
+                              disabled={groupsLoading}
+                              className="flex-1 py-2 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 transition disabled:opacity-50 text-sm"
+                            >
+                              {groupsLoading ? "Creating..." : "Create"}
+                            </button>
+                            <button
+                              onClick={() => setShowCreateGroup(false)}
+                              className="px-3 py-2 rounded-lg bg-gray-500/20 text-gray-400 hover:bg-gray-500/30 transition text-sm"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Created code display for league */}
+                    {createdGroupCode && activeTab === 'league' && (
+                      <div className="md:col-span-2 p-3 bg-green-500/10 border border-green-500/30 rounded-xl">
+                        <div className="text-center">
+                          <div className="text-sm text-green-400 mb-2">✅ Group created! Share this code:</div>
+                          <div className="flex items-center justify-center gap-2">
+                            <div className="font-mono text-xl font-bold bg-white/5 py-2 px-6 rounded-xl">
+                              {createdGroupCode}
+                            </div>
+                            <button
+                              onClick={() => copyToClipboard(createdGroupCode)}
+                              className="px-3 py-2 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 transition text-sm"
+                            >
+                              Copy
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Join League Group */}
+                    <div className="bg-white/5 border border-white/10 rounded-xl p-3">
+                      <h5 className="font-bold text-sm mb-2">🤝 Join a League Group</h5>
+                      <div className="space-y-2">
+                        <input
+                          type="text"
+                          placeholder="Enter code"
+                          value={joinGroupCode}
+                          onChange={(e) => setJoinGroupCode(e.target.value.toUpperCase())}
+                          className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-green-500/50 text-center font-mono text-sm"
+                        />
+                        <button
+                          onClick={() => handleJoinGroup()}
+                          disabled={groupsLoading}
+                          className="w-full py-2 rounded-lg bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 transition disabled:opacity-50 text-sm"
+                        >
+                          {groupsLoading ? "Joining..." : "Join Group"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <h2 className="text-2xl font-bold mb-6 text-green-400">⚽ League Matches</h2>
                 {!loadingMatches && leagueMatches.length > 0 && (
                   <div className="space-y-4 mb-8">
@@ -1341,25 +1459,27 @@ function PredictPageContent() {
                 ))}
               </div>
 
-              {/* My Groups section for WC tab */}
-              {activeTab === 'wc2026' && userGroups.filter(g => g.competition === 'wc2026').length > 0 && (
+              {/* My Groups section — shows groups matching current tab */}
+              {userGroups.filter(g => g.competition === activeTab || (activeTab === 'league' && g.competition === 'league') || (activeTab === 'wc2026' && g.competition === 'wc2026')).length > 0 && (
                 <>
                   <hr className="border-white/10 my-6" />
                   <div>
                     <h4 className="text-lg font-bold mb-4">👥 My Groups</h4>
                     <div className="space-y-2">
-                      {userGroups.filter(g => g.competition === 'wc2026').map((group) => (
+                      {userGroups.filter(g => g.competition === activeTab || (activeTab === 'league' && g.competition === 'league') || (activeTab === 'wc2026' && g.competition === 'wc2026')).map((group) => (
                         <div
                           key={group.id}
                           onClick={() => handleViewGroupLeaderboard(group)}
                           className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10 text-sm cursor-pointer hover:bg-white/10 transition"
                         >
                           <div>
-                            <div className="font-bold">{group.name}</div>
+                            <div className="font-bold">
+                              {group.competition === 'league' ? '🏟️' : '🏆'} {group.name}
+                            </div>
                             <div className="text-xs text-gray-400">{group.memberCount} members</div>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="text-purple-400 text-xs">Open →</span>
+                            <span className={`text-xs ${group.competition === 'league' ? 'text-green-400' : 'text-purple-400'}`}>Open →</span>
                           </div>
                         </div>
                       ))}

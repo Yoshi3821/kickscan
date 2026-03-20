@@ -7,7 +7,7 @@ const links = [
   { href: "/verdicts", label: "🎯 WC Verdicts", isNew: true },
   { href: "/leagues", label: "⚽ Leagues" },
   { href: "/predict", label: "🎮 Predict", isHot: true },
-  { href: "/predict#leaderboard", label: "🏆 Leaderboard" },
+  { href: "/leaderboard", label: "🏆 Leaderboard" },
   { href: "/matches", label: "WC Fixtures" },
   { href: "/live-scores", label: "Live Scores", badge: true },
   { href: "/verdict-history", label: "📊 AI Verdict" },

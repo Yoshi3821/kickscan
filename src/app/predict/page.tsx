@@ -1423,8 +1423,8 @@ function PredictPageContent() {
               <p className="text-[10px] text-gray-500 mb-4">
                 {activeTab === 'league' ? 'All competitions combined' : 'Tournament starts June 11 — register now to secure your spot'}
               </p>
-              <div className="space-y-2 max-h-[600px] overflow-y-auto">
-                {leaderboard.map((entry) => (
+              <div className="space-y-2">
+                {leaderboard.slice(0, 10).map((entry) => (
                   <div
                     key={entry.username}
                     onClick={() => goToProfile(entry.username, entry.isAI)}
@@ -1458,6 +1458,12 @@ function PredictPageContent() {
                   </div>
                 ))}
               </div>
+              <a
+                href="/leaderboard"
+                className="block text-center mt-3 text-xs text-purple-400 hover:text-purple-300 transition font-medium"
+              >
+                View Full Leaderboard →
+              </a>
 
               {/* My Groups section — shows groups matching current tab */}
               {userGroups.filter(g => g.competition === activeTab || (activeTab === 'league' && g.competition === 'league') || (activeTab === 'wc2026' && g.competition === 'wc2026')).length > 0 && (

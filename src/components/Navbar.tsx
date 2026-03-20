@@ -9,6 +9,7 @@ const links = [
   { href: "/predict", label: "🎮 Predict", isHot: true },
   { href: "/matches", label: "WC Fixtures" },
   { href: "/live-scores", label: "Live Scores", badge: true },
+  { href: "/verdict-history", label: "📊 History" },
   { href: "/players", label: "⭐ Players" },
 ];
 

@@ -2,7 +2,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { allMatches, getKickoffISO } from "@/data/matches";
 import { getUserTimezone, formatDateTime, getTimezoneLabel, setUserTimezone, TIMEZONE_OPTIONS } from "@/lib/timezone";
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 interface User {
   id: string;
@@ -70,6 +70,10 @@ type Competition = 'league' | 'wc2026';
 function PredictPageContent() {
   const searchParams = useSearchParams();
   const joinCode = searchParams.get('join');
+  const router = useRouter();
+  const goToProfile = (username: string, isAI: boolean) => {
+    router.push(`/profile/${isAI ? 'kickscan_ai' : encodeURIComponent(username)}`);
+  };
 
   const [user, setUser] = useState<User | null>(null);
   const [userId, setUserId] = useState<string>("");
@@ -735,7 +739,8 @@ function PredictPageContent() {
                   {leaderboard.map((entry) => (
                     <div
                       key={entry.username}
-                      className={`grid grid-cols-6 gap-4 items-center py-3 px-3 mb-2 rounded-xl border transition-all ${
+                      onClick={() => goToProfile(entry.username, entry.isAI)}
+                      className={`grid grid-cols-6 gap-4 items-center py-3 px-3 mb-2 rounded-xl border transition-all cursor-pointer ${
                         entry.isAI 
                           ? 'bg-cyan-500/10 border-cyan-500/30' 
                           : entry.rank <= 3
@@ -779,7 +784,8 @@ function PredictPageContent() {
                   {leaderboard.map((entry) => (
                     <div
                       key={entry.username}
-                      className={`p-4 rounded-xl border ${
+                      onClick={() => goToProfile(entry.username, entry.isAI)}
+                      className={`p-4 rounded-xl border cursor-pointer ${
                         entry.isAI 
                           ? 'bg-cyan-500/10 border-cyan-500/30' 
                           : entry.rank <= 3
@@ -1137,7 +1143,8 @@ function PredictPageContent() {
                 {leaderboard.map((entry) => (
                   <div
                     key={entry.username}
-                    className={`flex items-center justify-between p-3 rounded-xl border text-sm ${
+                    onClick={() => goToProfile(entry.username, entry.isAI)}
+                    className={`flex items-center justify-between p-3 rounded-xl border text-sm cursor-pointer hover:bg-white/[0.06] ${
                       entry.isAI 
                         ? 'bg-cyan-500/10 border-cyan-500/30' 
                         : entry.username === user.username

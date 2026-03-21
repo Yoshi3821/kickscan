@@ -148,9 +148,36 @@ export async function getAllLeagueFixtures(limit: number = 50): Promise<LeagueFi
     }
   }
   
-  // Sort by date
-  allFixtures.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  return allFixtures.slice(0, limit);
+  // Sort: live first, then upcoming by date, then recently finished
+  const LIVE = ['1H', '2H', 'HT', 'ET', 'P', 'LIVE', 'BT'];
+  const FINISHED = ['FT', 'AET', 'PEN'];
+  
+  allFixtures.sort((a, b) => {
+    const aLive = LIVE.includes(a.status);
+    const bLive = LIVE.includes(b.status);
+    const aFinished = FINISHED.includes(a.status);
+    const bFinished = FINISHED.includes(b.status);
+    
+    // Live first
+    if (aLive && !bLive) return -1;
+    if (!aLive && bLive) return 1;
+    // Then upcoming (NS)
+    if (!aFinished && bFinished) return -1;
+    if (aFinished && !bFinished) return 1;
+    // Within same category, sort by date
+    return new Date(a.date).getTime() - new Date(b.date).getTime();
+  });
+
+  // Filter out finished matches older than 1 hour post-kickoff + 2h match duration
+  const threeHoursAgo = Date.now() - 3 * 60 * 60 * 1000;
+  const filtered = allFixtures.filter(f => {
+    if (FINISHED.includes(f.status)) {
+      return new Date(f.date).getTime() > threeHoursAgo; // Keep if kicked off within last 3h
+    }
+    return true;
+  });
+
+  return filtered.slice(0, limit);
 }
 
 // Fetch team statistics/form

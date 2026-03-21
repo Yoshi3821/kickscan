@@ -59,26 +59,49 @@ async function MatchCard({ fixture }: { fixture: any }) {
   });
 
   const league = LEAGUES.find(l => l.id === fixture.league.id);
+  const LIVE_STATUSES = ['1H', '2H', 'HT', 'ET', 'P', 'LIVE', 'BT'];
+  const FINISHED_STATUSES = ['FT', 'AET', 'PEN'];
+  const isLive = LIVE_STATUSES.includes(fixture.status);
+  const isFinished = FINISHED_STATUSES.includes(fixture.status);
 
   return (
-    <div className="bg-gray-900/30 backdrop-blur-sm border border-gray-800/50 rounded-xl p-6 hover:border-gray-700/50 transition-all hover:bg-gray-800/20">
-      {/* League badge */}
-      <div className="flex items-center gap-2 mb-4">
-        <img src={fixture.league.logo} alt={fixture.league.name} className="w-5 h-5" />
-        <span className="text-sm text-gray-400">
-          {league?.flag} {fixture.league.name}
-        </span>
+    <div className={`bg-gray-900/30 backdrop-blur-sm border rounded-xl p-6 hover:border-gray-700/50 transition-all hover:bg-gray-800/20 ${
+      isLive ? 'border-green-500/30' : isFinished ? 'border-gray-600/50' : 'border-gray-800/50'
+    }`}>
+      {/* League badge + status */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <img src={fixture.league.logo} alt={fixture.league.name} className="w-5 h-5" />
+          <span className="text-sm text-gray-400">
+            {league?.flag} {fixture.league.name}
+          </span>
+        </div>
+        {isLive && (
+          <div className="flex items-center gap-1.5">
+            <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span></span>
+            <span className="text-xs font-bold text-green-400">LIVE</span>
+          </div>
+        )}
+        {isFinished && (
+          <span className="text-xs font-bold text-gray-500">FT</span>
+        )}
       </div>
 
-      {/* Teams */}
+      {/* Teams + Score */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <img src={fixture.home.logo} alt={fixture.home.name} className="w-8 h-8" />
           <span className="font-medium text-white">{fixture.home.name}</span>
         </div>
         
-        <div className="text-center text-gray-400">
-          <div className="text-xs">vs</div>
+        <div className="text-center">
+          {(isLive || isFinished) && fixture.goalsHome !== null ? (
+            <div className={`text-xl font-black ${isLive ? 'text-green-400' : 'text-white'}`}>
+              {fixture.goalsHome} - {fixture.goalsAway}
+            </div>
+          ) : (
+            <div className="text-xs text-gray-400">vs</div>
+          )}
         </div>
 
         <div className="flex items-center gap-3">

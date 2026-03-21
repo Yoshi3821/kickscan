@@ -700,7 +700,7 @@ function PredictPageContent() {
     }
   };
 
-  const handlePrediction = async (matchId: string, result: "home" | "draw" | "away", score: string, useBooster: boolean = false, homeTeam?: string, awayTeam?: string) => {
+  const handlePrediction = async (matchId: string, result: "home" | "draw" | "away", score: string, useBooster: boolean = false, homeTeam?: string, awayTeam?: string, marketFavorite?: string) => {
     if (!userId || !token) return;
     
     if (!/^\d+-\d+$/.test(score)) {
@@ -729,7 +729,8 @@ function PredictPageContent() {
           predictedScore: score,
           useBooster,
           homeTeam,
-          awayTeam
+          awayTeam,
+          marketFavorite
         })
       });
 
@@ -1915,7 +1916,7 @@ interface MatchCardProps {
   leagueFlag?: string;
   prediction?: Prediction;
   boostersRemaining: number;
-  onPredict: (matchId: string, result: "home" | "draw" | "away", score: string, useBooster: boolean, homeTeam?: string, awayTeam?: string) => void;
+  onPredict: (matchId: string, result: "home" | "draw" | "away", score: string, useBooster: boolean, homeTeam?: string, awayTeam?: string, marketFavorite?: string) => void;
   kickoffISO?: string;
   liveScore?: { home: number; away: number; minute: number; status: string } | null;
   avgOdds?: AvgOdds | null;
@@ -1981,7 +1982,7 @@ function MatchCard({
     }
     
     setIsSubmitting(true);
-    await onPredict(matchId, selectedResult, score, useBooster, home, away);
+    await onPredict(matchId, selectedResult, score, useBooster, home, away, marketIntel?.marketFavorite);
     setIsSubmitting(false);
   };
 

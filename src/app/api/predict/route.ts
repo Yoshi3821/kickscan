@@ -192,7 +192,7 @@ export async function DELETE(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { userId, token, matchId, predictedResult, predictedScore, useBooster, homeTeam, awayTeam } = body;
+    const { userId, token, matchId, predictedResult, predictedScore, useBooster, homeTeam, awayTeam, marketFavorite } = body;
 
     // Validation
     if (!userId || !token || !matchId || !predictedResult || !predictedScore) {
@@ -349,7 +349,8 @@ export async function POST(request: NextRequest) {
       const newPredictionData: any = {
         ...basePredictionData,
         ...(homeTeam && { home_team: homeTeam }),
-        ...(awayTeam && { away_team: awayTeam })
+        ...(awayTeam && { away_team: awayTeam }),
+        ...(marketFavorite && { market_favorite: marketFavorite })
       };
 
       let newPrediction;

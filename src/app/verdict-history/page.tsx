@@ -387,30 +387,48 @@ function VerdictHistorySection() {
   const aiCorrect = history.filter((p) => p.points_earned > 0).length;
   const aiWinRate = totalMatches > 0 ? Math.round((aiCorrect / totalMatches) * 100) : 0;
 
-  // Market accuracy: check if the market favorite (lowest odds side) matched the actual result
-  // We don't have stored market data per settled match, so we show AI stats only for now
-  // and note market stats will populate as more data arrives
+  // Market accuracy: check if stored market_favorite matched actual result
+  const matchesWithMarket = history.filter((p) => p.market_favorite);
+  const marketCorrect = matchesWithMarket.filter((p) => p.market_favorite === p.actual_result).length;
+  const marketWinRate = matchesWithMarket.length > 0 ? Math.round((marketCorrect / matchesWithMarket.length) * 100) : null;
 
   return (
     <div>
-      {/* Accuracy Summary */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      {/* Accuracy Summary — AI vs Market */}
+      <div className={`grid ${marketWinRate !== null ? 'grid-cols-2 sm:grid-cols-5' : 'grid-cols-2 sm:grid-cols-4'} gap-3 mb-6`}>
         <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
           <div className="text-2xl font-black text-white">{totalMatches}</div>
-          <div className="text-[10px] text-gray-500 uppercase tracking-wider">Matches Settled</div>
+          <div className="text-[10px] text-gray-500 uppercase tracking-wider">Settled</div>
         </div>
         <div className="bg-green-500/[0.06] border border-green-500/20 rounded-xl p-4 text-center">
-          <div className="text-2xl font-black text-green-400">{aiCorrect}</div>
+          <div className="text-2xl font-black text-green-400">{aiCorrect}/{totalMatches}</div>
           <div className="text-[10px] text-gray-500 uppercase tracking-wider">AI Correct</div>
-        </div>
-        <div className="bg-red-500/[0.04] border border-red-500/15 rounded-xl p-4 text-center">
-          <div className="text-2xl font-black text-red-400">{totalMatches - aiCorrect}</div>
-          <div className="text-[10px] text-gray-500 uppercase tracking-wider">AI Wrong</div>
         </div>
         <div className="bg-purple-500/[0.06] border border-purple-500/20 rounded-xl p-4 text-center">
           <div className="text-2xl font-black text-purple-400">{aiWinRate}%</div>
           <div className="text-[10px] text-gray-500 uppercase tracking-wider">AI Win Rate</div>
         </div>
+        {marketWinRate !== null && (
+          <div className="bg-cyan-500/[0.06] border border-cyan-500/20 rounded-xl p-4 text-center">
+            <div className="text-2xl font-black text-cyan-400">{marketCorrect}/{matchesWithMarket.length}</div>
+            <div className="text-[10px] text-gray-500 uppercase tracking-wider">Market Correct</div>
+          </div>
+        )}
+        {marketWinRate !== null ? (
+          <div className={`rounded-xl p-4 text-center ${
+            aiWinRate > marketWinRate ? 'bg-green-500/[0.08] border border-green-500/25' : aiWinRate < marketWinRate ? 'bg-red-500/[0.06] border border-red-500/20' : 'bg-white/5 border border-white/10'
+          }`}>
+            <div className={`text-2xl font-black ${aiWinRate > marketWinRate ? 'text-green-400' : aiWinRate < marketWinRate ? 'text-red-400' : 'text-gray-400'}`}>
+              {aiWinRate > marketWinRate ? `+${aiWinRate - marketWinRate}%` : aiWinRate < marketWinRate ? `${aiWinRate - marketWinRate}%` : 'Tied'}
+            </div>
+            <div className="text-[10px] text-gray-500 uppercase tracking-wider">AI vs Market</div>
+          </div>
+        ) : (
+          <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
+            <div className="text-lg font-black text-gray-500">—</div>
+            <div className="text-[10px] text-gray-500 uppercase tracking-wider">Market data collecting</div>
+          </div>
+        )}
       </div>
 
       <div className="text-center mb-6">
@@ -482,47 +500,66 @@ function VerdictHistorySection() {
               </button>
 
               {/* Expanded details */}
-              {isExpanded && (
-                <div className="px-4 pb-4 border-t border-white/5 pt-3 space-y-2">
-                  <div className="grid grid-cols-2 gap-3">
-                    {/* AI Prediction */}
-                    <div className="bg-white/5 rounded-lg p-3">
-                      <div className="text-[10px] text-purple-400 uppercase tracking-wider font-bold mb-1">🧠 AI Pick</div>
-                      <div className="text-sm font-bold text-white">{pickLabel}</div>
-                      {pred.predicted_score && (
-                        <div className="text-xs text-gray-400 mt-0.5">Predicted: {pred.predicted_score}</div>
-                      )}
-                      {pred.boosted && (
-                        <div className="text-xs text-purple-400 mt-0.5">⚡ Boosted</div>
-                      )}
-                    </div>
+              {isExpanded && (() => {
+                const marketFav = pred.market_favorite;
+                const marketFavLabel = marketFav === "home" ? `${homeName || "Home"} Win`
+                  : marketFav === "away" ? `${awayName || "Away"} Win`
+                  : marketFav === "draw" ? "Draw" : null;
+                const marketCorrectHere = marketFav && marketFav === pred.actual_result;
 
-                    {/* Actual Result */}
-                    <div className="bg-white/5 rounded-lg p-3">
-                      <div className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-1">📊 Actual Result</div>
-                      <div className={`text-lg font-black ${isCorrect ? "text-green-400" : "text-red-400"}`}>
-                        {pred.actual_score || "—"}
+                return (
+                  <div className="px-4 pb-4 border-t border-white/5 pt-3 space-y-2">
+                    <div className={`grid ${marketFavLabel ? 'grid-cols-3' : 'grid-cols-2'} gap-3`}>
+                      {/* AI Prediction */}
+                      <div className="bg-white/5 rounded-lg p-3">
+                        <div className="text-[10px] text-purple-400 uppercase tracking-wider font-bold mb-1">🧠 AI Pick</div>
+                        <div className="text-sm font-bold text-white">{pickLabel}</div>
+                        {pred.predicted_score && (
+                          <div className="text-xs text-gray-400 mt-0.5">Score: {pred.predicted_score}</div>
+                        )}
+                        <div className={`text-[10px] font-bold mt-1 ${isCorrect ? 'text-green-400' : 'text-red-400'}`}>
+                          {isCorrect ? '✅ Correct' : '❌ Wrong'}
+                        </div>
                       </div>
-                      {pred.actual_result && (
-                        <div className="text-xs text-gray-400 mt-0.5">
-                          {pred.actual_result === "home" ? `${homeName || "Home"} Win`
-                            : pred.actual_result === "away" ? `${awayName || "Away"} Win`
-                            : "Draw"}
+
+                      {/* Market Favorite */}
+                      {marketFavLabel && (
+                        <div className="bg-white/5 rounded-lg p-3">
+                          <div className="text-[10px] text-cyan-400 uppercase tracking-wider font-bold mb-1">📊 Market</div>
+                          <div className="text-sm font-bold text-white">{marketFavLabel}</div>
+                          <div className={`text-[10px] font-bold mt-1 ${marketCorrectHere ? 'text-green-400' : 'text-red-400'}`}>
+                            {marketCorrectHere ? '✅ Correct' : '❌ Wrong'}
+                          </div>
                         </div>
                       )}
+
+                      {/* Actual Result */}
+                      <div className="bg-white/5 rounded-lg p-3">
+                        <div className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-1">⚽ Result</div>
+                        <div className={`text-lg font-black ${isCorrect ? "text-green-400" : "text-red-400"}`}>
+                          {pred.actual_score || "—"}
+                        </div>
+                        {pred.actual_result && (
+                          <div className="text-xs text-gray-400 mt-0.5">
+                            {pred.actual_result === "home" ? `${homeName || "Home"} Win`
+                              : pred.actual_result === "away" ? `${awayName || "Away"} Win`
+                              : "Draw"}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Points breakdown */}
+                    <div className={`text-xs font-bold text-center py-2 rounded-lg ${
+                      isCorrect ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"
+                    }`}>
+                      {pred.points_earned > 0
+                        ? `+${pred.points_earned} points${pred.points_earned >= 8 ? " (exact score bonus!)" : pred.points_earned >= 6 ? " (boosted)" : ""}`
+                        : "0 points — prediction incorrect"}
                     </div>
                   </div>
-
-                  {/* Points breakdown */}
-                  <div className={`text-xs font-bold text-center py-2 rounded-lg ${
-                    isCorrect ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"
-                  }`}>
-                    {pred.points_earned > 0
-                      ? `+${pred.points_earned} points${pred.points_earned >= 8 ? " (exact score bonus!)" : pred.points_earned >= 6 ? " (boosted)" : ""}`
-                      : "0 points — prediction incorrect"}
-                  </div>
-                </div>
-              )}
+                );
+              })()}
             </div>
           );
         })}

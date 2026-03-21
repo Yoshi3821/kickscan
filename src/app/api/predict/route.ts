@@ -231,11 +231,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
 
-    // Check booster usage
-    if (useBooster && !canUseBooster(user)) {
-      return NextResponse.json({ 
-        error: "Maximum 2 boosters per day already used" 
-      }, { status: 400 });
+    // Check booster usage — re-fetch fresh count to prevent race condition
+    if (useBooster) {
+      const { data: freshUser } = await supabaseAdmin
+        .from('users')
+        .select('boosters_used_today, last_booster_date')
+        .eq('id', userId)
+        .single();
+      
+      if (freshUser) {
+        const todayCheck = new Date().toISOString().split('T')[0];
+        const currentUsed = freshUser.last_booster_date === todayCheck ? freshUser.boosters_used_today : 0;
+        if (currentUsed >= 2) {
+          return NextResponse.json({ 
+            error: "Maximum 2 boosters per day already used" 
+          }, { status: 400 });
+        }
+      }
     }
 
     // Check for existing prediction
@@ -375,7 +387,14 @@ export async function POST(request: NextRequest) {
       };
 
       if (useBooster) {
-        userUpdates.boosters_used_today = user.last_booster_date === today ? user.boosters_used_today + 1 : 1;
+        // Fresh read to prevent race condition
+        const { data: freshBooster } = await supabaseAdmin
+          .from('users')
+          .select('boosters_used_today, last_booster_date')
+          .eq('id', userId)
+          .single();
+        const currentUsed = freshBooster?.last_booster_date === today ? (freshBooster?.boosters_used_today || 0) : 0;
+        userUpdates.boosters_used_today = currentUsed + 1;
         userUpdates.last_booster_date = today;
       }
 
@@ -386,7 +405,7 @@ export async function POST(request: NextRequest) {
 
       const remainingBoosters = userUpdates.boosters_used_today 
         ? 2 - userUpdates.boosters_used_today
-        : 2 - user.boosters_used_today;
+        : 2;
 
       return NextResponse.json({
         success: true,

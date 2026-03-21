@@ -695,6 +695,15 @@ function PredictPageContent() {
       return;
     }
 
+    // Optimistic booster deduction — prevents rapid double-use
+    if (useBooster) {
+      if (boostersRemaining <= 0) {
+        alert("No boosters remaining today!");
+        return;
+      }
+      setBoostersRemaining(prev => Math.max(0, prev - 1));
+    }
+
     try {
       const response = await fetch("/api/predict", {
         method: "POST",

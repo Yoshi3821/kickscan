@@ -52,7 +52,7 @@ function HeroCountdown() {
 /* ──────────────────────── HERO SECTION ──────────────────────── */
 export default function HeroSection() {
   return (
-    <section className="hero-section relative min-h-[100vh] flex items-center justify-center overflow-hidden">
+    <section className="hero-section relative min-h-[100vh] flex items-center justify-center overflow-hidden" style={{ isolation: "isolate" }}>
       {/* ═══ BACKGROUND LAYERS ═══ */}
 
       {/* Stadium background — subtle */}

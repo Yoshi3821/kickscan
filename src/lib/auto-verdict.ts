@@ -288,22 +288,45 @@ export function generateAutoVerdict(
     riskLevel = "VERY HIGH";
   }
   
-  // Predicted score based on attack/defense strength — must be consistent with pick
-  let homeGoals = Math.min(4, Math.max(0, Math.round((homeStrength - 50) / 20 + (homeForm?.goalsFor || 0) / 10)));
-  let awayGoals = Math.min(3, Math.max(0, Math.round((awayStrength - 50) / 20 + (awayForm?.goalsFor || 0) / 10)));
+  // Predicted score — use probability-weighted expected goals model
+  // Base xG from team strength (scaled 0.5–2.5 range for realism)
+  const homeXG = 0.5 + ((homeStrength - 40) / 60) * 2.0;
+  const awayXG = 0.4 + ((awayStrength - 40) / 60) * 1.8;
+
+  // Form adjustment: recent goals scored/conceded
+  const homeFormGoals = homeForm?.goalsFor ? homeForm.goalsFor / 5 : 0;
+  const awayFormGoals = awayForm?.goalsFor ? awayForm.goalsFor / 5 : 0;
+
+  // Weighted xG
+  const adjHomeXG = homeXG * 0.7 + homeFormGoals * 0.3;
+  const adjAwayXG = awayXG * 0.7 + awayFormGoals * 0.3;
+
+  // Round to nearest realistic scoreline
+  let homeGoals = Math.min(4, Math.max(0, Math.round(adjHomeXG)));
+  let awayGoals = Math.min(3, Math.max(0, Math.round(adjAwayXG)));
 
   // Enforce score consistency with pick
   if (pickType === "home" && homeGoals <= awayGoals) {
-    // Home win predicted but score shows draw/away — fix it
     homeGoals = awayGoals + 1;
   } else if (pickType === "away" && awayGoals <= homeGoals) {
-    // Away win predicted but score shows draw/home — fix it
     awayGoals = homeGoals + 1;
   } else if (pickType === "draw" && homeGoals !== awayGoals) {
-    // Draw predicted but score isn't level — equalize
-    const avg = Math.round((homeGoals + awayGoals) / 2);
-    homeGoals = Math.max(1, avg);
-    awayGoals = homeGoals;
+    const avg = Math.max(1, Math.min(2, Math.round((homeGoals + awayGoals) / 2)));
+    homeGoals = avg;
+    awayGoals = avg;
+  }
+
+  // Keep scores realistic — most matches are low-scoring
+  if (homeGoals + awayGoals > 5) {
+    // Scale down proportionally
+    const ratio = homeGoals / (homeGoals + awayGoals);
+    const total = Math.min(5, homeGoals + awayGoals);
+    homeGoals = Math.round(total * ratio);
+    awayGoals = total - homeGoals;
+    // Re-enforce consistency
+    if (pickType === "home" && homeGoals <= awayGoals) homeGoals = awayGoals + 1;
+    if (pickType === "away" && awayGoals <= homeGoals) awayGoals = homeGoals + 1;
+    if (pickType === "draw") { homeGoals = Math.min(homeGoals, 2); awayGoals = homeGoals; }
   }
 
   const predictedScore = `${homeGoals}-${awayGoals}`;

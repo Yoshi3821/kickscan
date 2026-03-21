@@ -16,7 +16,7 @@ const BLOCKED_USERNAMES = new Set([
   "betmaster99", "cr7forever", "dragonking", "footballgeek", "goalhunter",
   "penaltyking", "strikerace", "winstreak", "messigoat", "neymarjr",
   "ronaldofan", "haalandfan", "mbappefan", "salahking", "brunogoat",
-  // Add any other seeded test accounts here
+  "messifanatic", "scoreprophet", "tacticsmaster", "wcfan2026",
 ]);
 
 // KickScan AI virtual participant — always present in leaderboard

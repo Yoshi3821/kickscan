@@ -251,29 +251,43 @@ export function generateAutoVerdict(
     valueGap = (aiProb - marketProb) * 100;
   }
   
-  // Determine recommendation based on value gap and confidence
+  // Determine recommendation — blend odds-derived edge with model confidence
   const strengthGap = Math.abs(homeStrength - awayStrength);
   
-  if (valueGap > 5 && strengthGap > 10) {
+  // Base confidence from the pick's probability
+  const pickProb = pickType === "home" ? homeProb : pickType === "away" ? awayProb : drawProb;
+  const baseConfidence = Math.round(pickProb * 100);
+
+  // Adjust confidence with market agreement (if odds available)
+  let marketAgreement = 0;
+  if (odds.length > 0) {
+    const avgOddsForPick = odds.reduce((s, o) => s + (pickType === "home" ? o.home : pickType === "away" ? o.away : o.draw), 0) / odds.length;
+    const marketProb = 1 / avgOddsForPick;
+    // If market agrees with our pick (market also sees this as most likely), boost confidence
+    const allAvgOdds = odds.reduce((s, o) => ({ h: s.h + o.home, d: s.d + o.draw, a: s.a + o.away }), { h: 0, d: 0, a: 0 });
+    const mktFav = Math.min(allAvgOdds.h, allAvgOdds.d, allAvgOdds.a);
+    if (Math.abs(avgOddsForPick - mktFav / odds.length) < 0.3) {
+      marketAgreement = 8; // Market agrees with AI pick
+    }
+  }
+
+  confidencePct = Math.min(92, Math.max(38, baseConfidence + marketAgreement));
+
+  if (valueGap > 5 && confidencePct >= 65) {
     recommendation = "BET";
     valueRating = 5;
-    confidencePct = 85;
-  } else if (valueGap > 2 && strengthGap > 5) {
+  } else if (valueGap > 2 && confidencePct >= 55) {
     recommendation = "BET";
     valueRating = 4;
-    confidencePct = 75;
-  } else if (valueGap > 0) {
+  } else if (valueGap > 0 || confidencePct >= 55) {
     recommendation = "LEAN";
     valueRating = 3;
-    confidencePct = 65;
-  } else if (valueGap > -3) {
+  } else if (valueGap > -5) {
     recommendation = "SKIP";
     valueRating = 2;
-    confidencePct = 55;
   } else {
     recommendation = "AVOID";
     valueRating = 1;
-    confidencePct = 45;
   }
   
   // Risk level based on league, team strength difference, and injuries
@@ -288,22 +302,70 @@ export function generateAutoVerdict(
     riskLevel = "VERY HIGH";
   }
   
-  // Predicted score — use probability-weighted expected goals model
-  // Base xG from team strength (scaled 0.5–2.5 range for realism)
-  const homeXG = 0.5 + ((homeStrength - 40) / 60) * 2.0;
-  const awayXG = 0.4 + ((awayStrength - 40) / 60) * 1.8;
+  // === PREDICTED SCORE — odds-driven expected goals model ===
+  // 
+  // Use real market odds to derive implied probabilities, then convert
+  // to expected goals using a Poisson-based mapping.
+  // 
+  // Average league match: ~2.6 total goals
+  // Home advantage: +0.3 xG typically
+  //
+  // If odds are available, use them. Otherwise fall back to team strength.
 
-  // Form adjustment: recent goals scored/conceded
-  const homeFormGoals = homeForm?.goalsFor ? homeForm.goalsFor / 5 : 0;
-  const awayFormGoals = awayForm?.goalsFor ? awayForm.goalsFor / 5 : 0;
+  let homeXG: number;
+  let awayXG: number;
 
-  // Weighted xG
-  const adjHomeXG = homeXG * 0.7 + homeFormGoals * 0.3;
-  const adjAwayXG = awayXG * 0.7 + awayFormGoals * 0.3;
+  if (odds.length > 0) {
+    // Derive from market odds — most reliable signal
+    const avgHomeOdds = odds.reduce((s, o) => s + o.home, 0) / odds.length;
+    const avgDrawOdds = odds.reduce((s, o) => s + o.draw, 0) / odds.length;
+    const avgAwayOdds = odds.reduce((s, o) => s + o.away, 0) / odds.length;
 
-  // Round to nearest realistic scoreline
-  let homeGoals = Math.min(4, Math.max(0, Math.round(adjHomeXG)));
-  let awayGoals = Math.min(3, Math.max(0, Math.round(adjAwayXG)));
+    // Implied probabilities (remove overround proportionally)
+    const rawHomeProb = 1 / avgHomeOdds;
+    const rawDrawProb = 1 / avgDrawOdds;
+    const rawAwayProb = 1 / avgAwayOdds;
+    const overround = rawHomeProb + rawDrawProb + rawAwayProb;
+    const mktHome = rawHomeProb / overround;
+    const mktDraw = rawDrawProb / overround;
+    const mktAway = rawAwayProb / overround;
+
+    // Expected total goals based on draw probability
+    // Higher draw prob = lower-scoring match (tight game)
+    // Typical: drawProb 0.25 → ~2.5 total, drawProb 0.35 → ~1.8 total
+    const expectedTotal = Math.max(1.6, Math.min(3.8, 4.0 - (mktDraw * 6.0)));
+
+    // Split total between home and away based on win probabilities
+    // Home gets proportionally more goals when home is favored
+    const homeShare = (mktHome + mktDraw * 0.5) / (mktHome + mktAway + mktDraw);
+    homeXG = expectedTotal * homeShare;
+    awayXG = expectedTotal * (1 - homeShare);
+  } else {
+    // Fallback: team strength based (when no odds available)
+    homeXG = 0.8 + ((homeStrength - 50) / 50) * 1.2;
+    awayXG = 0.6 + ((awayStrength - 50) / 50) * 1.0;
+  }
+
+  // Form fine-tuning (small adjustment, ±0.3 max)
+  if (homeForm?.goalsFor) homeXG += Math.min(0.3, (homeForm.goalsFor / 5 - 1.2) * 0.15);
+  if (awayForm?.goalsFor) awayXG += Math.min(0.3, (awayForm.goalsFor / 5 - 1.0) * 0.15);
+
+  // Clamp to realistic range
+  homeXG = Math.max(0.4, Math.min(3.2, homeXG));
+  awayXG = Math.max(0.3, Math.min(2.8, awayXG));
+
+  // Convert xG to most likely integer scoreline
+  // Use Poisson mode: most probable goal count for a given xG
+  // xG < 0.7 → 0 goals, 0.7-1.4 → 1 goal, 1.4-2.2 → 2 goals, 2.2+ → 3 goals
+  const xgToGoals = (xg: number): number => {
+    if (xg < 0.7) return 0;
+    if (xg < 1.4) return 1;
+    if (xg < 2.2) return 2;
+    return 3;
+  };
+
+  let homeGoals = xgToGoals(homeXG);
+  let awayGoals = xgToGoals(awayXG);
 
   // Enforce score consistency with pick
   if (pickType === "home" && homeGoals <= awayGoals) {
@@ -311,22 +373,9 @@ export function generateAutoVerdict(
   } else if (pickType === "away" && awayGoals <= homeGoals) {
     awayGoals = homeGoals + 1;
   } else if (pickType === "draw" && homeGoals !== awayGoals) {
-    const avg = Math.max(1, Math.min(2, Math.round((homeGoals + awayGoals) / 2)));
+    const avg = Math.max(0, Math.min(2, Math.round((homeGoals + awayGoals) / 2)));
     homeGoals = avg;
     awayGoals = avg;
-  }
-
-  // Keep scores realistic — most matches are low-scoring
-  if (homeGoals + awayGoals > 5) {
-    // Scale down proportionally
-    const ratio = homeGoals / (homeGoals + awayGoals);
-    const total = Math.min(5, homeGoals + awayGoals);
-    homeGoals = Math.round(total * ratio);
-    awayGoals = total - homeGoals;
-    // Re-enforce consistency
-    if (pickType === "home" && homeGoals <= awayGoals) homeGoals = awayGoals + 1;
-    if (pickType === "away" && awayGoals <= homeGoals) awayGoals = homeGoals + 1;
-    if (pickType === "draw") { homeGoals = Math.min(homeGoals, 2); awayGoals = homeGoals; }
   }
 
   const predictedScore = `${homeGoals}-${awayGoals}`;

@@ -86,16 +86,25 @@ function normalizeTeamName(name: string): string {
     .trim();
 }
 
-// Market data per match: h2h odds + totals + BTTS
+// Market data per match: h2h odds + totals + BTTS + consensus
 interface MarketData {
   home: number;
   draw: number;
   away: number;
-  totalLine?: number;    // e.g. 2.5
-  overOdds?: number;     // over 2.5 odds
-  underOdds?: number;    // under 2.5 odds
-  bttsYes?: number;      // BTTS Yes odds
-  bttsNo?: number;       // BTTS No odds
+  totalLine?: number;
+  overOdds?: number;
+  underOdds?: number;
+  bttsYes?: number;
+  bttsNo?: number;
+  // Derived market intelligence
+  homeProb?: number;     // implied probability %
+  drawProb?: number;
+  awayProb?: number;
+  overProb?: number;     // over line probability %
+  bttsProb?: number;     // BTTS Yes probability %
+  bookmakerCount?: number;
+  consensusLevel?: "strong" | "moderate" | "split";  // how much bookmakers agree
+  marketFavorite?: string; // "home" | "draw" | "away"
 }
 
 // Fetch all league odds in one batch (called once, cached 2h)
@@ -118,6 +127,7 @@ async function fetchBatchOdds(): Promise<Map<string, MarketData>> {
     if (result.status !== "fulfilled" || !Array.isArray(result.value)) continue;
     for (const match of result.value) {
       let homeTotal = 0, drawTotal = 0, awayTotal = 0, h2hCount = 0;
+      let homeMin = 99, homeMax = 0;
       let overTotal = 0, underTotal = 0, totalsCount = 0, totalLine = 2.5;
       let bttsYesTotal = 0, bttsNoTotal = 0, bttsCount = 0;
 
@@ -132,6 +142,8 @@ async function fetchBatchOdds(): Promise<Map<string, MarketData>> {
             homeTotal += homePrice;
             drawTotal += drawPrice;
             awayTotal += awayPrice;
+            if (homePrice < homeMin) homeMin = homePrice;
+            if (homePrice > homeMax) homeMax = homePrice;
             h2hCount++;
           }
         }
@@ -177,6 +189,47 @@ async function fetchBatchOdds(): Promise<Map<string, MarketData>> {
           data.bttsYes = Math.round((bttsYesTotal / bttsCount) * 100) / 100;
           data.bttsNo = Math.round((bttsNoTotal / bttsCount) * 100) / 100;
         }
+
+        // Derived: implied probabilities (overround removed)
+        const rawHome = 1 / data.home;
+        const rawDraw = 1 / data.draw;
+        const rawAway = 1 / data.away;
+        const overround = rawHome + rawDraw + rawAway;
+        data.homeProb = Math.round((rawHome / overround) * 100);
+        data.drawProb = Math.round((rawDraw / overround) * 100);
+        data.awayProb = 100 - data.homeProb - data.drawProb;
+
+        // Derived: O/U probability
+        if (data.overOdds && data.underOdds) {
+          const rawOver = 1 / data.overOdds;
+          const rawUnder = 1 / data.underOdds;
+          data.overProb = Math.round((rawOver / (rawOver + rawUnder)) * 100);
+        }
+
+        // Derived: BTTS probability
+        if (data.bttsYes && data.bttsNo) {
+          const rawBttsY = 1 / data.bttsYes;
+          const rawBttsN = 1 / data.bttsNo;
+          data.bttsProb = Math.round((rawBttsY / (rawBttsY + rawBttsN)) * 100);
+        }
+
+        // Derived: market favorite
+        data.marketFavorite = data.homeProb >= data.awayProb && data.homeProb >= data.drawProb
+          ? "home" : data.awayProb >= data.homeProb && data.awayProb >= data.drawProb
+          ? "away" : "draw";
+
+        // Derived: bookmaker consensus (based on odds spread)
+        data.bookmakerCount = h2hCount;
+        const homeSpreadPct = homeMin > 0 ? ((homeMax - homeMin) / homeMin) * 100 : 0;
+        // Tight spread (<10%) = strong consensus, 10-25% = moderate, >25% = split
+        if (h2hCount >= 3 && homeSpreadPct < 10) {
+          data.consensusLevel = "strong";
+        } else if (homeSpreadPct < 25) {
+          data.consensusLevel = "moderate";
+        } else {
+          data.consensusLevel = "split";
+        }
+
         const exactKey = `${match.home_team}|||${match.away_team}`.toLowerCase();
         const normKey = `${normalizeTeamName(match.home_team)}|||${normalizeTeamName(match.away_team)}`;
         oddsMap.set(exactKey, data);
@@ -330,6 +383,17 @@ export async function GET() {
           alternateScore: verdict.alternateScore,
           longshotScore: verdict.longshotScore,
           avgOdds: matchOdds ? { home: matchOdds.home, draw: matchOdds.draw, away: matchOdds.away } : null,
+          marketIntel: matchOdds ? {
+            homeProb: matchOdds.homeProb,
+            drawProb: matchOdds.drawProb,
+            awayProb: matchOdds.awayProb,
+            overProb: matchOdds.overProb,
+            totalLine: matchOdds.totalLine,
+            bttsProb: matchOdds.bttsProb,
+            bookmakerCount: matchOdds.bookmakerCount,
+            consensusLevel: matchOdds.consensusLevel,
+            marketFavorite: matchOdds.marketFavorite,
+          } : null,
           matchStatus: 'NS',
         };
       });

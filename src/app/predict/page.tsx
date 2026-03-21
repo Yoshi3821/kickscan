@@ -45,6 +45,18 @@ interface AvgOdds {
   away: number;
 }
 
+interface MarketIntel {
+  homeProb?: number;
+  drawProb?: number;
+  awayProb?: number;
+  overProb?: number;
+  totalLine?: number;
+  bttsProb?: number;
+  bookmakerCount?: number;
+  consensusLevel?: "strong" | "moderate" | "split";
+  marketFavorite?: string;
+}
+
 interface LeagueMatch {
   id: string | number;
   homeName: string;
@@ -56,6 +68,7 @@ interface LeagueMatch {
   leagueFlag: string;
   leagueLogo: string;
   avgOdds?: AvgOdds | null;
+  marketIntel?: MarketIntel | null;
   recommendation?: string;
   pick?: string;
   confidencePct?: number;
@@ -1516,6 +1529,7 @@ function PredictPageContent() {
                         }
                         return Object.keys(s).length > 0 ? s : null;
                       })()}
+                      marketIntel={match.marketIntel || null}
                     />
                   );
 
@@ -1906,6 +1920,7 @@ interface MatchCardProps {
   liveScore?: { home: number; away: number; minute: number; status: string } | null;
   avgOdds?: AvgOdds | null;
   signals?: MatchSignals | null;
+  marketIntel?: MarketIntel | null;
 }
 
 function MatchCard({ 
@@ -1924,7 +1939,8 @@ function MatchCard({
   kickoffISO,
   liveScore,
   avgOdds,
-  signals
+  signals,
+  marketIntel
 }: MatchCardProps) {
   const [selectedResult, setSelectedResult] = useState<"home" | "draw" | "away">(
     prediction?.predicted_result || "home"
@@ -2005,32 +2021,79 @@ function MatchCard({
         </div>
       </div>
 
-      {/* Avg Market Odds — shown when available and match hasn't started */}
+      {/* Market Intelligence — confidence bar + signals */}
       {avgOdds && !isStarted && !isLive && !isFinished && (
         <div className="mb-3 px-4 py-3 bg-white/[0.03] border border-white/[0.06] rounded-xl">
-          <div className="text-xs text-gray-500 text-center mb-2 uppercase tracking-wider font-semibold">Avg Market Odds</div>
-          <div className="grid grid-cols-3 gap-2 text-center">
-            <div className={`py-1.5 rounded-lg ${avgOdds.home <= avgOdds.away && avgOdds.home <= avgOdds.draw ? 'bg-green-500/10 border border-green-500/20' : 'bg-white/[0.03]'}`}>
-              <div className="text-[10px] text-gray-500 mb-0.5">Home</div>
-              <div className={`text-lg font-bold ${avgOdds.home <= avgOdds.away && avgOdds.home <= avgOdds.draw ? 'text-green-400' : 'text-gray-300'}`}>{avgOdds.home.toFixed(2)}</div>
+          {/* Market Confidence % bar */}
+          {marketIntel?.homeProb && (
+            <>
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Market Confidence</div>
+                {marketIntel.bookmakerCount && (
+                  <div className={`text-[9px] px-1.5 py-0.5 rounded-full ${
+                    marketIntel.consensusLevel === 'strong' ? 'bg-green-500/10 text-green-400/70 border border-green-500/20'
+                    : marketIntel.consensusLevel === 'moderate' ? 'bg-yellow-500/10 text-yellow-400/70 border border-yellow-500/20'
+                    : 'bg-red-500/10 text-red-400/70 border border-red-500/20'
+                  }`}>
+                    {marketIntel.bookmakerCount} bookmakers · {marketIntel.consensusLevel === 'strong' ? 'agree' : marketIntel.consensusLevel === 'moderate' ? 'mostly agree' : 'split'}
+                  </div>
+                )}
+              </div>
+              <div className="flex h-6 rounded-lg overflow-hidden mb-2">
+                <div className="bg-green-500/30 flex items-center justify-center text-[10px] text-green-300 font-bold" style={{ width: `${marketIntel.homeProb}%` }}>
+                  {marketIntel.homeProb > 20 ? `${marketIntel.homeProb}%` : ''}
+                </div>
+                <div className="bg-yellow-500/25 flex items-center justify-center text-[10px] text-yellow-300 font-bold" style={{ width: `${marketIntel.drawProb}%` }}>
+                  {(marketIntel.drawProb || 0) > 18 ? `${marketIntel.drawProb}%` : ''}
+                </div>
+                <div className="bg-blue-500/30 flex items-center justify-center text-[10px] text-blue-300 font-bold" style={{ width: `${marketIntel.awayProb}%` }}>
+                  {(marketIntel.awayProb || 0) > 20 ? `${marketIntel.awayProb}%` : ''}
+                </div>
+              </div>
+              <div className="flex justify-between text-[9px] text-gray-600 mb-2">
+                <span>{home}</span>
+                <span>Draw</span>
+                <span>{away}</span>
+              </div>
+            </>
+          )}
+
+          {/* Odds row — compact */}
+          <div className="grid grid-cols-3 gap-1.5 text-center mb-2">
+            <div className="py-1 rounded bg-white/[0.03]">
+              <div className="text-sm font-bold text-gray-300">{avgOdds.home.toFixed(2)}</div>
             </div>
-            <div className={`py-1.5 rounded-lg ${avgOdds.draw <= avgOdds.home && avgOdds.draw <= avgOdds.away ? 'bg-green-500/10 border border-green-500/20' : 'bg-white/[0.03]'}`}>
-              <div className="text-[10px] text-gray-500 mb-0.5">Draw</div>
-              <div className={`text-lg font-bold ${avgOdds.draw <= avgOdds.home && avgOdds.draw <= avgOdds.away ? 'text-green-400' : 'text-gray-300'}`}>{avgOdds.draw.toFixed(2)}</div>
+            <div className="py-1 rounded bg-white/[0.03]">
+              <div className="text-sm font-bold text-gray-300">{avgOdds.draw.toFixed(2)}</div>
             </div>
-            <div className={`py-1.5 rounded-lg ${avgOdds.away <= avgOdds.home && avgOdds.away <= avgOdds.draw ? 'bg-green-500/10 border border-green-500/20' : 'bg-white/[0.03]'}`}>
-              <div className="text-[10px] text-gray-500 mb-0.5">Away</div>
-              <div className={`text-lg font-bold ${avgOdds.away <= avgOdds.home && avgOdds.away <= avgOdds.draw ? 'text-green-400' : 'text-gray-300'}`}>{avgOdds.away.toFixed(2)}</div>
+            <div className="py-1 rounded bg-white/[0.03]">
+              <div className="text-sm font-bold text-gray-300">{avgOdds.away.toFixed(2)}</div>
             </div>
           </div>
-          {(() => {
-            const fav = avgOdds.home < avgOdds.away ? home : avgOdds.away < avgOdds.home ? away : null;
-            return fav ? (
-              <div className="text-xs text-gray-500 text-center mt-2">
-                Market favorite: <span className="text-green-400 font-semibold">{fav}</span>
-              </div>
-            ) : null;
-          })()}
+
+          {/* O/U + BTTS signals — only when data exists */}
+          {(marketIntel?.overProb || marketIntel?.bttsProb) && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {marketIntel.overProb && marketIntel.totalLine && (
+                <span className={`text-[10px] px-2 py-1 rounded-lg border ${
+                  marketIntel.overProb > 55
+                    ? 'bg-green-500/10 text-green-400 border-green-500/20'
+                    : 'bg-gray-500/10 text-gray-400 border-gray-500/20'
+                }`}>
+                  {marketIntel.overProb > 55 ? '↑' : '↓'} {marketIntel.overProb > 55 ? 'Over' : 'Under'} {marketIntel.totalLine} ({marketIntel.overProb > 55 ? marketIntel.overProb : 100 - marketIntel.overProb}%)
+                </span>
+              )}
+              {marketIntel.bttsProb && (
+                <span className={`text-[10px] px-2 py-1 rounded-lg border ${
+                  marketIntel.bttsProb > 55
+                    ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                    : 'bg-gray-500/10 text-gray-400 border-gray-500/20'
+                }`}>
+                  BTTS {marketIntel.bttsProb > 55 ? 'Yes' : 'No'} ({marketIntel.bttsProb > 55 ? marketIntel.bttsProb : 100 - marketIntel.bttsProb}%)
+                </span>
+              )}
+            </div>
+          )}
         </div>
       )}
 

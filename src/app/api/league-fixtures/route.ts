@@ -2,7 +2,7 @@ import { getAllLeagueFixtures, LEAGUES } from "@/lib/league-api";
 import { generateAutoVerdict } from "@/lib/auto-verdict";
 import { NextResponse } from "next/server";
 
-export const revalidate = 3600;
+export const revalidate = 300; // 5 min — needs to be fresh for live scores
 
 const ODDS_API_KEY = "2d76c480178eddba35634870e3420803";
 const ODDS_LEAGUES = [

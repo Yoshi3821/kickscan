@@ -7,9 +7,9 @@ import Footer from "@/components/Footer";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "KickScan — AI World Cup Intelligence Engine | Match Verdicts & Live Odds",
+  title: "KickScan — AI World Cup Intelligence Engine | FIFA 2026 Predictions",
   description:
-    "AI-powered match verdicts and live odds for FIFA World Cup 2026. Smart betting intelligence, league analysis, and live scores for all 104 matches.",
+    "AI-powered FIFA World Cup 2026 predictions, match analysis & betting intelligence. Beat our AI in daily football prediction challenges. Free AI verdicts & live odds.",
   keywords: [
     "World Cup 2026 odds",
     "World Cup betting",

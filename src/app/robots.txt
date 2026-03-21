@@ -1,0 +1,20 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://kickscan.io/sitemap.xml
+
+# Optimize crawling
+Crawl-delay: 1
+
+# High priority pages for bots
+Allow: /matches
+Allow: /predict  
+Allow: /blog
+Allow: /blog/ai-world-cup-2026-predictions
+Allow: /blog/today-ai-predictions
+
+# Block admin/private areas (if any)
+Disallow: /admin/
+Disallow: /api/private/
+Disallow: /.env
+Disallow: /package.json

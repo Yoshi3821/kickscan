@@ -2119,7 +2119,6 @@ function MatchCard({
               {prediction.boosted && <div className="text-xs text-purple-400">⚡ Booster active</div>}
               {isFinished && liveScore && (
                 <div className={`text-xs font-bold mt-1 ${
-                  // Check if prediction was correct
                   (() => {
                     const actualHome = liveScore.home;
                     const actualAway = liveScore.away;
@@ -2129,14 +2128,25 @@ function MatchCard({
                   })() ? 'text-green-400' : 'text-red-400'
                 }`}>
                   {(() => {
+                    // Use actual settled points if available, otherwise calculate display
+                    if (prediction.settled && prediction.points_earned !== undefined) {
+                      if (prediction.points_earned > 0) {
+                        const predScore = prediction.predicted_score;
+                        const actualScore = `${liveScore.home}-${liveScore.away}`;
+                        if (predScore === actualScore) return `🎯 Exact score! +${prediction.points_earned} pts`;
+                        return `✅ Correct result! +${prediction.points_earned} pts`;
+                      }
+                      return '❌ Wrong prediction · 0 pts';
+                    }
+                    // Fallback for not-yet-settled display
                     const actualHome = liveScore.home;
                     const actualAway = liveScore.away;
                     const predResult = prediction.predicted_result;
                     const actualResult = actualHome > actualAway ? 'home' : actualAway > actualHome ? 'away' : 'draw';
                     const predScore = prediction.predicted_score;
                     const actualScore = `${actualHome}-${actualAway}`;
-                    if (predScore === actualScore) return '🎯 Exact score! +8 pts';
-                    if (predResult === actualResult) return '✅ Correct result! +3 pts';
+                    if (predScore === actualScore) return '🎯 Exact score!';
+                    if (predResult === actualResult) return '✅ Correct result!';
                     return '❌ Wrong prediction';
                   })()}
                 </div>

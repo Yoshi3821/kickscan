@@ -22,19 +22,23 @@ export async function GET(request: NextRequest) {
       return getAIProfile();
     }
 
+    // Normalize: trim, collapse spaces, lowercase
+    const normalizedUsername = username.trim().replace(/\s+/g, ' ').toLowerCase();
+
     // Fetch user — try exact match first, then case-insensitive
     let { data: user, error: userError } = await supabaseAdmin
       .from("users")
       .select("id, username, total_points, total_predictions, correct_results, correct_scores, current_streak, best_streak, created_at")
-      .eq("username", username)
+      .eq("username", normalizedUsername)
       .single();
 
-    // If not found, try case-insensitive via ilike
+    // If not found, try case-insensitive via ilike (escape % and _ to prevent wildcard injection)
     if (userError || !user) {
+      const escapedUsername = normalizedUsername.replace(/%/g, '\\%').replace(/_/g, '\\_');
       const { data: userCI, error: errorCI } = await supabaseAdmin
         .from("users")
         .select("id, username, total_points, total_predictions, correct_results, correct_scores, current_streak, best_streak, created_at")
-        .ilike("username", username)
+        .ilike("username", escapedUsername)
         .limit(1)
         .single();
       user = userCI;

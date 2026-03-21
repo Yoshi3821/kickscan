@@ -37,7 +37,11 @@ interface PredictionEntry {
 
 export default function PublicProfilePage() {
   const params = useParams();
-  const username = params.username as string;
+  // Safety: decode in case URL encoding persists through useParams
+  const rawUsername = params.username as string;
+  const username = (() => {
+    try { return decodeURIComponent(rawUsername); } catch { return rawUsername; }
+  })();
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [predictions, setPredictions] = useState<PredictionEntry[]>([]);

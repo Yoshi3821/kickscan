@@ -288,9 +288,24 @@ export function generateAutoVerdict(
     riskLevel = "VERY HIGH";
   }
   
-  // Predicted score based on attack/defense strength
-  const homeGoals = Math.min(4, Math.max(0, Math.round((homeStrength - 50) / 20 + (homeForm?.goalsFor || 0) / 10)));
-  const awayGoals = Math.min(3, Math.max(0, Math.round((awayStrength - 50) / 20 + (awayForm?.goalsFor || 0) / 10)));
+  // Predicted score based on attack/defense strength — must be consistent with pick
+  let homeGoals = Math.min(4, Math.max(0, Math.round((homeStrength - 50) / 20 + (homeForm?.goalsFor || 0) / 10)));
+  let awayGoals = Math.min(3, Math.max(0, Math.round((awayStrength - 50) / 20 + (awayForm?.goalsFor || 0) / 10)));
+
+  // Enforce score consistency with pick
+  if (pickType === "home" && homeGoals <= awayGoals) {
+    // Home win predicted but score shows draw/away — fix it
+    homeGoals = awayGoals + 1;
+  } else if (pickType === "away" && awayGoals <= homeGoals) {
+    // Away win predicted but score shows draw/home — fix it
+    awayGoals = homeGoals + 1;
+  } else if (pickType === "draw" && homeGoals !== awayGoals) {
+    // Draw predicted but score isn't level — equalize
+    const avg = Math.round((homeGoals + awayGoals) / 2);
+    homeGoals = Math.max(1, avg);
+    awayGoals = homeGoals;
+  }
+
   const predictedScore = `${homeGoals}-${awayGoals}`;
   
   const reasoning = generateReasoning(

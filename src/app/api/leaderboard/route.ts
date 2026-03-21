@@ -11,6 +11,14 @@ interface LeaderboardEntry {
   isAI: boolean;
 }
 
+// Seeded/placeholder accounts to exclude from production leaderboards
+const BLOCKED_USERNAMES = new Set([
+  "betmaster99", "cr7forever", "dragonking", "footballgeek", "goalhunter",
+  "penaltyking", "strikerace", "winstreak", "messigoat", "neymarjr",
+  "ronaldofan", "haalandfan", "mbappefan", "salahking", "brunogoat",
+  // Add any other seeded test accounts here
+]);
+
 // KickScan AI virtual participant — always present in leaderboard
 const KICKSCAN_AI: Omit<LeaderboardEntry, 'rank'> = {
   username: "kickscan_ai",
@@ -85,7 +93,9 @@ export async function GET(request: NextRequest) {
       });
 
       // Merge all users with their WC stats (0 pts if no predictions)
+      // Filter out seeded/placeholder accounts
       const leaderboard: LeaderboardEntry[] = (allUsers || [])
+        .filter((user: any) => !BLOCKED_USERNAMES.has(user.username?.toLowerCase()))
         .map((user: any) => {
           const stats = userPoints.get(user.id) || { totalPoints: 0, predictions: 0, correctResults: 0 };
           return {
@@ -148,8 +158,9 @@ export async function GET(request: NextRequest) {
         if (points > 0) user.correctResults += 1;
       });
 
-      // Convert to leaderboard format and sort
+      // Convert to leaderboard format, filter blocked, and sort
       const leaderboard: LeaderboardEntry[] = Array.from(userPoints.values())
+        .filter((user) => !BLOCKED_USERNAMES.has(user.username?.toLowerCase()))
         .sort((a, b) => b.totalPoints - a.totalPoints)
         .map((user, index) => ({
           rank: index + 1,
@@ -186,22 +197,24 @@ export async function GET(request: NextRequest) {
         });
       }
 
-      // Generate leaderboard entries
-      const leaderboard: LeaderboardEntry[] = users.map((user, index) => {
-        const winRate = user.total_predictions > 0 
-          ? Math.round((user.correct_results / user.total_predictions) * 100) 
-          : 0;
+      // Generate leaderboard entries — filter blocked accounts
+      const leaderboard: LeaderboardEntry[] = (users || [])
+        .filter((user: any) => !BLOCKED_USERNAMES.has(user.username?.toLowerCase()))
+        .map((user: any, index: number) => {
+          const winRate = user.total_predictions > 0 
+            ? Math.round((user.correct_results / user.total_predictions) * 100) 
+            : 0;
 
-        return {
-          rank: index + 1,
-          username: user.username,
-          totalPoints: user.total_points,
-          predictions: user.total_predictions,
-          winRate,
-          streak: user.current_streak,
-          isAI: user.username === "kickscan ai"
-        };
-      });
+          return {
+            rank: index + 1,
+            username: user.username,
+            totalPoints: user.total_points,
+            predictions: user.total_predictions,
+            winRate,
+            streak: user.current_streak,
+            isAI: user.username === "kickscan ai"
+          };
+        });
 
       return NextResponse.json({
         leaderboard: injectAI(leaderboard),

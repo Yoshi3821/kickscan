@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 
 const links = [
@@ -317,9 +318,9 @@ export default function Navbar() {
       </div>
     </nav>
 
-    {/* Login Modal — rendered outside nav to escape stacking context */}
-    {showLoginModal && (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] overflow-y-auto">
+    {/* Login Modal — rendered via portal to document.body to escape ALL stacking contexts */}
+    {showLoginModal && typeof document !== 'undefined' && createPortal(
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto" style={{ zIndex: 99999 }}>
         <div className="bg-gray-900/95 backdrop-blur-xl border border-gray-700 rounded-2xl p-6 w-full max-w-md my-auto max-h-[90vh] overflow-y-auto">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-bold text-white">Login</h3>
@@ -381,7 +382,7 @@ export default function Navbar() {
           </div>
         </div>
       </div>
-    )}
+    , document.body)}
     </>
   );
 }

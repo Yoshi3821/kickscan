@@ -6,9 +6,9 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
           <div>
-            <h3 className="text-lg font-bold text-white mb-4">
-              ⚽ Kick<span className="text-green-400">Scan</span>
-            </h3>
+            <div className="mb-4">
+              <img src="/logo-header.png" alt="KickScan" className="h-7 w-auto" />
+            </div>
             <p className="text-gray-400 text-sm leading-relaxed">
               AI-powered betting intelligence for FIFA World Cup 2026.
               Compare odds, find arbitrage opportunities, and make smarter bets across North America.

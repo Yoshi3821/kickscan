@@ -155,12 +155,8 @@ export default function Navbar() {
     <nav className="bg-gray-950/95 backdrop-blur-xl border-b border-gray-800/50 sticky top-0 z-[100] relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ pointerEvents: "auto" }}>
         <div className="flex justify-between h-16 items-center">
-          <a href="/" className="flex items-center gap-2 relative z-[200] cursor-pointer" style={{ pointerEvents: "auto" }}>
-            <span className="text-2xl">⚽</span>
-            <span className="text-xl font-bold text-white">
-              Kick<span className="text-green-400">Scan</span>
-            </span>
-            <span className="text-[9px] bg-purple-500/20 text-purple-400 px-1.5 py-0.5 rounded-full border border-purple-500/30 font-bold ml-1 tracking-wider">AI ENGINE</span>
+          <a href="/" className="flex items-center relative z-[200] cursor-pointer" style={{ pointerEvents: "auto" }}>
+            <img src="/logo-header.png" alt="KickScan" className="h-8 sm:h-9 w-auto" />
           </a>
 
           <div className="hidden lg:flex items-center gap-6">

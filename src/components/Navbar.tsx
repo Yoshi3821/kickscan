@@ -153,60 +153,69 @@ export default function Navbar() {
   return (
     <>
     <nav className="bg-gray-950/95 backdrop-blur-xl border-b border-gray-800/50 sticky top-0 z-[100] relative">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ pointerEvents: "auto" }}>
-        <div className="flex justify-between h-[80px] sm:h-[90px] lg:h-[100px] items-center">
-          <a href="/" className="flex items-center relative z-[200] cursor-pointer" style={{ pointerEvents: "auto" }}>
-            <img src="/logo-header.png" alt="KickScan" className="w-[240px] sm:w-[300px] lg:w-[360px] h-auto" />
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-10" style={{ pointerEvents: "auto" }}>
+        <div className="flex items-center h-[70px] sm:h-[80px] lg:h-[72px]">
+          {/* Logo + BETA — fixed left */}
+          <a href="/" className="flex items-center gap-2 relative z-[200] cursor-pointer flex-shrink-0" style={{ pointerEvents: "auto" }}>
+            <img src="/logo-header.png" alt="KickScan" className="w-[200px] sm:w-[240px] lg:w-[200px] h-auto" />
+            <span className="hidden lg:inline-block text-[8px] font-bold tracking-widest text-green-400/70 border border-green-400/30 px-1.5 py-0.5 rounded-md uppercase">BETA</span>
           </a>
 
-          <div className="hidden lg:flex items-center gap-6">
-            {links.map((l, i) => (
-              <a
-                key={`${l.href}-${i}`}
-                href={l.href}
-                className={`text-sm font-medium transition relative ${
-                  pathname === l.href
-                    ? "text-green-400"
-                    : "text-gray-300 hover:text-green-400"
-                }`}
-              >
-                {l.label}
-                {l.isNew && (
-                  <span className="ml-1 text-[9px] bg-purple-500/20 text-purple-400 px-1 py-0.5 rounded-full border border-purple-500/30 font-bold">NEW</span>
-                )}
-                {l.isHot && (
-                  <span className="ml-1 text-[9px] bg-orange-500/20 text-orange-400 px-1 py-0.5 rounded-full border border-orange-500/30 font-bold">HOT</span>
-                )}
-                {l.badge && (
-                  <span className="absolute -top-1 -right-3 w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
-                )}
-              </a>
-            ))}
-
-            {/* Auth buttons/dropdown */}
-            {!user ? (
-              <div className="flex items-center gap-3 ml-4">
+          {/* Desktop nav — shifted right with flex-1 spacer */}
+          <div className="hidden lg:flex items-center flex-1 justify-end gap-1">
+            {/* Nav links — compact, elegant */}
+            <div className="flex items-center gap-4 mr-6">
+              {links.map((l, i) => (
                 <a
-                  href="/predict"
-                  className="text-sm font-bold text-white bg-gradient-to-r from-purple-600 to-cyan-500 hover:from-purple-500 hover:to-cyan-400 px-4 py-2 rounded-xl transition-all"
+                  key={`${l.href}-${i}`}
+                  href={l.href}
+                  className={`text-[11px] font-semibold tracking-wide uppercase transition relative whitespace-nowrap ${
+                    pathname === l.href
+                      ? "text-green-400"
+                      : "text-gray-400 hover:text-white"
+                  }`}
                 >
-                  Sign Up
+                  {l.label}
+                  {l.isNew && (
+                    <span className="ml-1 text-[7px] bg-purple-500/20 text-purple-400 px-1 py-0.5 rounded-full border border-purple-500/30 font-bold">NEW</span>
+                  )}
+                  {l.isHot && (
+                    <span className="ml-1 text-[7px] bg-orange-500/20 text-orange-400 px-1 py-0.5 rounded-full border border-orange-500/30 font-bold">HOT</span>
+                  )}
+                  {l.badge && (
+                    <span className="absolute -top-1 -right-2 w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
+                  )}
                 </a>
+              ))}
+            </div>
+
+            {/* Divider */}
+            <div className="w-px h-5 bg-gray-700/50 mr-4" />
+
+            {/* Auth buttons/dropdown — far right */}
+            {!user ? (
+              <div className="flex items-center gap-3">
                 <button
                   onClick={() => setShowLoginModal(true)}
-                  className="text-sm font-medium text-gray-300 hover:text-white transition"
+                  className="text-[11px] font-semibold text-gray-400 hover:text-white transition uppercase tracking-wide"
                 >
                   Login
                 </button>
+                <a
+                  href="/predict"
+                  className="text-[11px] font-bold text-white bg-gradient-to-r from-purple-600 to-cyan-500 hover:from-purple-500 hover:to-cyan-400 px-4 py-2 rounded-lg transition-all uppercase tracking-wide"
+                >
+                  Sign Up
+                </a>
               </div>
             ) : (
-              <div className="relative ml-4">
+              <div className="relative">
                 <button
                   onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="flex items-center gap-2 text-sm font-medium text-white hover:text-green-400 transition"
+                  className="flex items-center gap-2 text-[11px] font-semibold text-white hover:text-green-400 transition uppercase tracking-wide"
                 >
                   👤 {user.username}
-                  <span className="text-gray-400">▼</span>
+                  <span className="text-gray-500 text-[10px]">▼</span>
                 </button>
                 
                 {dropdownOpen && (
@@ -214,21 +223,21 @@ export default function Navbar() {
                     <div className="py-2">
                       <a
                         href="/profile"
-                        className="block px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-800/50 transition"
+                        className="block px-4 py-2 text-xs text-gray-300 hover:text-white hover:bg-gray-800/50 transition"
                         onClick={() => setDropdownOpen(false)}
                       >
                         My Profile
                       </a>
                       <a
                         href="/predict"
-                        className="block px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-800/50 transition"
+                        className="block px-4 py-2 text-xs text-gray-300 hover:text-white hover:bg-gray-800/50 transition"
                         onClick={() => setDropdownOpen(false)}
                       >
                         My Predictions
                       </a>
                       <a
                         href="/predict"
-                        className="block px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-800/50 transition"
+                        className="block px-4 py-2 text-xs text-gray-300 hover:text-white hover:bg-gray-800/50 transition"
                         onClick={() => setDropdownOpen(false)}
                       >
                         My Groups
@@ -236,7 +245,7 @@ export default function Navbar() {
                       <div className="border-t border-gray-700 my-1"></div>
                       <button
                         onClick={handleLogout}
-                        className="block w-full text-left px-4 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-gray-800/50 transition"
+                        className="block w-full text-left px-4 py-2 text-xs text-red-400 hover:text-red-300 hover:bg-gray-800/50 transition"
                       >
                         Logout
                       </button>
@@ -247,6 +256,8 @@ export default function Navbar() {
             )}
           </div>
 
+          {/* Mobile hamburger */}
+          <div className="flex-1 lg:hidden" />
           <button
             className="lg:hidden text-gray-300 text-xl"
             onClick={() => setMenuOpen(!menuOpen)}

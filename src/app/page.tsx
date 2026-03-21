@@ -93,40 +93,66 @@ function LeagueMatchesClient() {
   const recColors: Record<string, string> = { BET: "bg-green-500/20 text-green-400 border-green-500/30", LEAN: "bg-amber-500/20 text-amber-400 border-amber-500/30", SKIP: "bg-gray-500/20 text-gray-400 border-gray-500/30", AVOID: "bg-red-500/20 text-red-400 border-red-500/30" };
   const riskColors: Record<string, string> = { LOW: "text-green-400", MEDIUM: "text-yellow-400", HIGH: "text-orange-400", "VERY HIGH": "text-red-400" };
 
+  const LIVE = ['1H', '2H', 'HT', 'ET', 'P', 'LIVE', 'BT'];
+  const FINISHED = ['FT', 'AET', 'PEN'];
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      {matches.map((m: any) => (
-        <a key={m.id} href={typeof m.id === "number" || /^\d+$/.test(String(m.id)) ? `/leagues/${m.id}` : `/leagues`} className="block bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-5 hover:bg-white/[0.08] transition-all">
-          <div className="flex items-center gap-2 mb-3">
-            <img src={m.leagueLogo} alt="" className="w-4 h-4" />
-            <span className="text-[10px] text-gray-400">{m.leagueFlag} {m.leagueName}</span>
-            <span className="ml-auto text-[10px] text-gray-500">{formatDateTime(m.date, getUserTimezone())}</span>
-          </div>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              {m.homeLogo ? (
-                <img src={m.homeLogo} alt="" className="w-7 h-7 rounded" />
-              ) : (
-                <span className="w-7 h-7 rounded bg-white/10 flex items-center justify-center text-[10px] font-bold text-gray-400">{m.homeName?.slice(0,3).toUpperCase()}</span>
-              )}
-              <span className="text-sm font-bold text-white truncate">{m.homeName}</span>
+      {matches.map((m: any) => {
+        const isLive = LIVE.includes(m.matchStatus);
+        const isFinished = FINISHED.includes(m.matchStatus);
+        const hasScore = m.liveScore && (m.liveScore.home !== undefined);
+
+        return (
+          <a key={m.id} href={typeof m.id === "number" || /^\d+$/.test(String(m.id)) ? `/leagues/${m.id}` : `/leagues`} className={`block backdrop-blur-xl border rounded-2xl p-5 hover:bg-white/[0.08] transition-all ${isLive ? 'bg-green-500/[0.04] border-green-500/20' : isFinished ? 'bg-white/[0.03] border-gray-600/30' : 'bg-white/5 border-white/10'}`}>
+            <div className="flex items-center gap-2 mb-3">
+              <img src={m.leagueLogo} alt="" className="w-4 h-4" />
+              <span className="text-[10px] text-gray-400">{m.leagueFlag} {m.leagueName}</span>
+              <span className="ml-auto">
+                {isLive ? (
+                  <span className="flex items-center gap-1">
+                    <span className="relative flex h-1.5 w-1.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500"></span></span>
+                    <span className="text-[10px] font-bold text-green-400">LIVE{m.liveScore?.minute ? ` ${m.liveScore.minute}'` : ''}</span>
+                  </span>
+                ) : isFinished ? (
+                  <span className="text-[10px] font-bold text-gray-500">FT</span>
+                ) : (
+                  <span className="text-[10px] text-gray-500">{formatDateTime(m.date, getUserTimezone())}</span>
+                )}
+              </span>
             </div>
-            <span className="text-xs text-gray-500 px-2 font-bold">vs</span>
-            <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
-              <span className="text-sm font-bold text-white truncate">{m.awayName}</span>
-              {m.awayLogo ? (
-                <img src={m.awayLogo} alt="" className="w-7 h-7 rounded" />
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                {m.homeLogo ? (
+                  <img src={m.homeLogo} alt="" className="w-7 h-7 rounded" />
+                ) : (
+                  <span className="w-7 h-7 rounded bg-white/10 flex items-center justify-center text-[10px] font-bold text-gray-400">{m.homeName?.slice(0,3).toUpperCase()}</span>
+                )}
+                <span className="text-sm font-bold text-white truncate">{m.homeName}</span>
+              </div>
+              {(isLive || isFinished) && hasScore ? (
+                <span className={`text-lg font-black px-3 ${isLive ? 'text-green-400' : 'text-white'}`}>
+                  {m.liveScore.home} - {m.liveScore.away}
+                </span>
               ) : (
-                <span className="w-7 h-7 rounded bg-white/10 flex items-center justify-center text-[10px] font-bold text-gray-400">{m.awayName?.slice(0,3).toUpperCase()}</span>
+                <span className="text-xs text-gray-500 px-2 font-bold">vs</span>
               )}
+              <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
+                <span className="text-sm font-bold text-white truncate">{m.awayName}</span>
+                {m.awayLogo ? (
+                  <img src={m.awayLogo} alt="" className="w-7 h-7 rounded" />
+                ) : (
+                  <span className="w-7 h-7 rounded bg-white/10 flex items-center justify-center text-[10px] font-bold text-gray-400">{m.awayName?.slice(0,3).toUpperCase()}</span>
+                )}
+              </div>
             </div>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className={`px-2 py-0.5 text-[10px] font-bold border rounded-full ${recColors[m.recommendation] || recColors.SKIP}`}>{m.recommendation}: {m.pick}</span>
-            <span className={`text-[10px] font-bold ${riskColors[m.riskLevel] || "text-gray-400"}`}>{m.riskLevel}</span>
-          </div>
-        </a>
-      ))}
+            <div className="flex items-center justify-between">
+              <span className={`px-2 py-0.5 text-[10px] font-bold border rounded-full ${recColors[m.recommendation] || recColors.SKIP}`}>{m.recommendation}: {m.pick}</span>
+              <span className={`text-[10px] font-bold ${riskColors[m.riskLevel] || "text-gray-400"}`}>{m.riskLevel}</span>
+            </div>
+          </a>
+        );
+      })}
     </div>
   );
 }
@@ -152,57 +178,57 @@ export default function HomePage() {
       <HeroSection />
 
       {/* ═══════ WHAT IS KICKSCAN? SECTION ═══════ */}
-      <section className="py-20 px-4 max-w-7xl mx-auto">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3">
+      <section className="py-10 sm:py-20 px-4 max-w-7xl mx-auto">
+        <div className="text-center mb-6 sm:mb-12">
+          <h2 className="text-2xl sm:text-4xl font-bold text-white mb-2">
             YOUR AI FOOTBALL INTELLIGENCE PLATFORM
           </h2>
-          <p className="text-gray-400 text-lg">Match analysis, live scores, and AI verdicts — free for everyone. Predict & Compete with a free account.</p>
+          <p className="text-gray-400 text-sm sm:text-lg">Match analysis, live scores, and AI verdicts — free for everyone. Predict & Compete with a free account.</p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-12">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-6 mb-8 sm:mb-12">
           {/* Feature Card 1 - AI Verdicts */}
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 text-center hover:bg-white/[0.08] transition-all">
-            <div className="text-4xl mb-4">🎯</div>
-            <h3 className="text-xl font-bold text-white mb-3">AI Verdicts</h3>
-            <p className="text-gray-400 text-sm leading-relaxed">
-              Clear BET or SKIP calls for every match with intelligent reasoning
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl sm:rounded-2xl p-3 sm:p-6 text-center hover:bg-white/[0.08] transition-all">
+            <div className="text-2xl sm:text-4xl mb-2 sm:mb-4">🎯</div>
+            <h3 className="text-sm sm:text-xl font-bold text-white mb-1 sm:mb-3">AI Verdicts</h3>
+            <p className="text-gray-400 text-[10px] sm:text-sm leading-snug sm:leading-relaxed">
+              BET or SKIP calls with AI reasoning
             </p>
           </div>
 
           {/* Feature Card 2 - Predict & Compete */}
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 text-center hover:bg-white/[0.08] transition-all">
-            <div className="text-4xl mb-4">🎮</div>
-            <h3 className="text-xl font-bold text-white mb-3">Predict & Compete</h3>
-            <p className="text-gray-400 text-sm leading-relaxed">
-              Predict match results, earn points, and beat the AI
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl sm:rounded-2xl p-3 sm:p-6 text-center hover:bg-white/[0.08] transition-all">
+            <div className="text-2xl sm:text-4xl mb-2 sm:mb-4">🎮</div>
+            <h3 className="text-sm sm:text-xl font-bold text-white mb-1 sm:mb-3">Predict & Compete</h3>
+            <p className="text-gray-400 text-[10px] sm:text-sm leading-snug sm:leading-relaxed">
+              Predict results, earn points, beat the AI
             </p>
           </div>
 
           {/* Feature Card 3 - Private Groups */}
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 text-center hover:bg-white/[0.08] transition-all">
-            <div className="text-4xl mb-4">👥</div>
-            <h3 className="text-xl font-bold text-white mb-3">Private Groups</h3>
-            <p className="text-gray-400 text-sm leading-relaxed">
-              Create private leagues with friends — compete, rank & win together
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl sm:rounded-2xl p-3 sm:p-6 text-center hover:bg-white/[0.08] transition-all">
+            <div className="text-2xl sm:text-4xl mb-2 sm:mb-4">👥</div>
+            <h3 className="text-sm sm:text-xl font-bold text-white mb-1 sm:mb-3">Private Groups</h3>
+            <p className="text-gray-400 text-[10px] sm:text-sm leading-snug sm:leading-relaxed">
+              Compete with friends in private leagues
             </p>
           </div>
 
           {/* Feature Card 4 - Live Scores */}
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 text-center hover:bg-white/[0.08] transition-all">
-            <div className="text-4xl mb-4">📺</div>
-            <h3 className="text-xl font-bold text-white mb-3">Live Scores</h3>
-            <p className="text-gray-400 text-sm leading-relaxed">
-              Real-time scores with 10-second refresh, goal alerts & match events
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl sm:rounded-2xl p-3 sm:p-6 text-center hover:bg-white/[0.08] transition-all">
+            <div className="text-2xl sm:text-4xl mb-2 sm:mb-4">📺</div>
+            <h3 className="text-sm sm:text-xl font-bold text-white mb-1 sm:mb-3">Live Scores</h3>
+            <p className="text-gray-400 text-[10px] sm:text-sm leading-snug sm:leading-relaxed">
+              Real-time scores with goal alerts
             </p>
           </div>
 
           {/* Feature Card 5 - Match Analysis */}
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 text-center hover:bg-white/[0.08] transition-all">
-            <div className="text-4xl mb-4">🧠</div>
-            <h3 className="text-xl font-bold text-white mb-3">Match Analysis</h3>
-            <p className="text-gray-400 text-sm leading-relaxed">
-              Deep AI insights with form, H2H, injuries & intelligent angles
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl sm:rounded-2xl p-3 sm:p-6 text-center hover:bg-white/[0.08] transition-all col-span-2 sm:col-span-1">
+            <div className="text-2xl sm:text-4xl mb-2 sm:mb-4">🧠</div>
+            <h3 className="text-sm sm:text-xl font-bold text-white mb-1 sm:mb-3">Match Analysis</h3>
+            <p className="text-gray-400 text-[10px] sm:text-sm leading-snug sm:leading-relaxed">
+              Deep AI insights with form, H2H & injuries
             </p>
           </div>
         </div>
@@ -218,7 +244,7 @@ export default function HomePage() {
       </section>
 
       {/* ═══════ UPCOMING LEAGUE MATCHES ═══════ */}
-      <section className="py-16 px-4 max-w-7xl mx-auto">
+      <section className="py-8 sm:py-16 px-4 max-w-7xl mx-auto">
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-full px-4 py-1.5 text-sm text-green-400 font-semibold mb-4">
             <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-green-400"></span></span>
@@ -234,7 +260,7 @@ export default function HomePage() {
       </section>
 
       {/* ═══════ SECTION B — THE VERDICTS (FEATURED) ═══════ */}
-      <section className="py-20 px-4 max-w-7xl mx-auto">
+      <section className="py-10 sm:py-20 px-4 max-w-7xl mx-auto">
         <div className="text-center mb-12">
           <h2 className="text-3xl sm:text-4xl font-bold mb-3">
             <span className="bg-gradient-to-r from-purple-500 to-cyan-400 bg-clip-text text-transparent">
@@ -334,7 +360,7 @@ export default function HomePage() {
       </section>
 
       {/* ═══════ PREDICT & COMPETE PROMO (TOP 3 LEADERBOARD) ═══════ */}
-      <section className="py-20 px-4 max-w-7xl mx-auto">
+      <section className="py-10 sm:py-20 px-4 max-w-7xl mx-auto">
         <div className="max-w-4xl mx-auto">
           <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8">
             <div className="text-center mb-8">
@@ -405,7 +431,7 @@ export default function HomePage() {
 
 
       {/* ═══════ SECTION — STARS TO WATCH ═══════ */}
-      <section className="py-20 px-4 max-w-7xl mx-auto">
+      <section className="py-10 sm:py-20 px-4 max-w-7xl mx-auto">
         <div className="text-center mb-12">
           <h2 className="text-3xl sm:text-4xl font-bold mb-3">
             <span className="bg-gradient-to-r from-purple-500 to-cyan-400 bg-clip-text text-transparent">
@@ -476,7 +502,7 @@ export default function HomePage() {
 
 
       {/* ═══════ LATEST INTEL ═══════ */}
-      <section className="py-20 px-4 max-w-7xl mx-auto">
+      <section className="py-10 sm:py-20 px-4 max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-12">
           <div>
             <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3">Latest Intel</h2>
@@ -512,7 +538,7 @@ export default function HomePage() {
       </section>
 
       {/* ═══════ FINAL CTA ═══════ */}
-      <section className="py-24 px-4 bg-gradient-to-b from-[#06060f] via-purple-950/20 to-[#06060f]">
+      <section className="py-12 sm:py-24 px-4 bg-gradient-to-b from-[#06060f] via-purple-950/20 to-[#06060f]">
         <div className="max-w-3xl mx-auto text-center">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white mb-4">
             Stop guessing. Start scanning.

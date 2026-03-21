@@ -153,7 +153,7 @@ export default function HeroSection() {
         </div>
 
         {/* Tagline */}
-        <p className="animate-fade-in-up text-xs sm:text-sm font-semibold tracking-[0.3em] uppercase text-white/40 mb-3" style={{ animationDelay: "0.05s" }}>
+        <p className="animate-fade-in-up text-xs sm:text-sm font-semibold tracking-[0.3em] uppercase text-white/70 mb-3" style={{ animationDelay: "0.05s", textShadow: "0 1px 8px rgba(0,0,0,0.8)" }}>
           FIFA World Cup 2026
         </p>
 
@@ -163,9 +163,9 @@ export default function HeroSection() {
         </h1>
 
         {/* Subtitle */}
-        <p className="animate-fade-in-up text-base sm:text-lg md:text-xl text-white/60 mb-8 leading-relaxed" style={{ animationDelay: "0.2s" }}>
+        <p className="animate-fade-in-up text-base sm:text-lg md:text-xl text-white/80 mb-8 leading-relaxed" style={{ animationDelay: "0.2s", textShadow: "0 1px 8px rgba(0,0,0,0.7)" }}>
           Don&apos;t guess. <span className="text-white font-semibold">Scan the match.</span><br className="hidden sm:block" />
-          <span className="text-sm sm:text-base text-white/40">Match analysis · Score prediction · Fan sentiment · Market intelligence</span>
+          <span className="text-sm sm:text-base text-white/60">Match analysis · Score prediction · Fan sentiment · Market intelligence</span>
         </p>
 
         {/* CTA */}
@@ -174,13 +174,13 @@ export default function HeroSection() {
             href="/matches"
             className="hero-cta-btn inline-flex items-center gap-3 px-8 sm:px-10 py-4 sm:py-5 text-sm sm:text-base font-bold uppercase tracking-wider rounded-xl transition-all duration-300"
           >
-            ANALYZE MATCHES
+            SCAN MATCH NOW
             <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M5 12h14M12 5l7 7-7 7" />
             </svg>
           </Link>
         </div>
-        <p className="animate-fade-in-up text-xs text-white/30 mb-10" style={{ animationDelay: "0.35s" }}>
+        <p className="animate-fade-in-up text-xs text-white/50 mb-10" style={{ animationDelay: "0.35s" }}>
           Free match analysis · No signup required
         </p>
 
@@ -199,7 +199,7 @@ export default function HeroSection() {
 
         {/* Countdown */}
         <div className="animate-fade-in-up" style={{ animationDelay: "0.45s" }}>
-          <p className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-white/30 mb-4">
+          <p className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-white/50 mb-4">
             ⚽ World Cup Kicks Off In
           </p>
           <HeroCountdown />

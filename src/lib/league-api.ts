@@ -77,13 +77,32 @@ async function apiCall(endpoint: string): Promise<any> {
   }
 }
 
-// Fetch upcoming fixtures for a league
+// Fetch upcoming fixtures for a league (includes today's matches)
 export async function getLeagueFixtures(leagueId: number, next: number = 10): Promise<LeagueFixture[]> {
-  // Try current year first, then previous year (European leagues use season = start year)
-  let data = await apiCall(`/fixtures?league=${leagueId}&season=${new Date().getFullYear()}&next=${next}`);
-  if (!data || data.length === 0) {
-    data = await apiCall(`/fixtures?league=${leagueId}&season=${new Date().getFullYear() - 1}&next=${next}`);
+  const year = new Date().getFullYear();
+  const today = new Date().toISOString().split('T')[0];
+
+  // Fetch next upcoming + today's matches in parallel
+  const [nextData, todayData] = await Promise.all([
+    apiCall(`/fixtures?league=${leagueId}&season=${year}&next=${next}`)
+      .then(d => d || [])
+      .catch(() => apiCall(`/fixtures?league=${leagueId}&season=${year - 1}&next=${next}`).catch(() => [])),
+    apiCall(`/fixtures?league=${leagueId}&date=${today}&season=${year}`)
+      .then(d => d || [])
+      .catch(() => apiCall(`/fixtures?league=${leagueId}&date=${today}&season=${year - 1}`).catch(() => []))
+  ]);
+
+  // Merge and deduplicate by fixture ID
+  const seen = new Set<number>();
+  const merged: any[] = [];
+  for (const item of [...(todayData || []), ...(nextData || [])]) {
+    const id = item?.fixture?.id;
+    if (id && !seen.has(id)) {
+      seen.add(id);
+      merged.push(item);
+    }
   }
+  const data = merged;
   
   return data.map((item: any) => ({
     id: item.fixture.id,

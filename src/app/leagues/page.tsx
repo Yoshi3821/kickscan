@@ -5,7 +5,7 @@ import LeagueFilter from "@/components/LeagueFilter";
 import LeagueTimezone from "@/components/LeagueTimezone";
 import { Suspense } from 'react';
 
-export const revalidate = 3600;
+export const revalidate = 1800; // 30 min cache for fresher data
 
 export const metadata = {
   title: "⚽ Live Leagues — KickScan.io",
@@ -127,7 +127,8 @@ function LoadingSkeleton() {
 
 async function LeagueMatches() {
   try {
-    const fixtures = await getAllLeagueFixtures(24);
+    // Fetch more fixtures per league to ensure coverage
+    const fixtures = await getAllLeagueFixtures(40);
     
     if (fixtures.length === 0) {
       return (

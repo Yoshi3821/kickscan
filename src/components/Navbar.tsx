@@ -118,6 +118,7 @@ export default function Navbar() {
   };
 
   return (
+    <>
     <nav className="bg-gray-950/95 backdrop-blur-xl border-b border-gray-800/50 sticky top-0 z-[100] relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ pointerEvents: "auto" }}>
         <div className="flex justify-between h-16 items-center">
@@ -313,73 +314,74 @@ export default function Navbar() {
           </div>
         )}
 
-        {/* Login Modal */}
-        {showLoginModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[300] overflow-y-auto">
-            <div className="bg-gray-900/95 backdrop-blur-xl border border-gray-700 rounded-2xl p-6 w-full max-w-md my-auto max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-white">Login</h3>
-                <button
-                  onClick={() => {
-                    setShowLoginModal(false);
-                    setError("");
-                    setLoginUsername("");
-                    setLoginPassword("");
-                  }}
-                  className="text-gray-400 hover:text-white transition"
-                >
-                  ✕
-                </button>
-              </div>
+      </div>
+    </nav>
 
-              <div className="space-y-4">
-                <input
-                  type="text"
-                  placeholder="Username"
-                  value={loginUsername}
-                  onChange={(e) => setLoginUsername(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 transition"
-                />
-                
-                <input
-                  type="password"
-                  placeholder="Password"
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 transition"
-                  onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
-                />
-                
-                {error && (
-                  <p className="text-red-400 text-sm text-center">{error}</p>
-                )}
-                
-                <button
-                  onClick={handleLogin}
-                  disabled={loading}
-                  className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-purple-600 to-cyan-500 hover:from-purple-500 hover:to-cyan-400 transition-all disabled:opacity-50"
-                >
-                  {loading ? "Logging in..." : "Login"}
-                </button>
+    {/* Login Modal — rendered outside nav to escape stacking context */}
+    {showLoginModal && (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] overflow-y-auto">
+        <div className="bg-gray-900/95 backdrop-blur-xl border border-gray-700 rounded-2xl p-6 w-full max-w-md my-auto max-h-[90vh] overflow-y-auto">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-white">Login</h3>
+            <button
+              onClick={() => {
+                setShowLoginModal(false);
+                setError("");
+                setLoginUsername("");
+                setLoginPassword("");
+              }}
+              className="text-gray-400 hover:text-white transition"
+            >
+              ✕
+            </button>
+          </div>
 
-                <div className="text-center text-sm text-gray-400 space-y-2">
-                  <div>
-                    Don't have an account?{" "}
-                    <a
-                      href="/predict"
-                      className="text-purple-400 hover:text-purple-300 transition"
-                      onClick={() => setShowLoginModal(false)}
-                    >
-                      Sign up here
-                    </a>
-                  </div>
-                  {/* Account recovery — enable when support email is ready */}
-                </div>
+          <div className="space-y-4">
+            <input
+              type="text"
+              placeholder="Username"
+              value={loginUsername}
+              onChange={(e) => setLoginUsername(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 transition"
+            />
+            
+            <input
+              type="password"
+              placeholder="Password"
+              value={loginPassword}
+              onChange={(e) => setLoginPassword(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 transition"
+              onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+            />
+            
+            {error && (
+              <p className="text-red-400 text-sm text-center">{error}</p>
+            )}
+            
+            <button
+              onClick={handleLogin}
+              disabled={loading}
+              className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-purple-600 to-cyan-500 hover:from-purple-500 hover:to-cyan-400 transition-all disabled:opacity-50"
+            >
+              {loading ? "Logging in..." : "Login"}
+            </button>
+
+            <div className="text-center text-sm text-gray-400 space-y-2">
+              <div>
+                Don&apos;t have an account?{" "}
+                <a
+                  href="/predict"
+                  className="text-purple-400 hover:text-purple-300 transition"
+                  onClick={() => setShowLoginModal(false)}
+                >
+                  Sign up here
+                </a>
               </div>
             </div>
           </div>
-        )}
+        </div>
       </div>
-    </nav>
+    )}
+    </>
   );
 }

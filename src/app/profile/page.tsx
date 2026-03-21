@@ -47,6 +47,12 @@ export default function ProfilePage() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [leavingGroup, setLeavingGroup] = useState<string | null>(null);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
     const savedUser = localStorage.getItem("kickscan_user");
@@ -136,6 +142,50 @@ export default function ProfilePage() {
       alert("Network error. Please try again.");
     } finally {
       setLeavingGroup(null);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setPasswordMessage({ type: "error", text: "All fields are required" });
+      return;
+    }
+    if (newPassword.length < 6) {
+      setPasswordMessage({ type: "error", text: "New password must be at least 6 characters" });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordMessage({ type: "error", text: "New passwords don't match" });
+      return;
+    }
+    setPasswordLoading(true);
+    setPasswordMessage(null);
+    try {
+      const response = await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "change_password",
+          username: user?.username,
+          password: newPassword,
+          currentPassword,
+          newPassword
+        })
+      });
+      const data = await response.json();
+      if (data.success) {
+        setPasswordMessage({ type: "success", text: "Password updated!" });
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+        setTimeout(() => setShowChangePassword(false), 2000);
+      } else {
+        setPasswordMessage({ type: "error", text: data.error || "Failed to update password" });
+      }
+    } catch {
+      setPasswordMessage({ type: "error", text: "Network error" });
+    } finally {
+      setPasswordLoading(false);
     }
   };
 
@@ -398,6 +448,64 @@ export default function ProfilePage() {
                   🏆 View Leaderboard
                 </a>
               </div>
+            </div>
+
+            {/* Change Password */}
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+              {!showChangePassword ? (
+                <button
+                  onClick={() => setShowChangePassword(true)}
+                  className="w-full py-3 px-4 rounded-xl text-center bg-white/10 border border-white/20 hover:bg-white/20 text-gray-300 font-bold transition-all"
+                >
+                  🔑 Change Password
+                </button>
+              ) : (
+                <div className="space-y-3">
+                  <h3 className="text-sm font-bold text-white mb-2">Change Password</h3>
+                  <input
+                    type="password"
+                    placeholder="Current password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 text-sm"
+                  />
+                  <input
+                    type="password"
+                    placeholder="New password (min 6 chars)"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 text-sm"
+                  />
+                  <input
+                    type="password"
+                    placeholder="Confirm new password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleChangePassword()}
+                    className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 text-sm"
+                  />
+                  {passwordMessage && (
+                    <p className={`text-sm text-center ${passwordMessage.type === "success" ? "text-green-400" : "text-red-400"}`}>
+                      {passwordMessage.text}
+                    </p>
+                  )}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleChangePassword}
+                      disabled={passwordLoading}
+                      className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-purple-600 to-cyan-500 hover:from-purple-500 hover:to-cyan-400 transition-all disabled:opacity-50"
+                    >
+                      {passwordLoading ? "Updating..." : "Update Password"}
+                    </button>
+                    <button
+                      onClick={() => { setShowChangePassword(false); setPasswordMessage(null); setCurrentPassword(""); setNewPassword(""); setConfirmPassword(""); }}
+                      className="px-4 py-2.5 rounded-xl text-sm bg-white/10 text-gray-400 hover:bg-white/20 transition"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Logout */}

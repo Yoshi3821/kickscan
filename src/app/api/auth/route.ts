@@ -192,6 +192,48 @@ export async function POST(request: NextRequest) {
         token: user.id
       });
 
+    } else if (action === "change_password") {
+      if (!password) {
+        return NextResponse.json({ error: "New password required" }, { status: 400 });
+      }
+
+      const { currentPassword, newPassword } = body;
+      if (!currentPassword || !newPassword) {
+        return NextResponse.json({ error: "Current password and new password required" }, { status: 400 });
+      }
+
+      if (newPassword.length < 6) {
+        return NextResponse.json({ error: "New password must be at least 6 characters" }, { status: 400 });
+      }
+
+      // Find user by username
+      const { data: user, error } = await supabaseAdmin
+        .from('users')
+        .select('id, password_hash')
+        .eq('username', username.toLowerCase())
+        .single();
+
+      if (error || !user) {
+        return NextResponse.json({ error: "User not found" }, { status: 404 });
+      }
+
+      // Verify current password
+      if (user.password_hash !== hashPassword(currentPassword)) {
+        return NextResponse.json({ error: "Current password is incorrect" }, { status: 401 });
+      }
+
+      // Update password
+      const { error: updateError } = await supabaseAdmin
+        .from('users')
+        .update({ password_hash: hashPassword(newPassword) })
+        .eq('id', user.id);
+
+      if (updateError) {
+        return NextResponse.json({ error: "Failed to update password" }, { status: 500 });
+      }
+
+      return NextResponse.json({ success: true, message: "Password updated successfully" });
+
     } else if (action === "check_username") {
       if (!username) {
         return NextResponse.json({ error: "username required" }, { status: 400 });

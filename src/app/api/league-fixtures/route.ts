@@ -86,14 +86,27 @@ function normalizeTeamName(name: string): string {
     .trim();
 }
 
+// Market data per match: h2h odds + totals + BTTS
+interface MarketData {
+  home: number;
+  draw: number;
+  away: number;
+  totalLine?: number;    // e.g. 2.5
+  overOdds?: number;     // over 2.5 odds
+  underOdds?: number;    // under 2.5 odds
+  bttsYes?: number;      // BTTS Yes odds
+  bttsNo?: number;       // BTTS No odds
+}
+
 // Fetch all league odds in one batch (called once, cached 2h)
-async function fetchBatchOdds(): Promise<Map<string, { home: number; draw: number; away: number }>> {
-  const oddsMap = new Map<string, { home: number; draw: number; away: number }>();
+// Now fetches h2h + totals + BTTS for score modelling
+async function fetchBatchOdds(): Promise<Map<string, MarketData>> {
+  const oddsMap = new Map<string, MarketData>();
   
   const results = await Promise.allSettled(
     ODDS_LEAGUES.map(async (league) => {
       const res = await fetch(
-        `https://api.the-odds-api.com/v4/sports/${league.key}/odds?apiKey=${ODDS_API_KEY}&regions=uk,eu&markets=h2h&oddsFormat=decimal`,
+        `https://api.the-odds-api.com/v4/sports/${league.key}/odds?apiKey=${ODDS_API_KEY}&regions=uk,eu&markets=h2h,totals,btts&oddsFormat=decimal`,
         { next: { revalidate: 7200 } }
       );
       if (!res.ok) return [];
@@ -104,32 +117,70 @@ async function fetchBatchOdds(): Promise<Map<string, { home: number; draw: numbe
   for (const result of results) {
     if (result.status !== "fulfilled" || !Array.isArray(result.value)) continue;
     for (const match of result.value) {
-      // Average odds across all bookmakers
-      let homeTotal = 0, drawTotal = 0, awayTotal = 0, count = 0;
+      let homeTotal = 0, drawTotal = 0, awayTotal = 0, h2hCount = 0;
+      let overTotal = 0, underTotal = 0, totalsCount = 0, totalLine = 2.5;
+      let bttsYesTotal = 0, bttsNoTotal = 0, bttsCount = 0;
+
       for (const bm of (match.bookmakers || [])) {
+        // H2H market
         const h2h = bm.markets?.find((m: any) => m.key === "h2h");
-        if (!h2h) continue;
-        const homePrice = h2h.outcomes?.find((o: any) => o.name === match.home_team)?.price;
-        const awayPrice = h2h.outcomes?.find((o: any) => o.name === match.away_team)?.price;
-        const drawPrice = h2h.outcomes?.find((o: any) => o.name === "Draw")?.price;
-        if (homePrice && awayPrice && drawPrice) {
-          homeTotal += homePrice;
-          drawTotal += drawPrice;
-          awayTotal += awayPrice;
-          count++;
+        if (h2h) {
+          const homePrice = h2h.outcomes?.find((o: any) => o.name === match.home_team)?.price;
+          const awayPrice = h2h.outcomes?.find((o: any) => o.name === match.away_team)?.price;
+          const drawPrice = h2h.outcomes?.find((o: any) => o.name === "Draw")?.price;
+          if (homePrice && awayPrice && drawPrice) {
+            homeTotal += homePrice;
+            drawTotal += drawPrice;
+            awayTotal += awayPrice;
+            h2hCount++;
+          }
+        }
+
+        // Totals market (over/under)
+        const totals = bm.markets?.find((m: any) => m.key === "totals");
+        if (totals) {
+          const over = totals.outcomes?.find((o: any) => o.name === "Over");
+          const under = totals.outcomes?.find((o: any) => o.name === "Under");
+          if (over?.price && under?.price) {
+            overTotal += over.price;
+            underTotal += under.price;
+            if (over.point) totalLine = over.point;
+            totalsCount++;
+          }
+        }
+
+        // BTTS market
+        const btts = bm.markets?.find((m: any) => m.key === "btts");
+        if (btts) {
+          const yes = btts.outcomes?.find((o: any) => o.name === "Yes")?.price;
+          const no = btts.outcomes?.find((o: any) => o.name === "No")?.price;
+          if (yes && no) {
+            bttsYesTotal += yes;
+            bttsNoTotal += no;
+            bttsCount++;
+          }
         }
       }
-      if (count > 0) {
-        const odds = {
-          home: Math.round((homeTotal / count) * 100) / 100,
-          draw: Math.round((drawTotal / count) * 100) / 100,
-          away: Math.round((awayTotal / count) * 100) / 100,
+
+      if (h2hCount > 0) {
+        const data: MarketData = {
+          home: Math.round((homeTotal / h2hCount) * 100) / 100,
+          draw: Math.round((drawTotal / h2hCount) * 100) / 100,
+          away: Math.round((awayTotal / h2hCount) * 100) / 100,
         };
-        // Store under both exact and normalized keys for flexible matching
+        if (totalsCount > 0) {
+          data.totalLine = totalLine;
+          data.overOdds = Math.round((overTotal / totalsCount) * 100) / 100;
+          data.underOdds = Math.round((underTotal / totalsCount) * 100) / 100;
+        }
+        if (bttsCount > 0) {
+          data.bttsYes = Math.round((bttsYesTotal / bttsCount) * 100) / 100;
+          data.bttsNo = Math.round((bttsNoTotal / bttsCount) * 100) / 100;
+        }
         const exactKey = `${match.home_team}|||${match.away_team}`.toLowerCase();
         const normKey = `${normalizeTeamName(match.home_team)}|||${normalizeTeamName(match.away_team)}`;
-        oddsMap.set(exactKey, odds);
-        if (normKey !== exactKey) oddsMap.set(normKey, odds);
+        oddsMap.set(exactKey, data);
+        if (normKey !== exactKey) oddsMap.set(normKey, data);
       }
     }
   }
@@ -241,12 +292,23 @@ export async function GET() {
       const upcomingIds = new Set<number>();
       const results = fixtures.slice(0, 8).map((fixture) => {
         upcomingIds.add(fixture.id);
-        const verdict = generateAutoVerdict(fixture, null, null, [], [], []);
         const league = LEAGUES.find(l => l.id === fixture.league.id);
         
         const exactKey = `${fixture.home.name}|||${fixture.away.name}`.toLowerCase();
         const normKey = `${normalizeTeamName(fixture.home.name)}|||${normalizeTeamName(fixture.away.name)}`;
         const matchOdds = oddsMap.get(exactKey) || oddsMap.get(normKey) || null;
+        
+        // Convert market data to FixtureOdds format + pass market extras
+        const fixtureOdds = matchOdds ? [{ bookmaker: "market_avg", home: matchOdds.home, draw: matchOdds.draw, away: matchOdds.away }] : [];
+        const marketExtras = matchOdds ? {
+          totalLine: matchOdds.totalLine,
+          overOdds: matchOdds.overOdds,
+          underOdds: matchOdds.underOdds,
+          bttsYes: matchOdds.bttsYes,
+          bttsNo: matchOdds.bttsNo,
+        } : undefined;
+        
+        const verdict = generateAutoVerdict(fixture, null, null, [], [], fixtureOdds, marketExtras);
         
         return {
           id: fixture.id,
@@ -264,8 +326,11 @@ export async function GET() {
           riskLevel: verdict.riskLevel,
           confidencePct: verdict.confidencePct,
           predictedScore: verdict.predictedScore,
-          avgOdds: matchOdds,
-          matchStatus: 'NS', // Not started
+          scoreExplanation: verdict.scoreExplanation,
+          alternateScore: verdict.alternateScore,
+          longshotScore: verdict.longshotScore,
+          avgOdds: matchOdds ? { home: matchOdds.home, draw: matchOdds.draw, away: matchOdds.away } : null,
+          matchStatus: 'NS',
         };
       });
 

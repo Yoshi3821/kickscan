@@ -1,5 +1,13 @@
 import type { LeagueFixture, TeamForm, H2HResult, InjuryInfo, FixtureOdds } from './league-api';
 
+export interface MarketExtras {
+  totalLine?: number;
+  overOdds?: number;
+  underOdds?: number;
+  bttsYes?: number;
+  bttsNo?: number;
+}
+
 export interface AutoVerdict {
   fixtureId: number;
   league: string;
@@ -25,6 +33,29 @@ export interface AutoVerdict {
   drawPct: number;
   awayWinPct: number;
   predictedScore: string;
+  scoreExplanation: string;
+  alternateScore?: string;
+  longshotScore?: string;
+}
+
+// Poisson probability: P(X=k) = (λ^k * e^-λ) / k!
+function poissonPmf(lambda: number, k: number): number {
+  let factorial = 1;
+  for (let i = 2; i <= k; i++) factorial *= i;
+  return (Math.pow(lambda, k) * Math.exp(-lambda)) / factorial;
+}
+
+// Build a score probability grid (0-0 to maxGoals-maxGoals)
+function buildScoreGrid(homeXG: number, awayXG: number, maxGoals = 5): { home: number; away: number; prob: number }[] {
+  const grid: { home: number; away: number; prob: number }[] = [];
+  for (let h = 0; h <= maxGoals; h++) {
+    for (let a = 0; a <= maxGoals; a++) {
+      grid.push({ home: h, away: a, prob: poissonPmf(homeXG, h) * poissonPmf(awayXG, a) });
+    }
+  }
+  // Sort by probability descending
+  grid.sort((a, b) => b.prob - a.prob);
+  return grid;
 }
 
 // Team strength ratings for major leagues (simplified)
@@ -171,7 +202,8 @@ export function generateAutoVerdict(
   awayForm: TeamForm | null,
   h2h: H2HResult[],
   injuries: InjuryInfo[],
-  odds: FixtureOdds[]
+  odds: FixtureOdds[],
+  marketExtras?: MarketExtras
 ): AutoVerdict {
   // Calculate team strengths
   const homeStrength = getTeamStrength(fixture.home.name, fixture.league.id);
@@ -302,83 +334,98 @@ export function generateAutoVerdict(
     riskLevel = "VERY HIGH";
   }
   
-  // === PREDICTED SCORE — odds-driven expected goals model ===
-  // 
-  // Use real market odds to derive implied probabilities, then convert
-  // to expected goals using a Poisson-based mapping.
-  // 
-  // Average league match: ~2.6 total goals
-  // Home advantage: +0.3 xG typically
-  //
-  // If odds are available, use them. Otherwise fall back to team strength.
+  // === PREDICTED SCORE — Poisson model from market-implied xG ===
 
   let homeXG: number;
   let awayXG: number;
+  let expectedTotal: number;
+  let bttsProb = 0.5; // default
 
   if (odds.length > 0) {
-    // Derive from market odds — most reliable signal
+    // 1. Derive implied probabilities from 1X2 odds (remove overround)
     const avgHomeOdds = odds.reduce((s, o) => s + o.home, 0) / odds.length;
     const avgDrawOdds = odds.reduce((s, o) => s + o.draw, 0) / odds.length;
     const avgAwayOdds = odds.reduce((s, o) => s + o.away, 0) / odds.length;
+    const rawTotal = 1/avgHomeOdds + 1/avgDrawOdds + 1/avgAwayOdds;
+    const mktHome = (1/avgHomeOdds) / rawTotal;
+    const mktDraw = (1/avgDrawOdds) / rawTotal;
+    const mktAway = (1/avgAwayOdds) / rawTotal;
 
-    // Implied probabilities (remove overround proportionally)
-    const rawHomeProb = 1 / avgHomeOdds;
-    const rawDrawProb = 1 / avgDrawOdds;
-    const rawAwayProb = 1 / avgAwayOdds;
-    const overround = rawHomeProb + rawDrawProb + rawAwayProb;
-    const mktHome = rawHomeProb / overround;
-    const mktDraw = rawDrawProb / overround;
-    const mktAway = rawAwayProb / overround;
+    // 2. Expected total goals from over/under market (most accurate source)
+    if (marketExtras?.overOdds && marketExtras?.underOdds) {
+      const overRaw = 1 / marketExtras.overOdds;
+      const underRaw = 1 / marketExtras.underOdds;
+      const ouOverround = overRaw + underRaw;
+      const overProb = overRaw / ouOverround;
+      const line = marketExtras.totalLine || 2.5;
+      // overProb > 0.5 means market expects more goals than the line
+      // Map: overProb 0.3 → total ~1.8, overProb 0.5 → total ~2.5, overProb 0.7 → total ~3.2
+      expectedTotal = line + (overProb - 0.5) * 3.0;
+    } else {
+      // Fallback: derive from draw probability
+      expectedTotal = Math.max(1.6, Math.min(3.5, 3.8 - (mktDraw * 5.0)));
+    }
+    expectedTotal = Math.max(1.4, Math.min(4.0, expectedTotal));
 
-    // Expected total goals based on draw probability
-    // Higher draw prob = lower-scoring match (tight game)
-    // Typical: drawProb 0.25 → ~2.5 total, drawProb 0.35 → ~1.8 total
-    const expectedTotal = Math.max(1.6, Math.min(3.8, 4.0 - (mktDraw * 6.0)));
+    // 3. BTTS probability from market
+    if (marketExtras?.bttsYes && marketExtras?.bttsNo) {
+      const bttsRaw = 1 / marketExtras.bttsYes;
+      const bttsNoRaw = 1 / marketExtras.bttsNo;
+      bttsProb = bttsRaw / (bttsRaw + bttsNoRaw);
+    }
 
-    // Split total between home and away based on win probabilities
-    // Home gets proportionally more goals when home is favored
-    const homeShare = (mktHome + mktDraw * 0.5) / (mktHome + mktAway + mktDraw);
-    homeXG = expectedTotal * homeShare;
-    awayXG = expectedTotal * (1 - homeShare);
+    // 4. Split expected total between home and away
+    // Use 1X2 probabilities as strength proxy
+    const homeShare = 0.5 + (mktHome - mktAway) * 0.4; // range ~0.3–0.7
+    homeXG = expectedTotal * Math.max(0.3, Math.min(0.7, homeShare));
+    awayXG = expectedTotal - homeXG;
   } else {
-    // Fallback: team strength based (when no odds available)
-    homeXG = 0.8 + ((homeStrength - 50) / 50) * 1.2;
-    awayXG = 0.6 + ((awayStrength - 50) / 50) * 1.0;
+    // Fallback: team strength model
+    homeXG = 0.8 + ((homeStrength - 50) / 50) * 1.0;
+    awayXG = 0.6 + ((awayStrength - 50) / 50) * 0.8;
+    expectedTotal = homeXG + awayXG;
   }
 
-  // Form fine-tuning (small adjustment, ±0.3 max)
-  if (homeForm?.goalsFor) homeXG += Math.min(0.3, (homeForm.goalsFor / 5 - 1.2) * 0.15);
-  if (awayForm?.goalsFor) awayXG += Math.min(0.3, (awayForm.goalsFor / 5 - 1.0) * 0.15);
+  // Form fine-tuning (±0.2 max)
+  if (homeForm?.goalsFor) homeXG += Math.min(0.2, Math.max(-0.2, (homeForm.goalsFor / 5 - 1.2) * 0.1));
+  if (awayForm?.goalsFor) awayXG += Math.min(0.2, Math.max(-0.2, (awayForm.goalsFor / 5 - 1.0) * 0.1));
 
-  // Clamp to realistic range
-  homeXG = Math.max(0.4, Math.min(3.2, homeXG));
-  awayXG = Math.max(0.3, Math.min(2.8, awayXG));
+  // Clamp
+  homeXG = Math.max(0.3, Math.min(3.0, homeXG));
+  awayXG = Math.max(0.2, Math.min(2.5, awayXG));
 
-  // Convert xG to most likely integer scoreline
-  // Use Poisson mode: most probable goal count for a given xG
-  // xG < 0.7 → 0 goals, 0.7-1.4 → 1 goal, 1.4-2.2 → 2 goals, 2.2+ → 3 goals
-  const xgToGoals = (xg: number): number => {
-    if (xg < 0.7) return 0;
-    if (xg < 1.4) return 1;
-    if (xg < 2.2) return 2;
-    return 3;
-  };
+  // 5. Build Poisson score probability grid
+  const scoreGrid = buildScoreGrid(homeXG, awayXG);
 
-  let homeGoals = xgToGoals(homeXG);
-  let awayGoals = xgToGoals(awayXG);
+  // 6. Filter scores consistent with pick, then rank by probability
+  const consistentScores = scoreGrid.filter(s => {
+    if (pickType === "home") return s.home > s.away;
+    if (pickType === "away") return s.away > s.home;
+    return s.home === s.away; // draw
+  });
 
-  // Enforce score consistency with pick
-  if (pickType === "home" && homeGoals <= awayGoals) {
-    homeGoals = awayGoals + 1;
-  } else if (pickType === "away" && awayGoals <= homeGoals) {
-    awayGoals = homeGoals + 1;
-  } else if (pickType === "draw" && homeGoals !== awayGoals) {
-    const avg = Math.max(0, Math.min(2, Math.round((homeGoals + awayGoals) / 2)));
-    homeGoals = avg;
-    awayGoals = avg;
+  // Primary score = highest probability consistent score
+  const primary = consistentScores[0] || { home: pickType === "away" ? 0 : 1, away: pickType === "home" ? 0 : 1, prob: 0 };
+  // Alternate score = second most likely
+  const alternate = consistentScores[1] || null;
+  // Longshot = a higher-total consistent score, only if BTTS is likely or totals are high
+  const longshot = (bttsProb > 0.55 || expectedTotal > 2.8)
+    ? consistentScores.find(s => (s.home + s.away) >= 3 && s.home > 0 && s.away > 0 && s !== primary && s !== alternate) || null
+    : null;
+
+  const predictedScore = `${fixture.home.name} ${primary.home}–${primary.away} ${fixture.away.name}`;
+  const alternateScore = alternate
+    ? `${fixture.home.name} ${alternate.home}–${alternate.away} ${fixture.away.name}`
+    : undefined;
+  const longshotScore = longshot
+    ? `${fixture.home.name} ${longshot.home}–${longshot.away} ${fixture.away.name}`
+    : undefined;
+
+  // 7. Generate explanation
+  let scoreExplanation = `Primary ${primary.home}–${primary.away} is the highest-probability ${pickType === 'home' ? 'home win' : pickType === 'away' ? 'away win' : 'draw'} scoreline from market-implied goal distribution (${Math.round(primary.prob * 100)}% within category).`;
+  if (longshot) {
+    scoreExplanation += ` Longshot ${longshot.home}–${longshot.away} included because ${bttsProb > 0.55 ? 'BTTS market suggests both teams likely to score' : 'high expected total increases tail-score probability'}.`;
   }
-
-  const predictedScore = `${homeGoals}-${awayGoals}`;
   
   const reasoning = generateReasoning(
     fixture, homeForm, awayForm, h2h, injuries, odds,
@@ -410,5 +457,8 @@ export function generateAutoVerdict(
     drawPct,
     awayWinPct,
     predictedScore,
+    scoreExplanation,
+    alternateScore,
+    longshotScore,
   };
 }

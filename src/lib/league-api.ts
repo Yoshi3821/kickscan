@@ -82,14 +82,19 @@ export async function getLeagueFixtures(leagueId: number, next: number = 10): Pr
   const year = new Date().getFullYear();
   const today = new Date().toISOString().split('T')[0];
 
+  // Helper: try current year, fallback to previous year
+  const fetchWithSeasonFallback = async (params: string): Promise<any[]> => {
+    let data = await apiCall(`/fixtures?league=${leagueId}&season=${year}&${params}`).catch(() => []);
+    if (!data || data.length === 0) {
+      data = await apiCall(`/fixtures?league=${leagueId}&season=${year - 1}&${params}`).catch(() => []);
+    }
+    return data || [];
+  };
+
   // Fetch next upcoming + today's matches in parallel
   const [nextData, todayData] = await Promise.all([
-    apiCall(`/fixtures?league=${leagueId}&season=${year}&next=${next}`)
-      .then(d => d || [])
-      .catch(() => apiCall(`/fixtures?league=${leagueId}&season=${year - 1}&next=${next}`).catch(() => [])),
-    apiCall(`/fixtures?league=${leagueId}&date=${today}&season=${year}`)
-      .then(d => d || [])
-      .catch(() => apiCall(`/fixtures?league=${leagueId}&date=${today}&season=${year - 1}`).catch(() => []))
+    fetchWithSeasonFallback(`next=${next}`),
+    fetchWithSeasonFallback(`date=${today}`)
   ]);
 
   // Merge and deduplicate by fixture ID

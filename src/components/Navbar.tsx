@@ -30,6 +30,9 @@ export default function Navbar() {
   const [loginPassword, setLoginPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [forgotMode, setForgotMode] = useState<"" | "password" | "username">("");
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotSuccess, setForgotSuccess] = useState("");
   const pathname = usePathname();
 
   // Check for logged in user on mount + listen for auth changes
@@ -104,6 +107,35 @@ export default function Navbar() {
         setError(data.error || "Login failed");
       }
     } catch (err) {
+      setError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgot = async () => {
+    if (!forgotEmail.trim()) {
+      setError("Please enter your email");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      const response = await fetch("/api/forgot", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: forgotMode === "password" ? "forgot_password" : "forgot_username",
+          email: forgotEmail.trim()
+        })
+      });
+      const data = await response.json();
+      if (data.success) {
+        setForgotSuccess(data.message || "Email sent! Check your inbox.");
+      } else {
+        setError(data.error || "Something went wrong");
+      }
+    } catch {
       setError("Network error. Please try again.");
     } finally {
       setLoading(false);
@@ -323,13 +355,18 @@ export default function Navbar() {
       <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto" style={{ zIndex: 99999 }}>
         <div className="bg-gray-900/95 backdrop-blur-xl border border-gray-700 rounded-2xl p-6 w-full max-w-md my-auto max-h-[90vh] overflow-y-auto">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold text-white">Login</h3>
+            <h3 className="text-lg font-bold text-white">
+              {forgotMode === "password" ? "Reset Password" : forgotMode === "username" ? "Forgot Username" : "Login"}
+            </h3>
             <button
               onClick={() => {
                 setShowLoginModal(false);
                 setError("");
                 setLoginUsername("");
                 setLoginPassword("");
+                setForgotMode("");
+                setForgotEmail("");
+                setForgotSuccess("");
               }}
               className="text-gray-400 hover:text-white transition"
             >
@@ -337,6 +374,55 @@ export default function Navbar() {
             </button>
           </div>
 
+          {/* Forgot Password / Username Flow */}
+          {forgotMode ? (
+            <div className="space-y-4">
+              {forgotSuccess ? (
+                <div className="text-center py-4">
+                  <div className="text-2xl mb-3">✅</div>
+                  <p className="text-green-400 font-bold mb-2">{forgotSuccess}</p>
+                  <p className="text-gray-400 text-sm">Check your email inbox (and spam folder).</p>
+                  <button
+                    onClick={() => { setForgotMode(""); setForgotSuccess(""); setForgotEmail(""); }}
+                    className="mt-4 text-purple-400 hover:text-purple-300 transition text-sm"
+                  >
+                    ← Back to Login
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <p className="text-gray-400 text-sm text-center">
+                    {forgotMode === "password"
+                      ? "Enter your registered email. We'll send a temporary password."
+                      : "Enter your registered email. We'll send your username."}
+                  </p>
+                  <input
+                    type="email"
+                    placeholder="Your registered email"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 transition"
+                    onKeyPress={(e) => e.key === 'Enter' && handleForgot()}
+                  />
+                  {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+                  <button
+                    onClick={handleForgot}
+                    disabled={loading}
+                    className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-purple-600 to-cyan-500 hover:from-purple-500 hover:to-cyan-400 transition-all disabled:opacity-50"
+                  >
+                    {loading ? "Sending..." : "Send Email"}
+                  </button>
+                  <button
+                    onClick={() => { setForgotMode(""); setError(""); setForgotEmail(""); }}
+                    className="w-full text-center text-sm text-gray-400 hover:text-white transition"
+                  >
+                    ← Back to Login
+                  </button>
+                </>
+              )}
+            </div>
+          ) : (
+          /* Normal Login Flow */
           <div className="space-y-4">
             <input
               type="text"
@@ -367,6 +453,17 @@ export default function Navbar() {
               {loading ? "Logging in..." : "Login"}
             </button>
 
+            {/* Forgot links */}
+            <div className="flex justify-center gap-3 text-xs text-gray-500">
+              <button onClick={() => { setForgotMode("password"); setError(""); }} className="hover:text-purple-400 transition">
+                Forgot Password?
+              </button>
+              <span>·</span>
+              <button onClick={() => { setForgotMode("username"); setError(""); }} className="hover:text-purple-400 transition">
+                Forgot Username?
+              </button>
+            </div>
+
             <div className="text-center text-sm text-gray-400 space-y-2">
               <div>
                 Don&apos;t have an account?{" "}
@@ -380,6 +477,7 @@ export default function Navbar() {
               </div>
             </div>
           </div>
+          )}
         </div>
       </div>
     , document.body)}

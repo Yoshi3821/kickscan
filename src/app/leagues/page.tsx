@@ -2,6 +2,7 @@ import { getAllLeagueFixtures, LEAGUES } from '@/lib/league-api';
 import { generateAutoVerdict } from '@/lib/auto-verdict';
 import Link from 'next/link';
 import LeagueFilter from "@/components/LeagueFilter";
+import LeagueTimezone from "@/components/LeagueTimezone";
 import { Suspense } from 'react';
 
 export const revalidate = 3600;
@@ -86,10 +87,8 @@ async function MatchCard({ fixture }: { fixture: any }) {
         </div>
       </div>
 
-      {/* Match info */}
-      <div className="text-sm text-gray-400 mb-4 text-center">
-        {matchTime} • {fixture.venue.name}
-      </div>
+      {/* Match info — timezone-aware via client component */}
+      <LeagueTimezone dateISO={fixture.date} venue={fixture.venue.name} fallbackTime={matchTime} />
 
       {/* Verdict preview */}
       <div className="flex items-center justify-between mb-4">
@@ -199,6 +198,9 @@ export default function LeaguesPage() {
             head-to-head records, and value betting opportunities across all major competitions.
           </p>
         </div>
+
+        {/* Timezone selector */}
+        <LeagueTimezone pickerOnly />
 
         {/* League filters */}
         <LeagueFilter leagues={LEAGUES} />

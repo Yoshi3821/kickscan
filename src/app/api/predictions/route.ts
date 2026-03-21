@@ -18,18 +18,54 @@ export async function GET(request: NextRequest) {
 
     // If settled=true, fetch all settled predictions (for verdict history)
     if (settled === 'true') {
+      // Fetch settled predictions — deduplicate by match_id server-side
       const { data: settledPreds, error: settledError } = await supabase
         .from('predictions')
         .select('*')
         .eq('settled', true)
         .order('created_at', { ascending: false })
-        .limit(limit);
+        .limit(200); // Fetch more to ensure dedup coverage
 
       if (settledError) {
         return NextResponse.json({ error: settledError.message }, { status: 500 });
       }
 
-      return NextResponse.json({ success: true, predictions: settledPreds || [] });
+      // Deduplicate: one record per match_id, prefer entries with team names
+      const matchMap = new Map<string, any>();
+      for (const pred of (settledPreds || [])) {
+        const existing = matchMap.get(pred.match_id);
+        if (!existing) {
+          matchMap.set(pred.match_id, pred);
+        } else {
+          // Prefer the entry that has team names
+          const hasNames = pred.home_team && pred.home_team !== 'Unknown' && pred.home_team !== '';
+          const existingHasNames = existing.home_team && existing.home_team !== 'Unknown' && existing.home_team !== '';
+          if (hasNames && !existingHasNames) {
+            matchMap.set(pred.match_id, pred);
+          }
+        }
+      }
+
+      // Enrich with team names from WC data if missing
+      const deduped = Array.from(matchMap.values()).map((pred: any) => {
+        if ((!pred.home_team || pred.home_team === 'Unknown') && pred.match_id.startsWith('wc_')) {
+          const wcId = pred.match_id.replace('wc_', '');
+          const wcMatch = wcMatchLookup[wcId];
+          if (wcMatch) {
+            pred.home_team = wcMatch.home;
+            pred.away_team = wcMatch.away;
+          }
+        }
+        return pred;
+      });
+
+      // Sort by created_at desc, limit
+      deduped.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      return NextResponse.json({
+        success: true,
+        predictions: deduped.slice(0, limit)
+      });
     }
 
     if (!userId) {

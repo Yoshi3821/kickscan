@@ -256,22 +256,48 @@ function PredictPageContent() {
   useEffect(() => {
     if (!user) return;
 
+    const FINISHED_STATUSES = ['FT', 'AET', 'PEN'];
+    let lastHadFinished = false;
+
+    const triggerSettlement = () => {
+      fetch('/api/settle', { cache: 'no-store' })
+        .then(() => {
+          // Refresh user data after settlement to update points
+          const saved = localStorage.getItem("kickscan_user");
+          if (saved) {
+            try {
+              const d = JSON.parse(saved);
+              if (d.id && d.token) validateSession(d.id, d.token);
+            } catch {}
+          }
+        })
+        .catch(() => {});
+    };
+
     const fetchLiveScores = async () => {
       try {
         const response = await fetch('/api/livescores', { cache: 'no-store' });
         const data = await response.json();
         if (data.matches && Array.isArray(data.matches)) {
           const scores: Record<string, { home: number; away: number; minute: number; status: string }> = {};
+          let hasFinished = false;
           for (const m of data.matches) {
-            // Match by fixture ID for league matches
+            const status = m.status || '';
             scores[`league_${m.fixtureId}`] = {
               home: m.homeGoals ?? 0,
               away: m.awayGoals ?? 0,
               minute: m.minute ?? 0,
-              status: m.status || ''
+              status
             };
+            if (FINISHED_STATUSES.includes(status)) hasFinished = true;
           }
           setLiveScores(scores);
+
+          // Auto-trigger settlement when we first detect finished matches
+          if (hasFinished && !lastHadFinished) {
+            triggerSettlement();
+          }
+          lastHadFinished = hasFinished;
         }
       } catch (err) {
         // Silently fail — live scores are enhancement only
@@ -281,12 +307,9 @@ function PredictPageContent() {
     fetchLiveScores();
     const interval = setInterval(fetchLiveScores, 30000);
 
-    // Settlement polling — check for finished matches every 5 min
-    const triggerSettlement = () => {
-      fetch('/api/settle', { cache: 'no-store' }).catch(() => {});
-    };
+    // Settlement polling — check for finished matches every 2 min (was 5 min)
     triggerSettlement();
-    const settleInterval = setInterval(triggerSettlement, 300000);
+    const settleInterval = setInterval(triggerSettlement, 120000);
 
     return () => {
       clearInterval(interval);
@@ -1359,41 +1382,106 @@ function PredictPageContent() {
                 </div>
 
                 <h2 className="text-2xl font-bold mb-6 text-green-400">⚽ League Matches</h2>
-                {!loadingMatches && leagueMatches.length > 0 && (
-                  <div className="space-y-4 mb-8">
-                    {leagueMatches.slice(0, 10).map((match) => (
-                      <MatchCard
-                        key={`league_${match.id}_${userTz}`}
-                        matchId={`league_${match.id}`}
-                        home={match.homeName}
-                        away={match.awayName}
-                        homeFlag={match.homeLogo || ""}
-                        awayFlag={match.awayLogo || ""}
-                        date={formatDateTime(match.date, userTz)}
-                        time=""
-                        league={match.leagueName}
-                        leagueFlag={match.leagueFlag}
-                        prediction={predictions[`league_${match.id}`]}
-                        boostersRemaining={boostersRemaining}
-                        onPredict={handlePrediction}
-                        kickoffISO={match.date}
-                        liveScore={liveScores[`league_${match.id}`] || match.liveScore || null}
-                        avgOdds={match.avgOdds || null}
-                        signals={(() => {
-                          const s: MatchSignals = {};
-                          if (match.pick) { s.aiPick = match.pick; }
-                          if (match.confidencePct) { s.aiConfidence = match.confidencePct; }
-                          if (match.recommendation) { s.aiVerdict = match.recommendation; }
-                          if (match.avgOdds) {
-                            const o = match.avgOdds;
-                            s.marketFavorite = o.home < o.away ? `${match.homeName} Win` : o.away < o.home ? `${match.awayName} Win` : "Even";
-                          }
-                          return Object.keys(s).length > 0 ? s : null;
-                        })()}
-                      />
-                    ))}
-                  </div>
-                )}
+                {!loadingMatches && leagueMatches.length > 0 && (() => {
+                  const LIVE_STATUSES = ['1H', '2H', 'HT', 'ET', 'P', 'LIVE', 'BT'];
+                  const FINISHED_STATUSES = ['FT', 'AET', 'PEN'];
+                  const TWELVE_HOURS = 12 * 60 * 60 * 1000;
+                  const nowMs = Date.now();
+
+                  const getMatchLiveScore = (match: LeagueMatch) =>
+                    liveScores[`league_${match.id}`] || match.liveScore || null;
+
+                  const liveMatches = leagueMatches.filter((m) => {
+                    const ls = getMatchLiveScore(m);
+                    return ls && LIVE_STATUSES.includes(ls.status);
+                  });
+
+                  const finishedMatches = leagueMatches.filter((m) => {
+                    const ls = getMatchLiveScore(m);
+                    if (!ls || !FINISHED_STATUSES.includes(ls.status)) return false;
+                    // Keep visible for 12 hours after kickoff
+                    const kickoff = new Date(m.date).getTime();
+                    return nowMs - kickoff < TWELVE_HOURS;
+                  });
+
+                  const upcomingMatches = leagueMatches.filter((m) => {
+                    const ls = getMatchLiveScore(m);
+                    const isLive = ls && LIVE_STATUSES.includes(ls.status);
+                    const isFinished = ls && FINISHED_STATUSES.includes(ls.status);
+                    return !isLive && !isFinished;
+                  });
+
+                  const renderMatchCard = (match: LeagueMatch) => (
+                    <MatchCard
+                      key={`league_${match.id}_${userTz}`}
+                      matchId={`league_${match.id}`}
+                      home={match.homeName}
+                      away={match.awayName}
+                      homeFlag={match.homeLogo || ""}
+                      awayFlag={match.awayLogo || ""}
+                      date={formatDateTime(match.date, userTz)}
+                      time=""
+                      league={match.leagueName}
+                      leagueFlag={match.leagueFlag}
+                      prediction={predictions[`league_${match.id}`]}
+                      boostersRemaining={boostersRemaining}
+                      onPredict={handlePrediction}
+                      kickoffISO={match.date}
+                      liveScore={getMatchLiveScore(match)}
+                      avgOdds={match.avgOdds || null}
+                      signals={(() => {
+                        const s: MatchSignals = {};
+                        if (match.pick) { s.aiPick = match.pick; }
+                        if (match.confidencePct) { s.aiConfidence = match.confidencePct; }
+                        if (match.recommendation) { s.aiVerdict = match.recommendation; }
+                        if (match.avgOdds) {
+                          const o = match.avgOdds;
+                          s.marketFavorite = o.home < o.away ? `${match.homeName} Win` : o.away < o.home ? `${match.awayName} Win` : "Even";
+                        }
+                        return Object.keys(s).length > 0 ? s : null;
+                      })()}
+                    />
+                  );
+
+                  return (
+                    <div className="space-y-6 mb-8">
+                      {/* Live Matches */}
+                      {liveMatches.length > 0 && (
+                        <div>
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="relative flex h-2.5 w-2.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span></span>
+                            <h3 className="text-lg font-bold text-green-400">LIVE NOW</h3>
+                          </div>
+                          <div className="space-y-4">
+                            {liveMatches.map(renderMatchCard)}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Upcoming Matches */}
+                      {upcomingMatches.length > 0 && (
+                        <div>
+                          {liveMatches.length > 0 && (
+                            <h3 className="text-lg font-bold text-gray-300 mb-3">📅 Upcoming</h3>
+                          )}
+                          <div className="space-y-4">
+                            {upcomingMatches.slice(0, 10).map(renderMatchCard)}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Finished Matches — visible for 12h */}
+                      {finishedMatches.length > 0 && (
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-400 mb-3">✅ Recent Results</h3>
+                          <div className="space-y-4">
+                            {finishedMatches.map(renderMatchCard)}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </>
             )}
           </div>

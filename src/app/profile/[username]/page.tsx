@@ -175,76 +175,88 @@ export default function PublicProfilePage() {
             </div>
           ) : (
             <div className="space-y-3">
-              {predictions.map((pred, i) => (
-                <div
-                  key={`${pred.match_id}-${i}`}
-                  className={`rounded-xl p-4 border ${
-                    pred.hidden
-                      ? "bg-white/[0.02] border-white/5"
-                      : pred.points_earned > 0
-                      ? "bg-green-500/[0.05] border-green-500/20"
-                      : pred.settled
-                      ? "bg-red-500/[0.03] border-red-500/10"
-                      : "bg-white/[0.03] border-white/10"
-                  }`}
-                >
-                  {/* Match title */}
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="font-bold text-sm text-white">
-                      {pred.match_label || pred.match_id}
+              {predictions.map((pred, i) => {
+                // Safe match label — never show raw IDs
+                const safeLabel = pred.match_label && !pred.match_label.startsWith('league_') && !pred.match_label.startsWith('wc_')
+                  ? pred.match_label
+                  : pred.match_id.startsWith('wc_') ? "World Cup Match" : "League Match";
+
+                const isWin = pred.settled && pred.points_earned > 0;
+                const isLoss = pred.settled && pred.points_earned === 0;
+
+                return (
+                  <div
+                    key={`${pred.match_id}-${i}`}
+                    className={`rounded-xl p-4 border ${
+                      pred.hidden
+                        ? "bg-white/[0.02] border-white/5"
+                        : isWin
+                        ? "bg-green-500/[0.08] border-green-500/25"
+                        : isLoss
+                        ? "bg-red-500/[0.06] border-red-500/20"
+                        : "bg-white/[0.03] border-white/10"
+                    }`}
+                  >
+                    {/* Match title */}
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="font-bold text-white">{safeLabel}</div>
+                      {pred.match_date && (
+                        <span className="text-[10px] text-gray-500">{pred.match_date}</span>
+                      )}
                     </div>
-                    {pred.match_date && (
-                      <span className="text-[10px] text-gray-500">{pred.match_date}</span>
+
+                    {pred.hidden ? (
+                      <div className="text-xs text-gray-500 bg-white/5 px-3 py-1.5 rounded-lg inline-block">
+                        🔒 Hidden until kickoff
+                      </div>
+                    ) : (
+                      <>
+                        {/* Pick + Score */}
+                        <div className="text-sm mb-2">
+                          <span className="text-gray-400">Pick:</span>
+                          <span className="font-semibold text-white ml-1">{resultLabel(pred.predicted_result)}</span>
+                          {pred.predicted_score && (
+                            <>
+                              <span className="text-gray-600 mx-1.5">·</span>
+                              <span className="text-gray-400">Score:</span>
+                              <span className="font-semibold text-white ml-1">{pred.predicted_score}</span>
+                            </>
+                          )}
+                          {pred.boosted && (
+                            <span className="text-purple-400 text-xs ml-2">⚡ Boosted</span>
+                          )}
+                        </div>
+
+                        {/* Result row */}
+                        {pred.settled ? (
+                          <div className="flex items-center justify-between pt-3 border-t border-white/5">
+                            <div>
+                              {pred.actual_score && (
+                                <div className="text-lg font-black text-white">
+                                  Final: <span className={isWin ? "text-green-400" : "text-red-400"}>{pred.actual_score}</span>
+                                </div>
+                              )}
+                            </div>
+                            <div className={`text-sm font-bold px-3 py-1 rounded-lg ${
+                              isWin
+                                ? "bg-green-500/20 text-green-400"
+                                : "bg-red-500/20 text-red-400"
+                            }`}>
+                              {isWin ? `Win · +${pred.points_earned} pts` : "Loss · 0 pts"}
+                            </div>
+                          </div>
+                        ) : pred.source === "verdict_engine" ? (
+                          <div className="text-[10px] text-cyan-400/60 bg-cyan-500/10 px-1.5 py-0.5 rounded inline-block">
+                            AI Engine
+                          </div>
+                        ) : (
+                          <div className="text-xs text-gray-500 pt-2 border-t border-white/5">⏳ Awaiting result</div>
+                        )}
+                      </>
                     )}
                   </div>
-
-                  {pred.hidden ? (
-                    <div className="text-xs text-gray-500 bg-white/5 px-3 py-1.5 rounded-lg inline-block">
-                      🔒 Hidden until kickoff
-                    </div>
-                  ) : (
-                    <>
-                      {/* Pick + Score */}
-                      <div className="flex items-center gap-2 mb-2 text-sm">
-                        <span className="text-gray-300">Pick:</span>
-                        <span className="font-semibold text-white">{resultLabel(pred.predicted_result)}</span>
-                        {pred.predicted_score && (
-                          <>
-                            <span className="text-gray-500 mx-1">·</span>
-                            <span className="text-gray-300">Score:</span>
-                            <span className="font-semibold text-white">{pred.predicted_score}</span>
-                          </>
-                        )}
-                        {pred.boosted && (
-                          <span className="text-purple-400 text-xs ml-1">⚡ Boosted</span>
-                        )}
-                      </div>
-
-                      {/* Result row */}
-                      <div className="flex items-center justify-between">
-                        <div className="text-xs text-gray-400">
-                          {pred.actual_score && (
-                            <span>Final: <span className="text-white font-bold">{pred.actual_score}</span></span>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          {pred.settled ? (
-                            <span className={`text-sm font-bold ${pointsColor(pred.points_earned)}`}>
-                              {pred.points_earned > 0 ? `✅ +${pred.points_earned} pts` : "❌ 0 pts"}
-                            </span>
-                          ) : pred.source === "verdict_engine" ? (
-                            <span className="text-[10px] text-cyan-400/60 bg-cyan-500/10 px-1.5 py-0.5 rounded">
-                              AI Engine
-                            </span>
-                          ) : (
-                            <span className="text-xs text-gray-500">⏳ Awaiting result</span>
-                          )}
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

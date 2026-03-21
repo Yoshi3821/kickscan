@@ -267,13 +267,12 @@ export default function ProfilePage() {
               {predictions.length > 0 ? (
                 <div className="space-y-3">
                   {predictions.map((prediction) => {
-                    const homeName = prediction.home_team && prediction.home_team !== "Unknown" ? prediction.home_team : null;
-                    const awayName = prediction.away_team && prediction.away_team !== "Unknown" ? prediction.away_team : null;
+                    const homeName = prediction.home_team && prediction.home_team !== "Unknown" && prediction.home_team !== "" ? prediction.home_team : null;
+                    const awayName = prediction.away_team && prediction.away_team !== "Unknown" && prediction.away_team !== "" ? prediction.away_team : null;
                     const matchLabel = homeName && awayName
                       ? `${homeName} vs ${awayName}`
-                      : prediction.match_id.startsWith('wc_') ? `WC Match #${prediction.match_id.replace('wc_', '')}`
-                      : prediction.match_id.startsWith('league_') ? `League Match #${prediction.match_id.replace('league_', '')}`
-                      : `Match ${prediction.match_id}`;
+                      : prediction.match_id.startsWith('wc_') ? "World Cup Match"
+                      : "League Match";
                     
                     const pickLabel = prediction.predicted_result === "home"
                       ? `${homeName || "Home"} Win`
@@ -281,18 +280,21 @@ export default function ProfilePage() {
                       ? `${awayName || "Away"} Win`
                       : "Draw";
 
+                    const isWin = prediction.settled && prediction.points_earned > 0;
+                    const isLoss = prediction.settled && prediction.points_earned === 0;
+
                     return (
                       <div key={prediction.id} className={`p-4 border rounded-xl ${
-                        prediction.settled
-                          ? prediction.points_earned > 0
-                            ? "bg-green-500/[0.06] border-green-500/20"
-                            : "bg-red-500/[0.06] border-red-500/20"
+                        isWin
+                          ? "bg-green-500/[0.08] border-green-500/25"
+                          : isLoss
+                          ? "bg-red-500/[0.06] border-red-500/20"
                           : "bg-white/5 border-white/10"
                       }`}>
                         {/* Match title + competition */}
                         <div className="flex items-center justify-between mb-2">
-                          <div className="font-bold text-sm text-white">{matchLabel}</div>
-                          {prediction.competition && (
+                          <div className="font-bold text-white">{matchLabel}</div>
+                          {prediction.competition && prediction.competition !== "Unknown" && (
                             <span className="text-[10px] text-gray-500 bg-white/5 px-2 py-0.5 rounded-full">
                               {prediction.competition}
                             </span>
@@ -300,42 +302,37 @@ export default function ProfilePage() {
                         </div>
 
                         {/* User's pick + predicted score */}
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-base">{getResultIcon(prediction.predicted_result)}</span>
-                          <div className="text-sm">
-                            <span className="text-gray-300">Pick: </span>
-                            <span className="font-semibold text-white">{pickLabel}</span>
-                            <span className="text-gray-500 mx-1.5">·</span>
-                            <span className="text-gray-300">Score: </span>
-                            <span className="font-semibold text-white">{prediction.predicted_score}</span>
-                            {prediction.boosted && (
-                              <span className="ml-2 text-purple-400 text-xs">⚡ Boosted</span>
-                            )}
-                          </div>
+                        <div className="text-sm mb-2">
+                          <span className="text-gray-400">Pick: </span>
+                          <span className="font-semibold text-white">{pickLabel}</span>
+                          <span className="text-gray-600 mx-1.5">·</span>
+                          <span className="text-gray-400">Score: </span>
+                          <span className="font-semibold text-white">{prediction.predicted_score}</span>
+                          {prediction.boosted && (
+                            <span className="ml-2 text-purple-400 text-xs">⚡ Boosted</span>
+                          )}
                         </div>
 
                         {/* Post-match result (if settled) */}
                         {prediction.settled ? (
-                          <div className="flex items-center justify-between pt-2 border-t border-white/5">
-                            <div className="text-xs">
+                          <div className="flex items-center justify-between pt-3 border-t border-white/5">
+                            <div>
                               {prediction.actual_score && (
-                                <span className="text-gray-400">
-                                  Final score: <span className="text-white font-bold">{prediction.actual_score}</span>
-                                </span>
+                                <div className="text-lg font-black text-white">
+                                  Final: <span className={isWin ? "text-green-400" : "text-red-400"}>{prediction.actual_score}</span>
+                                </div>
                               )}
                             </div>
-                            <div className={`text-sm font-bold ${
-                              prediction.points_earned > 0 ? "text-green-400" : "text-red-400"
+                            <div className={`text-sm font-bold px-3 py-1 rounded-lg ${
+                              isWin
+                                ? "bg-green-500/20 text-green-400"
+                                : "bg-red-500/20 text-red-400"
                             }`}>
-                              {prediction.points_earned > 0 ? (
-                                <>✅ +{prediction.points_earned} pts</>
-                              ) : (
-                                <>❌ Wrong</>
-                              )}
+                              {isWin ? `Win · +${prediction.points_earned} pts` : "Loss · 0 pts"}
                             </div>
                           </div>
                         ) : (
-                          <div className="text-xs text-gray-500 pt-1">⏳ Awaiting result</div>
+                          <div className="text-xs text-gray-500 pt-2 border-t border-white/5">⏳ Awaiting result</div>
                         )}
                       </div>
                     );

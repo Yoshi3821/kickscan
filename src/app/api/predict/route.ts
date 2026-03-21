@@ -80,6 +80,115 @@ export async function GET(request: NextRequest) {
   }
 }
 
+/**
+ * DELETE /api/predict — cancel a pending prediction
+ * Body: { userId, token, matchId }
+ * Only allowed if match hasn't started (>5 min to kickoff).
+ */
+export async function DELETE(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { userId, token, matchId } = body;
+
+    if (!userId || !token || !matchId) {
+      return NextResponse.json({ error: "userId, token, and matchId required" }, { status: 400 });
+    }
+
+    // Validate user
+    const { data: user, error: userError } = await supabaseAdmin
+      .from('users')
+      .select('id, total_predictions, boosters_used_today, last_booster_date')
+      .eq('id', token)
+      .single();
+
+    if (userError || !user || user.id !== userId) {
+      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    }
+
+    // Fetch the prediction
+    const { data: prediction, error: predError } = await supabaseAdmin
+      .from('predictions')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('match_id', matchId)
+      .single();
+
+    if (predError || !prediction) {
+      return NextResponse.json({ error: "Prediction not found" }, { status: 404 });
+    }
+
+    // Cannot cancel settled predictions
+    if (prediction.settled) {
+      return NextResponse.json({ error: "Cannot cancel a settled prediction" }, { status: 400 });
+    }
+
+    // Check kickoff time — for league matches, use the fixture API
+    if (matchId.startsWith('league_')) {
+      const fixtureId = matchId.replace('league_', '');
+      try {
+        const res = await fetch(
+          `https://v3.football.api-sports.io/fixtures?id=${fixtureId}`,
+          {
+            headers: { 'x-apisports-key': '3408fed656308fb4ade76a6b3212a975' },
+            next: { revalidate: 300 }
+          }
+        );
+        const data = await res.json();
+        const fixture = data.response?.[0];
+        if (fixture) {
+          const status = fixture.fixture?.status?.short || 'NS';
+          if (['1H', '2H', 'HT', 'ET', 'P', 'FT', 'AET', 'PEN', 'LIVE', 'BT'].includes(status)) {
+            return NextResponse.json({ error: "Match is live or finished — cannot cancel" }, { status: 400 });
+          }
+          const kickoff = new Date(fixture.fixture?.date).getTime();
+          const now = Date.now();
+          if (now >= kickoff - 5 * 60 * 1000) {
+            return NextResponse.json({ error: "Too late — match starts in less than 5 minutes" }, { status: 400 });
+          }
+        }
+      } catch {
+        // If we can't verify, allow cancel (safe default for user)
+      }
+    }
+
+    // Delete the prediction
+    const { error: deleteError } = await supabaseAdmin
+      .from('predictions')
+      .delete()
+      .eq('id', prediction.id);
+
+    if (deleteError) {
+      console.error("Error deleting prediction:", deleteError);
+      return NextResponse.json({ error: "Failed to cancel prediction" }, { status: 500 });
+    }
+
+    // Update user stats — decrement total_predictions
+    const newTotal = Math.max(0, (user.total_predictions || 1) - 1);
+    const userUpdates: any = { total_predictions: newTotal };
+
+    // Refund booster if applicable (same day)
+    const today = new Date().toISOString().split('T')[0];
+    if (prediction.boosted && user.last_booster_date === today && user.boosters_used_today > 0) {
+      userUpdates.boosters_used_today = user.boosters_used_today - 1;
+    }
+
+    await supabaseAdmin
+      .from('users')
+      .update(userUpdates)
+      .eq('id', userId);
+
+    return NextResponse.json({
+      success: true,
+      cancelled: matchId,
+      boosterRefunded: !!prediction.boosted && userUpdates.boosters_used_today !== undefined
+    });
+
+  } catch (err) {
+    console.error("DELETE prediction error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();

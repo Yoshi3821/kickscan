@@ -139,6 +139,12 @@ function PredictPageContent() {
   // Live scores for match cards
   const [liveScores, setLiveScores] = useState<Record<string, { home: number; away: number; minute: number; status: string }>>({});
 
+  // Pending picks modal
+  const [showPicksModal, setShowPicksModal] = useState(false);
+  const [pendingPicks, setPendingPicks] = useState<any[]>([]);
+  const [loadingPicks, setLoadingPicks] = useState(false);
+  const [cancellingPick, setCancellingPick] = useState<string | null>(null);
+
   // Initialize timezone
   useEffect(() => {
     setUserTz(getUserTimezone());
@@ -519,6 +525,61 @@ function PredictPageContent() {
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     alert("Copied to clipboard!");
+  };
+
+  const openPicksModal = async () => {
+    setShowPicksModal(true);
+    setLoadingPicks(true);
+    try {
+      const response = await fetch(`/api/predictions?userId=${userId}&limit=30`);
+      const data = await response.json();
+      if (data.predictions) {
+        // Show unsettled (pending) first, then settled
+        const sorted = data.predictions.sort((a: any, b: any) => {
+          if (a.settled !== b.settled) return a.settled ? 1 : -1;
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        });
+        setPendingPicks(sorted);
+      }
+    } catch {
+      setPendingPicks([]);
+    } finally {
+      setLoadingPicks(false);
+    }
+  };
+
+  const cancelPick = async (matchId: string) => {
+    if (!confirm("Cancel this prediction? This cannot be undone.")) return;
+    setCancellingPick(matchId);
+    try {
+      const response = await fetch('/api/predict', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, token, matchId })
+      });
+      const data = await response.json();
+      if (data.success) {
+        // Remove from local list
+        setPendingPicks(prev => prev.filter(p => p.match_id !== matchId));
+        // Remove from predictions state
+        setPredictions(prev => {
+          const next = { ...prev };
+          delete next[matchId];
+          return next;
+        });
+        // Refresh user data
+        validateSession(userId, token);
+        if (data.boosterRefunded) {
+          setBoostersRemaining(prev => Math.min(prev + 1, 2));
+        }
+      } else {
+        alert(data.error || "Failed to cancel prediction");
+      }
+    } catch {
+      alert("Network error. Please try again.");
+    } finally {
+      setCancellingPick(null);
+    }
   };
 
   const handleRegister = async () => {
@@ -1039,7 +1100,11 @@ function PredictPageContent() {
               </div>
               <div className="text-[10px] md:text-xs text-gray-500">Win Rate</div>
             </div>
-            <div className="text-center">
+            <button onClick={openPicksModal} className="text-center cursor-pointer hover:opacity-80 transition">
+              <div className="text-lg md:text-xl font-bold text-blue-400">{user.predictions}</div>
+              <div className="text-[10px] md:text-xs text-gray-500">Picks ›</div>
+            </button>
+            <div className="text-center hidden md:block">
               <div className="text-lg md:text-xl font-bold text-orange-400">{user.currentStreak}</div>
               <div className="text-[10px] md:text-xs text-gray-500">Streak</div>
             </div>
@@ -1051,10 +1116,6 @@ function PredictPageContent() {
               <div className="text-lg md:text-xl font-bold text-purple-400">{boostersRemaining}</div>
               <div className="text-[10px] md:text-xs text-gray-500">Boosters</div>
             </div>
-            <a href="/profile" className="text-center hidden md:block cursor-pointer hover:opacity-80 transition">
-              <div className="text-lg md:text-xl font-bold text-blue-400">{user.predictions}</div>
-              <div className="text-[10px] md:text-xs text-gray-500">Picks</div>
-            </a>
           </div>
         </div>
 
@@ -1667,6 +1728,143 @@ function PredictPageContent() {
                   Leave Group
                 </button>
               </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Pending Picks Modal (#59) */}
+        {showPicksModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[300] overflow-y-auto">
+            <div className="bg-gray-900/95 backdrop-blur-xl border border-gray-700 rounded-2xl p-6 w-full max-w-lg my-auto max-h-[85vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-5">
+                <h3 className="text-lg font-bold text-white">📋 My Picks</h3>
+                <button
+                  onClick={() => setShowPicksModal(false)}
+                  className="text-gray-400 hover:text-white transition text-xl"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {loadingPicks ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="h-20 bg-white/5 rounded-xl animate-pulse" />
+                  ))}
+                </div>
+              ) : pendingPicks.length === 0 ? (
+                <div className="text-center py-8 text-gray-400">
+                  No predictions yet. Start predicting!
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {pendingPicks.map((pick) => {
+                    const homeName = pick.home_team && pick.home_team !== "Unknown" && pick.home_team !== "" ? pick.home_team : null;
+                    const awayName = pick.away_team && pick.away_team !== "Unknown" && pick.away_team !== "" ? pick.away_team : null;
+                    const matchLabel = homeName && awayName
+                      ? `${homeName} vs ${awayName}`
+                      : pick.match_id.startsWith('wc_') ? "World Cup Match"
+                      : "League Match";
+
+                    const pickLabel = pick.predicted_result === "home"
+                      ? `${homeName || "Home"} Win`
+                      : pick.predicted_result === "away"
+                      ? `${awayName || "Away"} Win`
+                      : "Draw";
+
+                    const isSettled = pick.settled;
+                    const isWin = isSettled && pick.points_earned > 0;
+                    const isLoss = isSettled && pick.points_earned === 0;
+                    const isPending = !isSettled;
+
+                    // Check if cancel is possible — match not in liveScores as live/finished
+                    const ls = liveScores[pick.match_id];
+                    const LIVE_STATUSES_M = ['1H', '2H', 'HT', 'ET', 'P', 'LIVE', 'BT'];
+                    const FINISHED_STATUSES_M = ['FT', 'AET', 'PEN'];
+                    const isMatchLive = ls && LIVE_STATUSES_M.includes(ls.status);
+                    const isMatchFinished = ls && FINISHED_STATUSES_M.includes(ls.status);
+                    const canCancel = isPending && !isMatchLive && !isMatchFinished;
+
+                    return (
+                      <div
+                        key={pick.id || pick.match_id}
+                        className={`p-4 border rounded-xl ${
+                          isWin ? "bg-green-500/[0.08] border-green-500/25"
+                          : isLoss ? "bg-red-500/[0.06] border-red-500/20"
+                          : isMatchLive ? "bg-amber-500/[0.06] border-amber-500/20"
+                          : "bg-white/5 border-white/10"
+                        }`}
+                      >
+                        {/* Match name */}
+                        <div className="font-bold text-white text-sm mb-1">{matchLabel}</div>
+
+                        {/* Pick + Score */}
+                        <div className="text-sm text-gray-300 mb-2">
+                          Pick: <span className="text-white font-semibold">{pickLabel}</span>
+                          <span className="text-gray-600 mx-1.5">·</span>
+                          Score: <span className="text-white font-semibold">{pick.predicted_score}</span>
+                          {pick.boosted && <span className="text-purple-400 text-xs ml-2">⚡</span>}
+                        </div>
+
+                        {/* Status + action */}
+                        {isSettled ? (
+                          <div className="flex items-center justify-between">
+                            {pick.actual_score && (
+                              <span className="text-sm font-bold text-white">
+                                Final: <span className={isWin ? "text-green-400" : "text-red-400"}>{pick.actual_score}</span>
+                              </span>
+                            )}
+                            <span className={`text-xs font-bold px-2 py-0.5 rounded-lg ${
+                              isWin ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
+                            }`}>
+                              {isWin ? `Win · +${pick.points_earned} pts` : "Loss · 0 pts"}
+                            </span>
+                          </div>
+                        ) : isMatchLive ? (
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                              <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span></span>
+                              <span className="text-xs text-green-400 font-bold">
+                                {ls ? `${ls.home}-${ls.away} (${ls.minute}')` : "LIVE"}
+                              </span>
+                            </div>
+                            <span className="text-[10px] text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-lg">
+                              🔒 Locked
+                            </span>
+                          </div>
+                        ) : canCancel ? (
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-gray-500">⏳ Pending</span>
+                            <button
+                              onClick={() => cancelPick(pick.match_id)}
+                              disabled={cancellingPick === pick.match_id}
+                              className="px-3 py-1 rounded-lg text-xs bg-red-500/20 text-red-400 hover:bg-red-500/30 transition border border-red-500/30 disabled:opacity-50"
+                            >
+                              {cancellingPick === pick.match_id ? "Cancelling..." : "Cancel Pick"}
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-gray-500">⏳ Pending</span>
+                            <span className="text-[10px] text-gray-500 bg-white/5 px-2 py-0.5 rounded-lg">
+                              🔒 Locked
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div className="mt-4 text-center">
+                <button
+                  onClick={() => setShowPicksModal(false)}
+                  className="px-6 py-2 rounded-xl text-sm bg-white/10 text-gray-300 hover:bg-white/20 transition"
+                >
+                  Close
+                </button>
               </div>
             </div>
           </div>

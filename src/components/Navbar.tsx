@@ -203,7 +203,7 @@ export default function Navbar() {
                 </button>
                 <a
                   href="/predict"
-                  className="text-[11px] font-bold text-white bg-gradient-to-r from-purple-600 to-cyan-500 hover:from-purple-500 hover:to-cyan-400 px-4 py-2 rounded-lg transition-all uppercase tracking-wide"
+                  className="text-[11px] font-black text-amber-400 hover:text-yellow-300 transition uppercase tracking-widest"
                 >
                   Sign Up
                 </a>

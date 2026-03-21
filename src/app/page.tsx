@@ -348,27 +348,23 @@ export default function HomePage() {
             <div className="mb-8">
               <h3 className="text-xl font-bold text-center mb-6">🏆 LEADERBOARD</h3>
               <div className="space-y-3">
-                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <span className="text-lg">🥇</span>
-                    <span className="font-bold text-yellow-400">#1 DragonKing</span>
-                  </div>
-                  <span className="text-xl font-bold text-yellow-400">847 pts</span>
-                </div>
                 <div className="flex items-center justify-between p-4 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/30 rounded-xl">
                   <div className="flex items-center gap-3">
                     <span className="text-lg">🧠</span>
-                    <span className="font-bold text-cyan-400">#2 KickScan AI</span>
+                    <span className="font-bold text-cyan-400">#1 KickScan AI</span>
                   </div>
-                  <span className="text-xl font-bold text-cyan-400">781 pts</span>
+                  <span className="text-xl font-bold text-cyan-400">—</span>
                 </div>
                 <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl">
                   <div className="flex items-center gap-3">
-                    <span className="text-lg">🥉</span>
-                    <span className="font-bold text-gray-300">#3 MessiFanatic</span>
+                    <span className="text-lg">🥇</span>
+                    <span className="font-bold text-yellow-400">Can you beat the AI?</span>
                   </div>
-                  <span className="text-lg font-bold text-gray-300">723 pts</span>
+                  <span className="text-sm font-bold text-gray-400">Your spot →</span>
                 </div>
+              </div>
+              <div className="text-center mt-4">
+                <a href="/leaderboard" className="text-xs text-purple-400 hover:text-purple-300 transition">View Live Leaderboard →</a>
               </div>
             </div>
 

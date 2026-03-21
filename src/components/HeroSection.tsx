@@ -187,7 +187,7 @@ export default function HeroSection() {
         {/* Trust badges */}
         <div className="animate-fade-in-up flex flex-wrap justify-center gap-5 sm:gap-8 mb-10" style={{ animationDelay: "0.4s" }}>
           {[
-            { icon: "🧠", text: "72 Matches Analyzed" },
+            { icon: "🧠", text: "72 WC + League Matches" },
             { icon: "📊", text: "30+ Bookmakers" },
             { icon: "🗳️", text: "Fan Sentiment" },
           ].map((b) => (

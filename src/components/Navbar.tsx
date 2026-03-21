@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 
 const links = [
   { href: "/verdicts", label: "🎯 WC Verdicts", isNew: true },
-  { href: "/leagues", label: "⚽ Leagues" },
+  { href: "/leagues", label: "⚽ Major Leagues" },
   { href: "/predict", label: "🎮 Predict", isHot: true },
   { href: "/leaderboard", label: "🏆 Leaderboard" },
   { href: "/matches", label: "WC Fixtures" },

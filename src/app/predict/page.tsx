@@ -1064,17 +1064,23 @@ function PredictPageContent() {
     <main className="min-h-screen bg-[#06060f] text-white">
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header — compact on mobile */}
-        <div className="text-center mb-5">
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">🎮 Predict & Compete</h1>
-          <p className="text-base md:text-xl text-gray-400">Predict match results, earn points, beat the AI</p>
+        <div className="text-center mb-6">
+          <h1 className="text-3xl md:text-4xl font-bold mb-1">🎮 Predict & Compete</h1>
+          <p className="text-sm md:text-xl text-gray-400">Predict match results, earn points, beat the AI</p>
         </div>
 
-        {/* User Stats Bar — grid layout for mobile */}
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 md:p-6 mb-5">
-          {/* Player name row */}
-          <div className="flex items-center justify-between mb-3 pb-3 border-b border-white/5">
-            <div className="text-base font-bold">{selectedAvatar} {user.username}</div>
-            <div className="flex items-center gap-1.5 text-xs text-gray-500">
+        {/* User Stats Bar — premium layout */}
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 md:p-6 mb-6">
+          {/* Player name + timezone — single row */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">{selectedAvatar}</span>
+              <div>
+                <div className="text-sm font-bold text-white">{user.username}</div>
+                <div className="text-[10px] text-gray-500">Rank #{user.rank || 0}</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5 text-[10px] text-gray-500 bg-white/5 px-2 py-1 rounded-lg">
               <span>🕐 {getTimezoneLabel(userTz)}</span>
               <button
                 onClick={() => setShowTzPicker(!showTzPicker)}
@@ -1084,37 +1090,37 @@ function PredictPageContent() {
               </button>
             </div>
           </div>
-          {/* Stats grid — 4 cols on mobile, 7 on desktop */}
-          <div className="grid grid-cols-4 md:grid-cols-7 gap-2 md:gap-4">
-            <div className="text-center">
+          {/* Stats grid — 2 rows of 3 on mobile, 1 row of 7 on desktop */}
+          <div className="grid grid-cols-3 md:grid-cols-7 gap-3 md:gap-4">
+            <div className="text-center bg-white/[0.03] rounded-xl py-2">
               <div className="text-lg md:text-xl font-bold text-green-400">{user.totalPoints}</div>
               <div className="text-[10px] md:text-xs text-gray-500">Points</div>
             </div>
-            <div className="text-center">
-              <div className="text-lg md:text-xl font-bold text-purple-400">#{user.rank || 0}</div>
-              <div className="text-[10px] md:text-xs text-gray-500">Rank</div>
-            </div>
-            <div className="text-center">
+            <div className="text-center bg-white/[0.03] rounded-xl py-2">
               <div className="text-lg md:text-xl font-bold text-white">
                 {user.predictions > 0 ? Math.round((user.correctResults / user.predictions) * 100) : 0}%
               </div>
               <div className="text-[10px] md:text-xs text-gray-500">Win Rate</div>
             </div>
-            <button onClick={openPicksModal} className="text-center cursor-pointer hover:opacity-80 transition">
+            <button onClick={openPicksModal} className="text-center bg-white/[0.03] rounded-xl py-2 cursor-pointer hover:bg-white/[0.06] transition">
               <div className="text-lg md:text-xl font-bold text-blue-400">{user.predictions}</div>
               <div className="text-[10px] md:text-xs text-gray-500">Picks ›</div>
             </button>
-            <div className="text-center hidden md:block">
-              <div className="text-lg md:text-xl font-bold text-orange-400">{user.currentStreak}</div>
+            <div className="text-center bg-white/[0.03] rounded-xl py-2">
+              <div className="text-lg md:text-xl font-bold text-orange-400">🔥{user.currentStreak}</div>
               <div className="text-[10px] md:text-xs text-gray-500">Streak</div>
             </div>
-            <div className="text-center hidden md:block">
+            <div className="text-center bg-white/[0.03] rounded-xl py-2">
+              <div className="text-lg md:text-xl font-bold text-purple-400">{boostersRemaining}</div>
+              <div className="text-[10px] md:text-xs text-gray-500">Boosters</div>
+            </div>
+            <div className="text-center bg-white/[0.03] rounded-xl py-2">
               <div className="text-lg md:text-xl font-bold text-cyan-400">{userGroups.length}</div>
               <div className="text-[10px] md:text-xs text-gray-500">Groups</div>
             </div>
-            <div className="text-center hidden md:block">
-              <div className="text-lg md:text-xl font-bold text-purple-400">{boostersRemaining}</div>
-              <div className="text-[10px] md:text-xs text-gray-500">Boosters</div>
+            <div className="text-center hidden md:block bg-white/[0.03] rounded-xl py-2">
+              <div className="text-lg md:text-xl font-bold text-gray-300">{user.bestStreak}</div>
+              <div className="text-[10px] md:text-xs text-gray-500">Best Streak</div>
             </div>
           </div>
         </div>

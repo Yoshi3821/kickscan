@@ -254,7 +254,7 @@ export async function GET(request: NextRequest) {
         correctScores: user.correct_scores || 0,
         currentStreak: user.current_streak,
         bestStreak: user.best_streak,
-        boostersUsedToday: user.boosters_used_today,
+        boostersUsedToday: user.last_booster_date === new Date().toISOString().split('T')[0] ? user.boosters_used_today : 0,
         rank: rank,
         created_at: user.created_at
       }

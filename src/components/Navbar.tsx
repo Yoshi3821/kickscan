@@ -154,9 +154,9 @@ export default function Navbar() {
     <>
     <nav className="bg-gray-950/95 backdrop-blur-xl border-b border-gray-800/50 sticky top-0 z-[100] relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ pointerEvents: "auto" }}>
-        <div className="flex justify-between h-[56px] sm:h-[64px] lg:h-[72px] items-center">
+        <div className="flex justify-between h-[80px] sm:h-[90px] lg:h-[100px] items-center">
           <a href="/" className="flex items-center relative z-[200] cursor-pointer" style={{ pointerEvents: "auto" }}>
-            <img src="/logo-header.png" alt="KickScan" className="h-[48px] sm:h-[56px] lg:h-[64px] w-auto" />
+            <img src="/logo-header.png" alt="KickScan" className="w-[240px] sm:w-[300px] lg:w-[360px] h-auto" />
           </a>
 
           <div className="hidden lg:flex items-center gap-6">

@@ -7,7 +7,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
           <div>
             <div className="mb-4">
-              <img src="/logo-header.png" alt="KickScan" className="h-7 w-auto" />
+              <img src="/logo-header.png" alt="KickScan" className="h-12 w-auto" style={{ mixBlendMode: "lighten" }} />
             </div>
             <p className="text-gray-400 text-sm leading-relaxed">
               AI-powered betting intelligence for FIFA World Cup 2026.

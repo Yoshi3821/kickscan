@@ -22,12 +22,24 @@ export async function GET(request: NextRequest) {
       return getAIProfile();
     }
 
-    // Fetch user
-    const { data: user, error: userError } = await supabaseAdmin
+    // Fetch user — try exact match first, then case-insensitive
+    let { data: user, error: userError } = await supabaseAdmin
       .from("users")
       .select("id, username, total_points, total_predictions, correct_results, correct_scores, current_streak, best_streak, created_at")
       .eq("username", username)
       .single();
+
+    // If not found, try case-insensitive via ilike
+    if (userError || !user) {
+      const { data: userCI, error: errorCI } = await supabaseAdmin
+        .from("users")
+        .select("id, username, total_points, total_predictions, correct_results, correct_scores, current_streak, best_streak, created_at")
+        .ilike("username", username)
+        .limit(1)
+        .single();
+      user = userCI;
+      userError = errorCI;
+    }
 
     if (userError || !user) {
       return NextResponse.json({ error: "Player not found" }, { status: 404 });

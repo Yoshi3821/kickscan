@@ -14,6 +14,24 @@ export async function GET(request: NextRequest) {
     const userId = searchParams.get('userId');
     const limit = parseInt(searchParams.get('limit') || '10');
 
+    const settled = searchParams.get('settled');
+
+    // If settled=true, fetch all settled predictions (for verdict history)
+    if (settled === 'true') {
+      const { data: settledPreds, error: settledError } = await supabase
+        .from('predictions')
+        .select('*')
+        .eq('settled', true)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (settledError) {
+        return NextResponse.json({ error: settledError.message }, { status: 500 });
+      }
+
+      return NextResponse.json({ success: true, predictions: settledPreds || [] });
+    }
+
     if (!userId) {
       return NextResponse.json({ error: 'Missing userId parameter' }, { status: 400 });
     }

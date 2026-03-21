@@ -251,11 +251,12 @@ export async function GET(request: NextRequest) {
         totalPoints: user.total_points,
         predictions: user.total_predictions,
         correctResults: user.correct_results,
-        correctScores: user.correct_scores,
+        correctScores: user.correct_scores || 0,
         currentStreak: user.current_streak,
         bestStreak: user.best_streak,
         boostersUsedToday: user.boosters_used_today,
-        rank: rank
+        rank: rank,
+        created_at: user.created_at
       }
     });
 

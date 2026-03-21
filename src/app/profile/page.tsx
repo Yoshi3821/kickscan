@@ -145,7 +145,10 @@ export default function ProfilePage() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+    if (!dateString) return "—";
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return "—";
+    return d.toLocaleDateString("en-US", {
       year: "numeric",
       month: "long", 
       day: "numeric"
@@ -392,10 +395,10 @@ export default function ProfilePage() {
                   🎮 Make Predictions
                 </a>
                 <a
-                  href="/predict"
+                  href="/leaderboard"
                   className="block w-full py-3 px-4 rounded-xl text-center bg-white/10 border border-white/20 hover:bg-white/20 text-gray-300 font-bold transition-all"
                 >
-                  👥 View Leaderboard
+                  🏆 View Leaderboard
                 </a>
               </div>
             </div>

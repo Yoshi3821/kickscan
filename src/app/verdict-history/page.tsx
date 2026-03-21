@@ -30,7 +30,7 @@ interface LeagueVerdict {
 }
 
 export default function AIVerdictPage() {
-  const [activeSection, setActiveSection] = useState<"league" | "wc">("league");
+  const [activeSection, setActiveSection] = useState<"league" | "wc" | "history">("league");
   const [filterGroup, setFilterGroup] = useState<string>("all");
   const [filterRec, setFilterRec] = useState<string>("all");
   const [leagueVerdicts, setLeagueVerdicts] = useState<LeagueVerdict[]>([]);
@@ -111,6 +111,16 @@ export default function AIVerdictPage() {
             }`}
           >
             🏆 World Cup 2026
+          </button>
+          <button
+            onClick={() => setActiveSection("history")}
+            className={`px-6 py-3 rounded-xl font-bold transition-all ${
+              activeSection === "history"
+                ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                : "text-gray-300 hover:bg-white/10"
+            }`}
+          >
+            📋 Verdict History
           </button>
         </div>
 
@@ -312,7 +322,104 @@ export default function AIVerdictPage() {
             )}
           </div>
         )}
+
+        {/* VERDICT HISTORY SECTION — past settled predictions */}
+        {activeSection === "history" && (
+          <VerdictHistorySection />
+        )}
       </div>
     </main>
+  );
+}
+
+function VerdictHistorySection() {
+  const [history, setHistory] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Fetch settled predictions with results
+    fetch("/api/predictions?settled=true&limit=30")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.predictions) setHistory(data.predictions);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="space-y-3">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-20 bg-white/5 rounded-xl animate-pulse" />
+        ))}
+      </div>
+    );
+  }
+
+  if (history.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <div className="text-4xl mb-4">📋</div>
+        <h3 className="text-xl font-bold text-white mb-2">No Verdict History Yet</h3>
+        <p className="text-gray-400 text-sm">
+          Past match results and AI verdict accuracy will appear here once matches are settled.
+        </p>
+        <p className="text-gray-500 text-xs mt-2">
+          League matches settle automatically after full time. World Cup starts June 11, 2026.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="text-center mb-6">
+        <p className="text-gray-500 text-sm">
+          Past matches — AI prediction vs actual result
+        </p>
+      </div>
+      <div className="space-y-3">
+        {history.map((pred: any, i: number) => {
+          const isCorrect = pred.points_earned > 0;
+          return (
+            <div
+              key={pred.id || i}
+              className={`p-4 rounded-xl border ${
+                isCorrect
+                  ? "bg-green-500/[0.06] border-green-500/20"
+                  : "bg-red-500/[0.04] border-red-500/15"
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="font-bold text-sm text-white">
+                  {pred.home_team && pred.away_team
+                    ? `${pred.home_team} vs ${pred.away_team}`
+                    : pred.match_id}
+                </div>
+                <span className={`text-sm font-bold ${isCorrect ? "text-green-400" : "text-red-400"}`}>
+                  {isCorrect ? `✅ +${pred.points_earned} pts` : "❌ Wrong"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-xs text-gray-400">
+                <div>
+                  <span>Pick: </span>
+                  <span className="text-white font-medium">
+                    {pred.predicted_result === "home" ? (pred.home_team || "Home") + " Win"
+                      : pred.predicted_result === "away" ? (pred.away_team || "Away") + " Win"
+                      : "Draw"} — {pred.predicted_score}
+                  </span>
+                </div>
+                <div>
+                  {pred.actual_score && (
+                    <span>Final: <span className="text-white font-bold">{pred.actual_score}</span></span>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }

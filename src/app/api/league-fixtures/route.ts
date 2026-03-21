@@ -193,21 +193,57 @@ async function getOddsApiFallback(): Promise<any[]> {
   return allMatches.slice(0, 6);
 }
 
+// Fetch today's live/finished fixtures from API-Football
+async function getTodayFixtures(): Promise<any[]> {
+  const today = new Date().toISOString().split('T')[0];
+  const LEAGUE_IDS = [39, 140, 135, 78, 2]; // EPL, La Liga, Serie A, Bundesliga, UCL
+  const allFixtures: any[] = [];
+  
+  for (const leagueId of LEAGUE_IDS) {
+    try {
+      const res = await fetch(
+        `https://v3.football.api-sports.io/fixtures?league=${leagueId}&date=${today}&season=${new Date().getFullYear()}`,
+        {
+          headers: { 'x-apisports-key': '3408fed656308fb4ade76a6b3212a975' },
+          next: { revalidate: 300 } // 5 min cache for live data
+        }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        if (data.response) {
+          for (const item of data.response) {
+            const status = item.fixture?.status?.short || '';
+            // Include live, HT, finished, and not started
+            if (['1H', '2H', 'HT', 'ET', 'P', 'FT', 'AET', 'PEN', 'NS'].includes(status)) {
+              allFixtures.push(item);
+            }
+          }
+        }
+      }
+    } catch {}
+  }
+  return allFixtures;
+}
+
 export async function GET() {
   try {
-    // Fetch odds in parallel (one batch call, cached 2h)
+    // Fetch odds + today's fixtures in parallel
     const oddsMapPromise = fetchBatchOdds().catch(() => new Map());
+    const todayFixturesPromise = getTodayFixtures().catch(() => []);
     
-    // Try API-Football first
+    // Try API-Football for upcoming
     const fixtures = await getAllLeagueFixtures(12);
     const oddsMap = await oddsMapPromise;
+    const todayFixtures = await todayFixturesPromise;
     
-    if (fixtures.length > 0) {
-      const results = fixtures.slice(0, 6).map((fixture) => {
+    if (fixtures.length > 0 || todayFixtures.length > 0) {
+      // Build upcoming results
+      const upcomingIds = new Set<number>();
+      const results = fixtures.slice(0, 8).map((fixture) => {
+        upcomingIds.add(fixture.id);
         const verdict = generateAutoVerdict(fixture, null, null, [], [], []);
         const league = LEAGUES.find(l => l.id === fixture.league.id);
         
-        // Match odds by team names (try exact first, then normalized)
         const exactKey = `${fixture.home.name}|||${fixture.away.name}`.toLowerCase();
         const normKey = `${normalizeTeamName(fixture.home.name)}|||${normalizeTeamName(fixture.away.name)}`;
         const matchOdds = oddsMap.get(exactKey) || oddsMap.get(normKey) || null;
@@ -229,8 +265,58 @@ export async function GET() {
           confidencePct: verdict.confidencePct,
           predictedScore: verdict.predictedScore,
           avgOdds: matchOdds,
+          matchStatus: 'NS', // Not started
         };
       });
+
+      // Add today's live/finished fixtures that aren't already in upcoming
+      for (const item of todayFixtures) {
+        const fixtureId = item.fixture?.id;
+        if (!fixtureId || upcomingIds.has(fixtureId)) continue;
+        
+        const status = item.fixture?.status?.short || 'NS';
+        if (status === 'NS') continue; // Skip not-started (already in upcoming)
+        
+        const leagueObj = LEAGUES.find(l => l.id === item.league?.id);
+        const exactKey = `${item.teams?.home?.name}|||${item.teams?.away?.name}`.toLowerCase();
+        const normKey = `${normalizeTeamName(item.teams?.home?.name || '')}|||${normalizeTeamName(item.teams?.away?.name || '')}`;
+        
+        results.push({
+          id: fixtureId,
+          leagueName: item.league?.name || 'League',
+          leagueLogo: item.league?.logo || '',
+          leagueFlag: leagueObj?.flag || '⚽',
+          homeName: item.teams?.home?.name || 'Home',
+          awayName: item.teams?.away?.name || 'Away',
+          homeLogo: item.teams?.home?.logo || '',
+          awayLogo: item.teams?.away?.logo || '',
+          date: item.fixture?.date || new Date().toISOString(),
+          recommendation: 'SKIP',
+          pick: '',
+          valueRating: 1,
+          riskLevel: 'MEDIUM',
+          confidencePct: 0,
+          predictedScore: '',
+          avgOdds: oddsMap.get(exactKey) || oddsMap.get(normKey) || null,
+          matchStatus: status,
+          liveScore: {
+            home: item.goals?.home ?? 0,
+            away: item.goals?.away ?? 0,
+            minute: item.fixture?.status?.elapsed ?? 0,
+            status: status,
+          },
+        } as any);
+      }
+
+      // Sort: live first, then upcoming by date, then finished last
+      const statusOrder: Record<string, number> = { '1H': 0, '2H': 0, 'HT': 0, 'ET': 0, 'P': 0, 'NS': 1, 'FT': 2, 'AET': 2, 'PEN': 2 };
+      results.sort((a, b) => {
+        const aOrder = statusOrder[a.matchStatus || 'NS'] ?? 1;
+        const bOrder = statusOrder[b.matchStatus || 'NS'] ?? 1;
+        if (aOrder !== bOrder) return aOrder - bOrder;
+        return new Date(a.date).getTime() - new Date(b.date).getTime();
+      });
+
       return NextResponse.json(results);
     }
     

@@ -59,6 +59,8 @@ interface LeagueMatch {
   recommendation?: string;
   pick?: string;
   confidencePct?: number;
+  matchStatus?: string;
+  liveScore?: { home: number; away: number; minute: number; status: string } | null;
 }
 
 interface MatchSignals {
@@ -278,7 +280,18 @@ function PredictPageContent() {
 
     fetchLiveScores();
     const interval = setInterval(fetchLiveScores, 30000);
-    return () => clearInterval(interval);
+
+    // Settlement polling — check for finished matches every 5 min
+    const triggerSettlement = () => {
+      fetch('/api/settle', { cache: 'no-store' }).catch(() => {});
+    };
+    triggerSettlement();
+    const settleInterval = setInterval(triggerSettlement, 300000);
+
+    return () => {
+      clearInterval(interval);
+      clearInterval(settleInterval);
+    };
   }, [user]);
 
   const validateSession = async (uid: string, tok: string) => {
@@ -1015,10 +1028,10 @@ function PredictPageContent() {
               <div className="text-lg md:text-xl font-bold text-purple-400">{boostersRemaining}</div>
               <div className="text-[10px] md:text-xs text-gray-500">Boosters</div>
             </div>
-            <div className="text-center hidden md:block">
+            <a href="/profile" className="text-center hidden md:block cursor-pointer hover:opacity-80 transition">
               <div className="text-lg md:text-xl font-bold text-blue-400">{user.predictions}</div>
               <div className="text-[10px] md:text-xs text-gray-500">Picks</div>
-            </div>
+            </a>
           </div>
         </div>
 
@@ -1364,7 +1377,7 @@ function PredictPageContent() {
                         boostersRemaining={boostersRemaining}
                         onPredict={handlePrediction}
                         kickoffISO={match.date}
-                        liveScore={liveScores[`league_${match.id}`] || null}
+                        liveScore={liveScores[`league_${match.id}`] || match.liveScore || null}
                         avgOdds={match.avgOdds || null}
                         signals={(() => {
                           const s: MatchSignals = {};

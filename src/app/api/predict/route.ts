@@ -230,9 +230,7 @@ export async function POST(request: NextRequest) {
         match_id: matchId,
         predicted_result: predictedResult,
         predicted_score: predictedScore || '',
-        correct_score_entered: !!(predictedScore && predictedScore.trim()),
         boosted: useBooster || false,
-        booster_used: useBooster || false,
         created_at: now,
         settled: false,
         points_earned: 0
@@ -306,5 +304,9 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     console.error("POST prediction error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}}l server error" }, { status: 500 });
+  }
+}}r error" }, { status: 500 });
   }
 }}

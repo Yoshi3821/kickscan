@@ -103,6 +103,13 @@ export async function runSettlement(): Promise<SettleResult> {
             awayGoals: fixture.goals?.away ?? 0,
             status,
           };
+        } else if (['PST', 'CANC', 'ABD', 'AWD', 'WO'].includes(status)) {
+          // Postponed/Cancelled/Abandoned/Awarded/Walkover — void the prediction
+          fixtureResults[fixtureId] = {
+            homeGoals: -1,
+            awayGoals: -1,
+            status,
+          };
         }
       }
     } catch (e: any) {
@@ -128,6 +135,44 @@ export async function runSettlement(): Promise<SettleResult> {
     }
 
     if (!isFinished || actualHome === null || actualAway === null) continue;
+
+    // Handle voided matches (postponed, cancelled, etc.)
+    if (actualHome === -1 && actualAway === -1) {
+      // Void: settle with 0 points, refund booster if used
+      const { error: voidError } = await supabaseAdmin
+        .from('predictions')
+        .update({
+          settled: true,
+          actual_result: 'void',
+          actual_score: 'VOID',
+          points_earned: 0,
+        })
+        .eq('id', pred.id)
+        .eq('settled', false);
+
+      if (voidError) {
+        errors.push(`Failed to void ${pred.id}: ${voidError.message}`);
+        continue;
+      }
+
+      // Refund booster if used
+      if (pred.boosted) {
+        const { data: userData } = await supabaseAdmin
+          .from('users')
+          .select('boosters')
+          .eq('id', pred.user_id)
+          .single();
+        if (userData) {
+          await supabaseAdmin
+            .from('users')
+            .update({ boosters: (userData.boosters || 0) + 1 })
+            .eq('id', pred.user_id);
+        }
+      }
+
+      settledCount++;
+      continue;
+    }
 
     // Calculate actual result
     const actualResult =

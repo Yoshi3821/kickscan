@@ -177,7 +177,6 @@ export async function POST(request: NextRequest) {
           }, { status: 400 });
         }
         updateData.boosted = true;
-        updateData.booster_used = true;
 
         // Update user's booster count
         const newBoostersUsed = user.last_booster_date === today ? user.boosters_used_today + 1 : 1;

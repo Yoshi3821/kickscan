@@ -10,6 +10,13 @@ export interface MarketExtras {
   ahHomeOdds?: number;
   ahAwayOdds?: number;
   ahDerived?: boolean;   // true if derived from 1X2, false if real spreads data
+  // API-Football predictions (external ML model)
+  apiPrediction?: {
+    homePct: number;
+    drawPct: number;
+    awayPct: number;
+    advice: string;
+  };
 }
 
 export interface AutoVerdict {
@@ -329,16 +336,41 @@ export function generateAutoVerdict(
       else { btA = mA + 0.02; btH = mH - 0.02; }
     }
 
+    // API-Football prediction layer (external ML model)
+    let predH = mH, predD = mD, predA = mA;
+    const apiPred = marketExtras?.apiPrediction;
+    if (apiPred && apiPred.homePct + apiPred.drawPct + apiPred.awayPct > 0) {
+      predH = apiPred.homePct / 100;
+      predD = apiPred.drawPct / 100;
+      predA = apiPred.awayPct / 100;
+    }
+
     // Weighted blend
-    // Market: 40%, AH-adjusted: 20%, O/U: 15%, BTTS: 10%, Strength: 10%, Form: 5%
-    homeProb = mH * 0.40 + ahH * 0.20 + ouH * 0.15 + btH * 0.10 + strengthHome * 0.10 + (strengthHome + formHome) * 0.05;
-    drawProb = mD * 0.40 + ahD * 0.20 + ouD * 0.15 + btD * 0.10 + strengthDraw * 0.10 + strengthDraw * 0.05;
-    awayProb = mA * 0.40 + ahA * 0.20 + ouA * 0.15 + btA * 0.10 + strengthAway * 0.10 + (strengthAway + formAway) * 0.05;
+    // Market: 35%, AH: 18%, API-Football Pred: 12%, O/U: 12%, BTTS: 8%, Strength: 10%, Form: 5%
+    const hasApiPred = apiPred && apiPred.homePct + apiPred.drawPct + apiPred.awayPct > 0;
+    if (hasApiPred) {
+      homeProb = mH * 0.35 + ahH * 0.18 + predH * 0.12 + ouH * 0.12 + btH * 0.08 + strengthHome * 0.10 + (strengthHome + formHome) * 0.05;
+      drawProb = mD * 0.35 + ahD * 0.18 + predD * 0.12 + ouD * 0.12 + btD * 0.08 + strengthDraw * 0.10 + strengthDraw * 0.05;
+      awayProb = mA * 0.35 + ahA * 0.18 + predA * 0.12 + ouA * 0.12 + btA * 0.08 + strengthAway * 0.10 + (strengthAway + formAway) * 0.05;
+    } else {
+      // No API prediction — redistribute its 12% to market (40%) + AH (20%)
+      homeProb = mH * 0.42 + ahH * 0.23 + ouH * 0.12 + btH * 0.08 + strengthHome * 0.10 + (strengthHome + formHome) * 0.05;
+      drawProb = mD * 0.42 + ahD * 0.23 + ouD * 0.12 + btD * 0.08 + strengthDraw * 0.10 + strengthDraw * 0.05;
+      awayProb = mA * 0.42 + ahA * 0.23 + ouA * 0.12 + btA * 0.08 + strengthAway * 0.10 + (strengthAway + formAway) * 0.05;
+    }
   } else {
-    // No market data — fallback to strength + form only
-    homeProb = strengthHome + formHome;
-    drawProb = strengthDraw;
-    awayProb = strengthAway + formAway;
+    // No market data — use API prediction + strength + form
+    const apiPred = marketExtras?.apiPrediction;
+    if (apiPred && apiPred.homePct + apiPred.drawPct + apiPred.awayPct > 0) {
+      const pH = apiPred.homePct / 100, pD = apiPred.drawPct / 100, pA = apiPred.awayPct / 100;
+      homeProb = pH * 0.50 + strengthHome * 0.35 + (strengthHome + formHome) * 0.15;
+      drawProb = pD * 0.50 + strengthDraw * 0.35 + strengthDraw * 0.15;
+      awayProb = pA * 0.50 + strengthAway * 0.35 + (strengthAway + formAway) * 0.15;
+    } else {
+      homeProb = strengthHome + formHome;
+      drawProb = strengthDraw;
+      awayProb = strengthAway + formAway;
+    }
   }
 
   // Normalize
@@ -386,12 +418,14 @@ export function generateAutoVerdict(
 
   // Data quality score (0-1) — affects confidence
   let dataQuality = 0;
-  if (hasOdds) dataQuality += 0.5;
-  if (ahLine !== undefined && !ahDerived) dataQuality += 0.2; // real AH data
-  else if (ahLine !== undefined) dataQuality += 0.1; // derived AH
-  if (marketExtras?.overOdds) dataQuality += 0.1;
-  if (marketExtras?.bttsYes) dataQuality += 0.05;
-  if (homeForm) dataQuality += 0.1;
+  if (hasOdds) dataQuality += 0.35;
+  if (ahLine !== undefined && !ahDerived) dataQuality += 0.15; // real AH data
+  else if (ahLine !== undefined) dataQuality += 0.08; // derived AH
+  if (marketExtras?.overOdds) dataQuality += 0.08;
+  if (marketExtras?.bttsYes) dataQuality += 0.04;
+  if (marketExtras?.apiPrediction) dataQuality += 0.10; // API-Football ML
+  if (homeForm) dataQuality += 0.10;
+  if (awayForm) dataQuality += 0.05;
   if (h2h.length > 0) dataQuality += 0.05;
 
   // Confidence: blend of pick probability + data quality

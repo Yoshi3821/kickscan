@@ -1,4 +1,5 @@
 import { getAllLeagueFixtures, LEAGUES } from "@/lib/league-api";
+import type { TeamForm, InjuryInfo } from "@/lib/league-api";
 import { generateAutoVerdict } from "@/lib/auto-verdict";
 import { NextResponse } from "next/server";
 
@@ -110,6 +111,124 @@ interface MarketData {
   bookmakerCount?: number;
   consensusLevel?: "strong" | "moderate" | "split";  // how much bookmakers agree
   marketFavorite?: string; // "home" | "draw" | "away"
+}
+
+// ── Batched league enrichment (form + injuries) ──
+// 1 standings call per league → form for ALL teams
+// 1 injuries call per league → injuries for ALL fixtures today
+// Total: ~10 calls for 5 leagues (vs 40+ per-fixture calls)
+
+const API_FOOTBALL_KEY = '3408fed656308fb4ade76a6b3212a975';
+
+interface LeagueFormMap {
+  [teamName: string]: TeamForm;
+}
+
+interface LeagueInjuryMap {
+  [teamName: string]: InjuryInfo[];
+}
+
+interface BatchEnrichment {
+  formMap: LeagueFormMap;
+  injuryMap: LeagueInjuryMap;
+}
+
+function getSeasonForLeague(leagueId: number): number {
+  const year = new Date().getFullYear();
+  const month = new Date().getMonth(); // 0-indexed
+  const crossYearLeagues = [39, 140, 135, 78, 2];
+  return crossYearLeagues.includes(leagueId) && month < 7 ? year - 1 : year;
+}
+
+// Fetch standings for one league → form data for all teams (1 API call)
+async function fetchLeagueForm(leagueId: number): Promise<LeagueFormMap> {
+  const season = getSeasonForLeague(leagueId);
+  const formMap: LeagueFormMap = {};
+  try {
+    const res = await fetch(
+      `https://v3.football.api-sports.io/standings?league=${leagueId}&season=${season}`,
+      {
+        headers: { 'x-apisports-key': API_FOOTBALL_KEY },
+        next: { revalidate: 7200 }, // 2h cache — standings change slowly
+      }
+    );
+    if (!res.ok) return formMap;
+    const data = await res.json();
+    const standings = data.response?.[0]?.league?.standings?.[0] || [];
+    for (const entry of standings) {
+      const name = entry.team?.name;
+      if (!name) continue;
+      formMap[name] = {
+        form: (entry.form || 'NNNNN').slice(-5),
+        played: entry.all?.played || 0,
+        wins: entry.all?.win || 0,
+        draws: entry.all?.draw || 0,
+        losses: entry.all?.lose || 0,
+        goalsFor: entry.all?.goals?.for || 0,
+        goalsAgainst: entry.all?.goals?.against || 0,
+      };
+    }
+  } catch {}
+  return formMap;
+}
+
+// Fetch injuries for one league today (1 API call)
+async function fetchLeagueInjuries(leagueId: number): Promise<LeagueInjuryMap> {
+  const season = getSeasonForLeague(leagueId);
+  const today = new Date().toISOString().split('T')[0];
+  const injuryMap: LeagueInjuryMap = {};
+  try {
+    const res = await fetch(
+      `https://v3.football.api-sports.io/injuries?league=${leagueId}&season=${season}&date=${today}`,
+      {
+        headers: { 'x-apisports-key': API_FOOTBALL_KEY },
+        next: { revalidate: 3600 }, // 1h cache
+      }
+    );
+    if (!res.ok) return injuryMap;
+    const data = await res.json();
+    for (const item of (data.response || [])) {
+      const teamName = item.team?.name;
+      if (!teamName) continue;
+      if (!injuryMap[teamName]) injuryMap[teamName] = [];
+      injuryMap[teamName].push({
+        player: item.player?.name || 'Unknown',
+        team: teamName,
+        reason: item.player?.reason || 'Injury',
+      });
+    }
+  } catch {}
+  return injuryMap;
+}
+
+// Batch fetch form + injuries for all leagues in parallel (10 calls total)
+async function fetchBatchEnrichment(): Promise<BatchEnrichment> {
+  const LEAGUE_IDS = [39, 140, 135, 78, 2];
+
+  const [formResults, injuryResults] = await Promise.all([
+    Promise.allSettled(LEAGUE_IDS.map(id => fetchLeagueForm(id))),
+    Promise.allSettled(LEAGUE_IDS.map(id => fetchLeagueInjuries(id))),
+  ]);
+
+  // Merge all league form maps into one
+  const formMap: LeagueFormMap = {};
+  for (const result of formResults) {
+    if (result.status === 'fulfilled') {
+      Object.assign(formMap, result.value);
+    }
+  }
+
+  // Merge all league injury maps into one
+  const injuryMap: LeagueInjuryMap = {};
+  for (const result of injuryResults) {
+    if (result.status === 'fulfilled') {
+      for (const [team, injuries] of Object.entries(result.value)) {
+        injuryMap[team] = [...(injuryMap[team] || []), ...injuries];
+      }
+    }
+  }
+
+  return { formMap, injuryMap };
 }
 
 // Fetch all league odds in one batch (called once, cached 2h)
@@ -375,27 +494,41 @@ async function getTodayFixtures(): Promise<any[]> {
 
 export async function GET() {
   try {
-    // Fetch odds + today's fixtures in parallel
+    // Fetch odds + today's fixtures + enrichment (form/injuries) in parallel
     const oddsMapPromise = fetchBatchOdds().catch(() => new Map());
     const todayFixturesPromise = getTodayFixtures().catch(() => []);
+    const enrichmentPromise = fetchBatchEnrichment().catch((): BatchEnrichment => ({ formMap: {}, injuryMap: {} }));
     
     // Try API-Football for upcoming
     const fixtures = await getAllLeagueFixtures(12);
-    const oddsMap = await oddsMapPromise;
-    const todayFixtures = await todayFixturesPromise;
+    const [oddsMap, todayFixtures, enrichment] = await Promise.all([
+      oddsMapPromise, todayFixturesPromise, enrichmentPromise,
+    ]);
     
     if (fixtures.length > 0 || todayFixtures.length > 0) {
-      // Build upcoming results
+      // Build upcoming results with batched enrichment (form + injuries from league-level calls)
       const upcomingIds = new Set<number>();
-      const results = fixtures.slice(0, 8).map((fixture) => {
+      const upcomingFixtures = fixtures.slice(0, 8);
+      
+      const results = upcomingFixtures.map((fixture) => {
         upcomingIds.add(fixture.id);
         const league = LEAGUES.find(l => l.id === fixture.league.id);
+        
+        // Look up form from batched standings data
+        const homeForm = enrichment.formMap[fixture.home.name] || null;
+        const awayForm = enrichment.formMap[fixture.away.name] || null;
+        
+        // Look up injuries from batched league injury data
+        const homeInjuries = enrichment.injuryMap[fixture.home.name] || [];
+        const awayInjuries = enrichment.injuryMap[fixture.away.name] || [];
+        const allInjuries = [...homeInjuries, ...awayInjuries];
         
         const exactKey = `${fixture.home.name}|||${fixture.away.name}`.toLowerCase();
         const normKey = `${normalizeTeamName(fixture.home.name)}|||${normalizeTeamName(fixture.away.name)}`;
         const matchOdds = oddsMap.get(exactKey) || oddsMap.get(normKey) || null;
         
         // Convert market data to FixtureOdds format + pass market extras
+        // Note: H2H and API-Football predictions are NOT fetched at list level (saved for detail page)
         const fixtureOdds = matchOdds ? [{ bookmaker: "market_avg", home: matchOdds.home, draw: matchOdds.draw, away: matchOdds.away }] : [];
         const marketExtras = matchOdds ? {
           totalLine: matchOdds.totalLine,
@@ -409,7 +542,16 @@ export async function GET() {
           ahDerived: matchOdds.ahDerived,
         } : undefined;
         
-        const verdict = generateAutoVerdict(fixture, null, null, [], [], fixtureOdds, marketExtras);
+        const verdict = generateAutoVerdict(
+          fixture,
+          homeForm,
+          awayForm,
+          [],        // H2H: detail page only
+          allInjuries,
+          fixtureOdds,
+          marketExtras,
+          // apiPrediction: detail page only
+        );
         
         return {
           id: fixture.id,

@@ -1,8 +1,11 @@
 import { getFixtureById, getTeamForm, getH2H, getInjuries, getFixtureOdds } from '@/lib/league-api';
 import { generateAutoVerdict } from '@/lib/auto-verdict';
+import type { MarketExtras } from '@/lib/auto-verdict';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import LeagueMatchClient from './LeagueMatchClient';
+
+const API_FOOTBALL_KEY = '3408fed656308fb4ade76a6b3212a975';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -66,8 +69,37 @@ export default async function LeagueMatchPage({ params }: { params: Promise<{ id
       // Continue with null data — verdict will still work
     }
 
-    // Generate AI verdict
-    const verdict = generateAutoVerdict(fixture, homeFormData, awayFormData, h2hData, injuries, odds);
+    // Fetch API-Football prediction (detail page only — adds ML cross-check)
+    let apiPrediction: MarketExtras['apiPrediction'] = undefined;
+    try {
+      const predRes = await fetch(
+        `https://v3.football.api-sports.io/predictions?fixture=${fixtureId}`,
+        {
+          headers: { 'x-apisports-key': API_FOOTBALL_KEY },
+          next: { revalidate: 21600 }, // 6h cache
+        }
+      );
+      if (predRes.ok) {
+        const predData = await predRes.json();
+        const pred = predData.response?.[0]?.predictions;
+        if (pred) {
+          apiPrediction = {
+            homePct: parseInt(pred.percent?.home || '33'),
+            drawPct: parseInt(pred.percent?.draw || '33'),
+            awayPct: parseInt(pred.percent?.away || '33'),
+            advice: pred.advice || '',
+          };
+        }
+      }
+    } catch {}
+
+    // Build market extras for verdict engine (detail page gets API prediction)
+    const marketExtras: MarketExtras = {
+      ...(apiPrediction ? { apiPrediction } : {}),
+    };
+
+    // Generate AI verdict with full enrichment
+    const verdict = generateAutoVerdict(fixture, homeFormData, awayFormData, h2hData, injuries, odds, marketExtras);
 
     return (
       <main className="min-h-screen bg-dot-pattern">

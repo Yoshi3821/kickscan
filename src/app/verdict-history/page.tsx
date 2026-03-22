@@ -382,14 +382,15 @@ function VerdictHistorySection() {
     );
   }
 
-  // Calculate accuracy stats
-  const totalMatches = history.length;
-  const aiCorrect = history.filter((p) => p.points_earned > 0).length;
+  // Calculate accuracy stats (exclude voided matches)
+  const nonVoidHistory = history.filter((p: any) => p.actual_result !== 'void');
+  const totalMatches = nonVoidHistory.length;
+  const aiCorrect = nonVoidHistory.filter((p: any) => p.points_earned > 0).length;
   const aiWinRate = totalMatches > 0 ? Math.round((aiCorrect / totalMatches) * 100) : 0;
 
   // Market accuracy: check if stored market_favorite matched actual result
-  const matchesWithMarket = history.filter((p) => p.market_favorite);
-  const marketCorrect = matchesWithMarket.filter((p) => p.market_favorite === p.actual_result).length;
+  const matchesWithMarket = nonVoidHistory.filter((p: any) => p.market_favorite);
+  const marketCorrect = matchesWithMarket.filter((p: any) => p.market_favorite === p.actual_result).length;
   const marketWinRate = matchesWithMarket.length > 0 ? Math.round((marketCorrect / matchesWithMarket.length) * 100) : null;
 
   return (
@@ -439,7 +440,8 @@ function VerdictHistorySection() {
 
       <div className="space-y-3">
         {history.map((pred: any) => {
-          const isCorrect = pred.points_earned > 0;
+          const isVoid = pred.actual_result === 'void';
+          const isCorrect = !isVoid && pred.points_earned > 0;
           const isExpanded = expandedMatch === pred.match_id;
 
           // Safe match label
@@ -466,7 +468,9 @@ function VerdictHistorySection() {
             <div
               key={pred.match_id}
               className={`rounded-xl border overflow-hidden transition-all ${
-                isCorrect
+                isVoid
+                  ? "bg-gray-500/[0.06] border-gray-500/20"
+                  : isCorrect
                   ? "bg-green-500/[0.08] border-green-500/25"
                   : "bg-red-500/[0.06] border-red-500/20"
               }`}
@@ -484,23 +488,37 @@ function VerdictHistorySection() {
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    {pred.actual_score && (
+                    {pred.actual_score && !isVoid && (
                       <div className="text-lg font-black">
                         <span className={isCorrect ? "text-green-400" : "text-red-400"}>{pred.actual_score}</span>
                       </div>
                     )}
                     <div className={`text-xs font-bold px-2.5 py-1 rounded-lg ${
-                      isCorrect ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
+                      isVoid
+                        ? "bg-gray-500/20 text-gray-300"
+                        : isCorrect ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
                     }`}>
-                      {isCorrect ? "Win" : "Loss"}
+                      {isVoid ? "Void" : isCorrect ? "Win" : "Loss"}
                     </div>
                     <span className="text-gray-500 text-xs">{isExpanded ? "▲" : "▼"}</span>
                   </div>
                 </div>
               </button>
 
-              {/* Expanded details */}
-              {isExpanded && (() => {
+              {/* Expanded details — void */}
+              {isExpanded && isVoid && (
+                <div className="px-4 pb-4 border-t border-white/5 pt-3">
+                  <div className="text-sm text-gray-400 text-center py-2">
+                    Match postponed / cancelled — prediction voided · 0 pts
+                    {pred.boosted && (
+                      <span className="ml-1 text-purple-400">· ⚡ Booster refunded</span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Expanded details — normal */}
+              {isExpanded && !isVoid && (() => {
                 const marketFav = pred.market_favorite;
                 const marketFavLabel = marketFav === "home" ? `${homeName || "Home"} Win`
                   : marketFav === "away" ? `${awayName || "Away"} Win`

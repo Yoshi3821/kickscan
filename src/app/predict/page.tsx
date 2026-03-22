@@ -1607,7 +1607,7 @@ function PredictPageContent() {
                   <p className="text-purple-400 font-bold">⚡ DAILY BOOSTER (×2)</p>
                   <p className="text-xs text-gray-400 mt-1">
                     2 per day • doubles base pts<br />
-                    Does NOT apply to score bonus<br />
+                    Does NOT apply to CS bonus or penalties<br />
                     Use wisely — pick your best!
                   </p>
                 </div>

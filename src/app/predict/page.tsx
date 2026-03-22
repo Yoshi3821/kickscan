@@ -641,9 +641,7 @@ function PredictPageContent() {
         localStorage.setItem("kickscan_user", JSON.stringify(userData));
         window.dispatchEvent(new Event("kickscan_auth_change"));
         
-        // Fetch full user data
-        validateSession(data.user.id, data.token);
-        fetchLeaderboard();
+        // Skip expensive validation - registration already returns full user data
       } else {
         setError(data.error || "Registration failed");
       }

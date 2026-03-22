@@ -127,10 +127,10 @@ async function handleOddsLocking() {
 
   } catch (error) {
     console.error('Odds locking error:', error);
-    return {
+    return NextResponse.json({
       success: false,
       error: 'Failed to lock odds'
-    };
+    });
   }
 }
 

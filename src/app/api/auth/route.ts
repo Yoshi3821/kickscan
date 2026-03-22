@@ -312,6 +312,4 @@ export async function GET(request: NextRequest) {
     console.error("Validation error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-}nternal server error" }, { status: 500 });
-  }
 }

@@ -129,11 +129,13 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (error) {
-        console.error("Error creating user:", error);
+        console.error("Error creating user:", JSON.stringify(error));
         return NextResponse.json({ 
           error: "Failed to create user", 
-          details: error.message,
-          code: error.code 
+          supabaseError: error.message || JSON.stringify(error),
+          errorCode: error.code,
+          errorDetails: error.details,
+          errorHint: error.hint
         }, { status: 500 });
       }
 

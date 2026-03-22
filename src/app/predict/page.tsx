@@ -745,9 +745,7 @@ function PredictPageContent() {
         
         setBoostersRemaining(data.boostersRemaining);
         
-        // Refresh user data
-        validateSession(userId, token);
-        fetchLeaderboard();
+        // Skip expensive refreshes - prediction save already returns updated user data
       } else {
         alert(data.error || "Failed to save prediction");
       }

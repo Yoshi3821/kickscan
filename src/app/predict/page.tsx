@@ -130,7 +130,7 @@ function PredictPageContent() {
   const [leagueMatches, setLeagueMatches] = useState<LeagueMatch[]>([]);
   const [loadingMatches, setLoadingMatches] = useState<boolean>(true);
   const [predictions, setPredictions] = useState<Record<string, Prediction>>({});
-  const [boostersRemaining, setBoostersRemaining] = useState<number>(2);
+  const [boostersRemaining, setBoostersRemaining] = useState<number>(1);
 
   // Groups state
   const [userGroups, setUserGroups] = useState<Group[]>([]);

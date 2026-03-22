@@ -345,7 +345,7 @@ function PredictPageContent() {
         setUser(data.user);
         setUserId(uid);
         setToken(tok);
-        setBoostersRemaining(2 - data.user.boostersUsedToday);
+        setBoostersRemaining(1 - data.user.boostersUsedToday);
       } else {
         // Only logout on explicit auth failure, not network issues
         if (data && data.error) {
@@ -964,7 +964,7 @@ function PredictPageContent() {
                         </div>
                         <div className="flex justify-between">
                           <span>⚡ Booster (1/day):</span>
-                          <span className="text-purple-400 font-bold">x2 1X2 only</span>
+                          <span className="text-purple-400 font-bold">×2 1X2 only</span>
                         </div>
                       </div>
                     </div>

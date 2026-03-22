@@ -460,10 +460,9 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({
     prediction: newPrediction,
-        boostersRemaining: remainingBoosters,
-        created: true
-      });
-    }
+    boostersRemaining: remainingBoosters,
+    created: true
+  });
 
   } catch (err) {
     console.error("POST prediction error:", err);

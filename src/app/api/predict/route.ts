@@ -290,6 +290,7 @@ export async function POST(request: NextRequest) {
       } else if (!useBooster && existingPrediction.boosted) {
         // Removing booster - give it back if same day
         updateData.boosted = false;
+        updateData.booster_used = false;
         if (user.last_booster_date === today && user.boosters_used_today > 0) {
           await supabaseAdmin
             .from('users')
@@ -437,6 +438,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         prediction: newPrediction,
+        boostersRemaining: remainingBoosters,
+        created: true
+      });
+    }
+
+  } catch (err) {
+    console.error("POST prediction error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}: newPrediction,
         boostersRemaining: remainingBoosters,
         created: true
       });

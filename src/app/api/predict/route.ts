@@ -128,7 +128,9 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (userError || !user || user.id !== userId) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+      return NextResponse.json({ 
+        error: "Invalid user authentication. Please log in again." 
+      }, { status: 401 });
     }
 
     // Check booster usage

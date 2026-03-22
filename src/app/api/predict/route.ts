@@ -92,15 +92,14 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Check if predictions are locked for this match
-    const { checkPredictionLock } = await import('@/lib/odds-manager');
-    const lockStatus = await checkPredictionLock(matchId);
-    
-    if (lockStatus.isLocked) {
-      return NextResponse.json({
-        error: "Predictions are locked for this match (less than 5 minutes until kickoff)"
-      }, { status: 400 });
-    }
+    // TODO: Re-enable prediction locking after odds data is populated
+    // const { checkPredictionLock } = await import('@/lib/odds-manager');
+    // const lockStatus = await checkPredictionLock(matchId);
+    // if (lockStatus.isLocked) {
+    //   return NextResponse.json({
+    //     error: "Predictions are locked for this match (less than 5 minutes until kickoff)"
+    //   }, { status: 400 });
+    // }
 
     if (!["home", "draw", "away"].includes(predictedResult)) {
       return NextResponse.json({ 

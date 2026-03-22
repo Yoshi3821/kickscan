@@ -951,16 +951,20 @@ function PredictPageContent() {
                       <div>Earn points:</div>
                       <div className="ml-4 mt-1 space-y-1 text-xs">
                         <div className="flex justify-between">
-                          <span>✅ Correct result:</span>
-                          <span className="text-green-400 font-bold">3 pts</span>
+                          <span>✅ Correct 1X2:</span>
+                          <span className="text-green-400 font-bold">1-11 pts</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>❌ Wrong 1X2:</span>
+                          <span className="text-red-400 font-bold">-1 pt</span>
                         </div>
                         <div className="flex justify-between">
                           <span>🎯 Correct score:</span>
-                          <span className="text-green-400 font-bold">+5 bonus</span>
+                          <span className="text-green-400 font-bold">+3 to +7</span>
                         </div>
                         <div className="flex justify-between">
-                          <span>⚡ Booster (2/day):</span>
-                          <span className="text-purple-400 font-bold">x2 base pts</span>
+                          <span>⚡ Booster (1/day):</span>
+                          <span className="text-purple-400 font-bold">x2 1X2 only</span>
                         </div>
                       </div>
                     </div>

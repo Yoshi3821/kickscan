@@ -1,0 +1,92 @@
+[
+  {
+    "rank": 1,
+    "username": "KickScan AI",
+    "totalPoints": 781,
+    "predictions": 45,
+    "winRate": 62,
+    "streak": 8,
+    "isAI": false
+  },
+  {
+    "rank": 2,
+    "username": "messi the goat",
+    "totalPoints": 15,
+    "predictions": 5,
+    "winRate": 80,
+    "streak": 1,
+    "isAI": false
+  },
+  {
+    "rank": 3,
+    "username": "godofgambler",
+    "totalPoints": 9,
+    "predictions": 6,
+    "winRate": 33,
+    "streak": 1,
+    "isAI": false
+  },
+  {
+    "rank": 4,
+    "username": "cola77",
+    "totalPoints": 8,
+    "predictions": 5,
+    "winRate": 20,
+    "streak": 1,
+    "isAI": false
+  },
+  {
+    "rank": 5,
+    "username": "siuuu",
+    "totalPoints": 6,
+    "predictions": 5,
+    "winRate": 20,
+    "streak": 1,
+    "isAI": false
+  },
+  {
+    "rank": 6,
+    "username": "roberto baggio",
+    "totalPoints": 3,
+    "predictions": 5,
+    "winRate": 20,
+    "streak": 0,
+    "isAI": false
+  },
+  {
+    "rank": 7,
+    "username": "wwh",
+    "totalPoints": 3,
+    "predictions": 2,
+    "winRate": 50,
+    "streak": 0,
+    "isAI": false
+  },
+  {
+    "rank": 8,
+    "username": "yoshi",
+    "totalPoints": 3,
+    "predictions": 9,
+    "winRate": 11,
+    "streak": 0,
+    "isAI": false
+  },
+  {
+    "rank": 9,
+    "username": "stevenlim",
+    "totalPoints": 0,
+    "predictions": 0,
+    "winRate": 0,
+    "streak": 0,
+    "isAI": false
+  },
+  {
+    "username": "kickscan_ai",
+    "totalPoints": 0,
+    "predictions": 72,
+    "winRate": 0,
+    "streak": 0,
+    "isAI": true,
+    "rank": 10
+  }
+]

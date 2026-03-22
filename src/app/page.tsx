@@ -406,7 +406,7 @@ export default function HomePage() {
                 </div>
                 <div>
                   <div className="text-lg mb-1">⚡</div>
-                  <div className="font-bold">2 Daily Boosters</div>
+                  <div className="font-bold">1 Daily Booster</div>
                 </div>
                 <div>
                   <div className="text-lg mb-1">🏆</div>

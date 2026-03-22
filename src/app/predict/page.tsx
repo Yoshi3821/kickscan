@@ -345,7 +345,7 @@ function PredictPageContent() {
         setUser(data.user);
         setUserId(uid);
         setToken(tok);
-        setBoostersRemaining(1 - data.user.boostersUsedToday);
+        setBoostersRemaining(Math.max(0, 1 - (data.user.boostersUsedToday || 0)));
       } else {
         // Only logout on explicit auth failure, not network issues
         if (data && data.error) {
@@ -586,7 +586,7 @@ function PredictPageContent() {
         // Refresh user data
         validateSession(userId, token);
         if (data.boosterRefunded) {
-          setBoostersRemaining(prev => Math.min(prev + 1, 2));
+          setBoostersRemaining(prev => Math.min(prev + 1, 1));
         }
       } else {
         alert(data.error || "Failed to cancel prediction");
@@ -704,8 +704,9 @@ function PredictPageContent() {
   const handlePrediction = async (matchId: string, result: "home" | "draw" | "away", score: string, useBooster: boolean = false, homeTeam?: string, awayTeam?: string, marketFavorite?: string) => {
     if (!userId || !token) return;
     
-    if (!/^\d+-\d+$/.test(score)) {
-      alert("Score must be in format '2-1'");
+    // Score is optional in new scoring system
+    if (score && score.trim() && !/^\d+-\d+$/.test(score)) {
+      alert("Score must be in format '2-1' or leave empty");
       return;
     }
 

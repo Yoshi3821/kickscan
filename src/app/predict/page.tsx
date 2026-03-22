@@ -347,7 +347,10 @@ function PredictPageContent() {
         setToken(tok);
         setBoostersRemaining(2 - data.user.boostersUsedToday);
       } else {
-        localStorage.removeItem("kickscan_user");
+        // Only logout on explicit auth failure, not network issues
+        if (data && data.error) {
+          localStorage.removeItem("kickscan_user");
+        }
       }
     } catch (err) {
       console.error("Session validation failed:", err);

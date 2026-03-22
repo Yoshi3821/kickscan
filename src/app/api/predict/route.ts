@@ -300,12 +300,43 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      const { data: updatedPrediction, error: updateError } = await supabaseAdmin
-        .from('predictions')
-        .update(updateData)
-        .eq('id', existingPrediction.id)
-        .select()
-        .single();
+      // Batch operations: prediction update + user booster update
+      const promises = [];
+      
+      promises.push(
+        supabaseAdmin
+          .from('predictions')
+          .update(updateData)
+          .eq('id', existingPrediction.id)
+          .select()
+          .single()
+      );
+
+      // Handle booster updates
+      if (useBooster && !existingPrediction.boosted) {
+        const newBoostersUsed = user.last_booster_date === today ? user.boosters_used_today + 1 : 1;
+        promises.push(
+          supabaseAdmin
+            .from('users')
+            .update({
+              boosters_used_today: newBoostersUsed,
+              last_booster_date: today
+            })
+            .eq('id', userId)
+        );
+      } else if (!useBooster && existingPrediction.boosted && user.last_booster_date === today) {
+        promises.push(
+          supabaseAdmin
+            .from('users')
+            .update({
+              boosters_used_today: Math.max(0, user.boosters_used_today - 1)
+            })
+            .eq('id', userId)
+        );
+      }
+
+      const results = await Promise.all(promises);
+      const { data: updatedPrediction, error: updateError } = results[0];
 
       if (updateError) {
         console.error("Error updating prediction:", updateError);

@@ -79,24 +79,18 @@ export async function POST(request: NextRequest) {
         }, { status: 400 });
       }
 
-      // Check if username already exists
-      const { data: existingUser } = await supabaseAdmin
+      // Check username and email in single query
+      const { data: existingUsers } = await supabaseAdmin
         .from('users')
-        .select('id')
-        .eq('username', normalizedName.toLowerCase())
-        .single();
+        .select('username, email')
+        .or(`username.eq.${normalizedName.toLowerCase()},email.eq.${trimmedEmail}`);
+
+      const existingUser = existingUsers?.find(u => u.username === normalizedName.toLowerCase());
+      const existingEmail = existingUsers?.find(u => u.email === trimmedEmail);
 
       if (existingUser) {
         return NextResponse.json({ error: "Username already taken" }, { status: 400 });
       }
-
-      // Check if email already exists
-      const { data: existingEmail } = await supabaseAdmin
-        .from('users')
-        .select('id')
-        .eq('email', trimmedEmail)
-        .single();
-
       if (existingEmail) {
         return NextResponse.json({ error: "Email already registered" }, { status: 400 });
       }

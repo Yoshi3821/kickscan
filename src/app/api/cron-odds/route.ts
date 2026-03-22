@@ -67,13 +67,13 @@ async function handleOddsRefresh() {
     const fixtureIds = matches.map(m => m.fixture_id);
     const { updated, errors } = await bulkRefreshOdds(fixtureIds);
 
-    return {
+    return NextResponse.json({
       success: true,
       message: `Refreshed odds for ${updated} out of ${matches.length} matches`,
       updated,
       total: matches.length,
       errors: errors.length > 0 ? errors : undefined
-    };
+    });
 
   } catch (error) {
     console.error('Odds refresh error:', error);

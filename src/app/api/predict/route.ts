@@ -201,7 +201,6 @@ export async function POST(request: NextRequest) {
             .eq('id', userId);
         }
         updateData.boosted = false;
-        updateData.booster_used = false;
       }
 
       const { data: updatedPrediction, error: updateError } = await supabaseAdmin
@@ -308,4 +307,4 @@ export async function POST(request: NextRequest) {
     console.error("POST prediction error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-}
+}}

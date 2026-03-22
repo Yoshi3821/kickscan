@@ -185,8 +185,9 @@ export default function PublicProfilePage() {
                   ? pred.match_label
                   : pred.match_id.startsWith('wc_') ? "World Cup Match" : "League Match";
 
-                const isWin = pred.settled && pred.points_earned > 0;
-                const isLoss = pred.settled && pred.points_earned === 0;
+                const isVoid = pred.settled && pred.actual_result === 'void';
+                const isWin = pred.settled && !isVoid && pred.points_earned > 0;
+                const isLoss = pred.settled && !isVoid && pred.points_earned === 0;
 
                 return (
                   <div
@@ -194,6 +195,8 @@ export default function PublicProfilePage() {
                     className={`rounded-xl p-4 border ${
                       pred.hidden
                         ? "bg-white/[0.02] border-white/5"
+                        : isVoid
+                        ? "bg-gray-500/[0.06] border-gray-500/20"
                         : isWin
                         ? "bg-green-500/[0.08] border-green-500/25"
                         : isLoss
@@ -233,22 +236,36 @@ export default function PublicProfilePage() {
 
                         {/* Result row */}
                         {pred.settled ? (
-                          <div className="flex items-center justify-between pt-3 border-t border-white/5">
-                            <div>
-                              {pred.actual_score && (
-                                <div className="text-lg font-black text-white">
-                                  Final: <span className={isWin ? "text-green-400" : "text-red-400"}>{pred.actual_score}</span>
-                                </div>
-                              )}
+                          isVoid ? (
+                            <div className="flex items-center justify-between pt-3 border-t border-white/5">
+                              <div className="text-sm text-gray-400">
+                                Match postponed / cancelled — prediction voided
+                              </div>
+                              <div className="text-sm font-bold px-3 py-1 rounded-lg bg-gray-500/20 text-gray-300">
+                                Void · 0 pts
+                                {pred.boosted && (
+                                  <span className="ml-1 text-purple-400">· ⚡ Refunded</span>
+                                )}
+                              </div>
                             </div>
-                            <div className={`text-sm font-bold px-3 py-1 rounded-lg ${
-                              isWin
-                                ? "bg-green-500/20 text-green-400"
-                                : "bg-red-500/20 text-red-400"
-                            }`}>
-                              {isWin ? `Win · +${pred.points_earned} pts` : "Loss · 0 pts"}
+                          ) : (
+                            <div className="flex items-center justify-between pt-3 border-t border-white/5">
+                              <div>
+                                {pred.actual_score && (
+                                  <div className="text-lg font-black text-white">
+                                    Final: <span className={isWin ? "text-green-400" : "text-red-400"}>{pred.actual_score}</span>
+                                  </div>
+                                )}
+                              </div>
+                              <div className={`text-sm font-bold px-3 py-1 rounded-lg ${
+                                isWin
+                                  ? "bg-green-500/20 text-green-400"
+                                  : "bg-red-500/20 text-red-400"
+                              }`}>
+                                {isWin ? `Win · +${pred.points_earned} pts` : "Loss · 0 pts"}
+                              </div>
                             </div>
-                          </div>
+                          )
                         ) : pred.source === "verdict_engine" ? (
                           <div className="text-[10px] text-cyan-400/60 bg-cyan-500/10 px-1.5 py-0.5 rounded inline-block">
                             AI Engine

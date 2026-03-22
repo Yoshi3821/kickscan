@@ -330,12 +330,15 @@ export default function ProfilePage() {
                       ? `${awayName || "Away"} Win`
                       : "Draw";
 
-                    const isWin = prediction.settled && prediction.points_earned > 0;
-                    const isLoss = prediction.settled && prediction.points_earned === 0;
+                    const isVoid = prediction.settled && prediction.actual_result === 'void';
+                    const isWin = prediction.settled && !isVoid && prediction.points_earned > 0;
+                    const isLoss = prediction.settled && !isVoid && prediction.points_earned === 0;
 
                     return (
                       <div key={prediction.id} className={`p-4 border rounded-xl ${
-                        isWin
+                        isVoid
+                          ? "bg-gray-500/[0.06] border-gray-500/20"
+                          : isWin
                           ? "bg-green-500/[0.08] border-green-500/25"
                           : isLoss
                           ? "bg-red-500/[0.06] border-red-500/20"
@@ -365,22 +368,36 @@ export default function ProfilePage() {
 
                         {/* Post-match result (if settled) */}
                         {prediction.settled ? (
-                          <div className="flex items-center justify-between pt-3 border-t border-white/5">
-                            <div>
-                              {prediction.actual_score && (
-                                <div className="text-lg font-black text-white">
-                                  Final: <span className={isWin ? "text-green-400" : "text-red-400"}>{prediction.actual_score}</span>
-                                </div>
-                              )}
+                          isVoid ? (
+                            <div className="flex items-center justify-between pt-3 border-t border-white/5">
+                              <div className="text-sm text-gray-400">
+                                Match postponed / cancelled — prediction voided
+                              </div>
+                              <div className="text-sm font-bold px-3 py-1 rounded-lg bg-gray-500/20 text-gray-300">
+                                Void · 0 pts
+                                {prediction.boosted && (
+                                  <span className="ml-1 text-purple-400">· ⚡ Booster refunded</span>
+                                )}
+                              </div>
                             </div>
-                            <div className={`text-sm font-bold px-3 py-1 rounded-lg ${
-                              isWin
-                                ? "bg-green-500/20 text-green-400"
-                                : "bg-red-500/20 text-red-400"
-                            }`}>
-                              {isWin ? `Win · +${prediction.points_earned} pts` : "Loss · 0 pts"}
+                          ) : (
+                            <div className="flex items-center justify-between pt-3 border-t border-white/5">
+                              <div>
+                                {prediction.actual_score && (
+                                  <div className="text-lg font-black text-white">
+                                    Final: <span className={isWin ? "text-green-400" : "text-red-400"}>{prediction.actual_score}</span>
+                                  </div>
+                                )}
+                              </div>
+                              <div className={`text-sm font-bold px-3 py-1 rounded-lg ${
+                                isWin
+                                  ? "bg-green-500/20 text-green-400"
+                                  : "bg-red-500/20 text-red-400"
+                              }`}>
+                                {isWin ? `Win · +${prediction.points_earned} pts` : "Loss · 0 pts"}
+                              </div>
                             </div>
-                          </div>
+                          )
                         ) : (
                           <div className="text-xs text-gray-500 pt-2 border-t border-white/5">⏳ Awaiting result</div>
                         )}

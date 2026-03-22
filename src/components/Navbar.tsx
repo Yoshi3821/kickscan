@@ -158,18 +158,18 @@ export default function Navbar() {
           {/* Logo + BETA — fixed left */}
           <a href="/" className="flex items-center gap-2 relative z-[200] cursor-pointer flex-shrink-0" style={{ pointerEvents: "auto" }}>
             <img src="/logo-header.png" alt="KickScan" className="w-[200px] sm:w-[240px] lg:w-[200px] h-auto" />
-            <span className="hidden lg:inline-block text-[8px] font-bold tracking-widest text-green-400/70 border border-green-400/30 px-1.5 py-0.5 rounded-md uppercase">BETA</span>
+            <span className="hidden md:inline-block text-[8px] font-bold tracking-widest text-green-400/70 border border-green-400/30 px-1.5 py-0.5 rounded-md uppercase">BETA</span>
           </a>
 
           {/* Desktop nav — shifted right with flex-1 spacer */}
-          <div className="hidden lg:flex items-center flex-1 justify-end gap-1">
+          <div className="hidden md:flex items-center flex-1 justify-end gap-1">
             {/* Nav links — compact, elegant */}
-            <div className="flex items-center gap-4 mr-6">
+            <div className="flex items-center gap-2 lg:gap-4 mr-4 lg:mr-6">
               {links.map((l, i) => (
                 <a
                   key={`${l.href}-${i}`}
                   href={l.href}
-                  className={`text-[11px] font-semibold tracking-wide uppercase transition relative whitespace-nowrap ${
+                  className={`text-[10px] lg:text-[11px] font-semibold tracking-wide uppercase transition relative whitespace-nowrap ${
                     pathname === l.href
                       ? "text-green-400"
                       : "text-gray-400 hover:text-white"
@@ -257,9 +257,9 @@ export default function Navbar() {
           </div>
 
           {/* Mobile hamburger */}
-          <div className="flex-1 lg:hidden" />
+          <div className="flex-1 md:hidden" />
           <button
-            className="lg:hidden text-gray-300 text-xl"
+            className="md:hidden text-gray-300 text-xl"
             onClick={() => setMenuOpen(!menuOpen)}
           >
             {menuOpen ? "✕" : "☰"}
@@ -267,7 +267,7 @@ export default function Navbar() {
         </div>
 
         {menuOpen && (
-          <div className="lg:hidden pb-4 space-y-1 border-t border-gray-800 pt-2">
+          <div className="md:hidden pb-4 space-y-1 border-t border-gray-800 pt-2">
             {links.map((l, i) => (
               <a
                 key={`${l.href}-mobile-${i}`}

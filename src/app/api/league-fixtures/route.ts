@@ -627,12 +627,23 @@ export async function GET() {
         } as any);
       }
 
-      // Sort: live first, then upcoming by date, then finished last
+      // Sort: live first, then by league priority (EPL first), then by date, then finished last
       const statusOrder: Record<string, number> = { '1H': 0, '2H': 0, 'HT': 0, 'ET': 0, 'P': 0, 'NS': 1, 'FT': 2, 'AET': 2, 'PEN': 2 };
+      const leaguePriority: Record<string, number> = {
+        'Premier League': 0,
+        'La Liga': 1,
+        'Serie A': 2,
+        'Bundesliga': 3,
+        'UEFA Champions League': 4,
+      };
       results.sort((a, b) => {
         const aOrder = statusOrder[a.matchStatus || 'NS'] ?? 1;
         const bOrder = statusOrder[b.matchStatus || 'NS'] ?? 1;
         if (aOrder !== bOrder) return aOrder - bOrder;
+        // Within same status, sort by league priority (EPL first)
+        const aLeague = leaguePriority[a.leagueName] ?? 99;
+        const bLeague = leaguePriority[b.leagueName] ?? 99;
+        if (aLeague !== bLeague) return aLeague - bLeague;
         return new Date(a.date).getTime() - new Date(b.date).getTime();
       });
 

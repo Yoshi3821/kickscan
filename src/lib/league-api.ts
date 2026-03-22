@@ -175,7 +175,12 @@ export async function getAllLeagueFixtures(limit: number = 50): Promise<LeagueFi
     // Then upcoming (NS)
     if (!aFinished && bFinished) return -1;
     if (aFinished && !bFinished) return 1;
-    // Within same category, sort by date
+    // Within same category, sort by league priority (EPL first)
+    const LP: Record<number, number> = { 39: 0, 140: 1, 135: 2, 78: 3, 2: 4 };
+    const aLP = LP[a.league.id] ?? 99;
+    const bLP = LP[b.league.id] ?? 99;
+    if (aLP !== bLP) return aLP - bLP;
+    // Then by date
     return new Date(a.date).getTime() - new Date(b.date).getTime();
   });
 

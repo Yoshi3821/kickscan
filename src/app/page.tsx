@@ -402,7 +402,7 @@ export default function HomePage() {
                 </div>
                 <div>
                   <div className="text-lg mb-1">🎯</div>
-                  <div className="font-bold">Correct score: +5 bonus</div>
+                  <div className="font-bold">Correct score: +3 to +7 bonus</div>
                 </div>
                 <div>
                   <div className="text-lg mb-1">⚡</div>

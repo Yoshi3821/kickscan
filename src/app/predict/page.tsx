@@ -1587,12 +1587,16 @@ function PredictPageContent() {
               <h3 className="text-lg font-bold mb-4">🎯 How Points Work</h3>
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
-                  <span>✅ Correct result:</span>
-                  <span className="text-green-400 font-bold">3 pts</span>
+                  <span>✅ Correct 1X2:</span>
+                  <span className="text-green-400 font-bold">1-11 pts</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>❌ Wrong 1X2:</span>
+                  <span className="text-red-400 font-bold">-1 pt</span>
                 </div>
                 <div className="flex justify-between">
                   <span>🎯 Correct score:</span>
-                  <span className="text-green-400 font-bold">+5 bonus</span>
+                  <span className="text-green-400 font-bold">+3 to +7</span>
                 </div>
                 <div className="flex justify-between">
                   <span>❌ Wrong:</span>

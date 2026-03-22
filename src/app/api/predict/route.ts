@@ -166,7 +166,6 @@ export async function POST(request: NextRequest) {
       const updateData: any = {
         predicted_result: predictedResult,
         predicted_score: predictedScore || '',
-        correct_score_entered: !!(predictedScore && predictedScore.trim()),
       };
 
       // Handle booster logic for updates

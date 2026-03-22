@@ -130,7 +130,11 @@ export async function POST(request: NextRequest) {
 
       if (error) {
         console.error("Error creating user:", error);
-        return NextResponse.json({ error: "Failed to create user" }, { status: 500 });
+        return NextResponse.json({ 
+          error: "Failed to create user", 
+          details: error.message,
+          code: error.code 
+        }, { status: 500 });
       }
 
       return NextResponse.json({
@@ -305,5 +309,7 @@ export async function GET(request: NextRequest) {
   } catch (err) {
     console.error("Validation error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}nternal server error" }, { status: 500 });
   }
 }

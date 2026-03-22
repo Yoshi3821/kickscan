@@ -6,6 +6,10 @@ export interface MarketExtras {
   underOdds?: number;
   bttsYes?: number;
   bttsNo?: number;
+  ahLine?: number;       // Asian Handicap line (negative = home favored)
+  ahHomeOdds?: number;
+  ahAwayOdds?: number;
+  ahDerived?: boolean;   // true if derived from 1X2, false if real spreads data
 }
 
 export interface AutoVerdict {
@@ -38,14 +42,14 @@ export interface AutoVerdict {
   longshotScore?: string;
 }
 
-// Poisson probability: P(X=k) = (λ^k * e^-λ) / k!
+// ── Poisson helpers ──
+
 function poissonPmf(lambda: number, k: number): number {
   let factorial = 1;
   for (let i = 2; i <= k; i++) factorial *= i;
   return (Math.pow(lambda, k) * Math.exp(-lambda)) / factorial;
 }
 
-// Build a score probability grid (0-0 to maxGoals-maxGoals)
 function buildScoreGrid(homeXG: number, awayXG: number, maxGoals = 5): { home: number; away: number; prob: number }[] {
   const grid: { home: number; away: number; prob: number }[] = [];
   for (let h = 0; h <= maxGoals; h++) {
@@ -53,61 +57,91 @@ function buildScoreGrid(homeXG: number, awayXG: number, maxGoals = 5): { home: n
       grid.push({ home: h, away: a, prob: poissonPmf(homeXG, h) * poissonPmf(awayXG, a) });
     }
   }
-  // Sort by probability descending
   grid.sort((a, b) => b.prob - a.prob);
   return grid;
 }
 
-// Team strength ratings for major leagues (simplified)
+// ── Team strength fallback ──
+
 const TEAM_STRENGTH: Record<string, number> = {
   // Premier League
   "Manchester City": 95, "Arsenal": 90, "Liverpool": 88, "Chelsea": 85, "Manchester United": 82,
   "Tottenham": 78, "Newcastle": 75, "Aston Villa": 72, "West Ham": 68, "Brighton": 65,
   "Crystal Palace": 60, "Fulham": 58, "Wolves": 56, "Everton": 54, "Brentford": 52,
   "Nottingham Forest": 50, "Leicester City": 48, "Southampton": 45, "Ipswich": 42, "Bournemouth": 40,
-  
   // La Liga
   "Real Madrid": 94, "Barcelona": 90, "Atletico Madrid": 85, "Real Sociedad": 75, "Athletic Bilbao": 72,
   "Villarreal": 70, "Valencia": 65, "Sevilla": 68, "Real Betis": 62, "Girona": 58,
-  
   // Serie A
   "Inter Milan": 88, "Juventus": 85, "AC Milan": 82, "Napoli": 80, "Roma": 75,
   "Atalanta": 78, "Lazio": 72, "Fiorentina": 68, "Bologna": 62, "Torino": 55,
-  
   // Bundesliga
   "Bayern Munich": 92, "Borussia Dortmund": 82, "RB Leipzig": 78, "Bayer Leverkusen": 85,
   "Eintracht Frankfurt": 70, "VfL Wolfsburg": 65, "Borussia Monchengladbach": 62, "Union Berlin": 58,
-  
-  // Champions League (additional top teams)
+  // UCL extras
   "PSG": 88, "Benfica": 75, "Porto": 72, "Ajax": 70, "Celtic": 65,
 };
 
-// Get team strength or estimate based on league
 function getTeamStrength(teamName: string, leagueId: number): number {
-  if (TEAM_STRENGTH[teamName]) {
-    return TEAM_STRENGTH[teamName];
-  }
-  
-  // Default estimates by league
+  if (TEAM_STRENGTH[teamName]) return TEAM_STRENGTH[teamName];
   switch (leagueId) {
-    case 39: return 60; // Premier League average
-    case 140: return 58; // La Liga average
-    case 135: return 56; // Serie A average
-    case 78: return 55; // Bundesliga average
-    case 2: return 70; // Champions League average
+    case 39: return 60;
+    case 140: return 58;
+    case 135: return 56;
+    case 78: return 55;
+    case 2: return 70;
     default: return 50;
   }
 }
 
-// Analyze team form and return win/draw/loss counts
+// ── Form analysis ──
+
 function analyzeForm(form: string): { wins: number; draws: number; losses: number } {
-  const wins = (form.match(/W/g) || []).length;
-  const draws = (form.match(/D/g) || []).length;
-  const losses = (form.match(/L/g) || []).length;
-  return { wins, draws, losses };
+  return {
+    wins: (form.match(/W/g) || []).length,
+    draws: (form.match(/D/g) || []).length,
+    losses: (form.match(/L/g) || []).length,
+  };
 }
 
-// Generate reasoning text from data
+// ── Expected total from O/U market ──
+
+function getExpectedTotal(marketExtras?: MarketExtras): number {
+  if (marketExtras?.overOdds && marketExtras?.underOdds) {
+    const oRaw = 1 / marketExtras.overOdds;
+    const uRaw = 1 / marketExtras.underOdds;
+    const overProb = oRaw / (oRaw + uRaw);
+    const line = marketExtras.totalLine || 2.5;
+    return Math.max(1.4, Math.min(4.0, line + (overProb - 0.5) * 3.0));
+  }
+  return 2.5; // fallback
+}
+
+// ── BTTS probability ──
+
+function getBttsProb(marketExtras?: MarketExtras): number {
+  if (marketExtras?.bttsYes && marketExtras?.bttsNo) {
+    const yRaw = 1 / marketExtras.bttsYes;
+    const nRaw = 1 / marketExtras.bttsNo;
+    return yRaw / (yRaw + nRaw);
+  }
+  return 0.5;
+}
+
+// ── Derive market implied probabilities from 1X2 odds ──
+
+function getMarketProbs(odds: FixtureOdds[]): { home: number; draw: number; away: number } | null {
+  if (odds.length === 0) return null;
+  const avgH = odds.reduce((s, o) => s + o.home, 0) / odds.length;
+  const avgD = odds.reduce((s, o) => s + o.draw, 0) / odds.length;
+  const avgA = odds.reduce((s, o) => s + o.away, 0) / odds.length;
+  const rawH = 1 / avgH, rawD = 1 / avgD, rawA = 1 / avgA;
+  const total = rawH + rawD + rawA;
+  return { home: rawH / total, draw: rawD / total, away: rawA / total };
+}
+
+// ── Reasoning generator ──
+
 function generateReasoning(
   fixture: LeagueFixture,
   homeForm: TeamForm | null,
@@ -118,84 +152,78 @@ function generateReasoning(
   homeWinPct: number,
   awayWinPct: number,
   drawPct: number,
-  pick: string
+  pick: string,
+  ahLine?: number,
+  ahDerived?: boolean,
 ): string {
-  const reasoningParts: string[] = [];
-  
-  // Form analysis
+  const parts: string[] = [];
+
+  // AH-based insight (most valuable)
+  if (ahLine !== undefined) {
+    const absLine = Math.abs(ahLine);
+    const favored = ahLine < 0 ? fixture.home.name : fixture.away.name;
+    if (absLine >= 1.5) {
+      parts.push(`Market expects ${favored} to dominate (AH ${ahLine > 0 ? '+' : ''}${ahLine.toFixed(2)}).`);
+    } else if (absLine >= 0.75) {
+      parts.push(`Market prices ${favored} as clear favorite (AH ${ahLine > 0 ? '+' : ''}${ahLine.toFixed(2)}).`);
+    } else if (absLine < 0.3) {
+      parts.push(`Tight match — AH line of ${ahLine.toFixed(2)} suggests near-even contest.`);
+    }
+  }
+
+  // Form
   if (homeForm && awayForm) {
-    const homeAnalysis = analyzeForm(homeForm.form);
-    const awayAnalysis = analyzeForm(awayForm.form);
-    
-    if (homeAnalysis.wins >= 4) {
-      reasoningParts.push(`${fixture.home.name} are in flying form with ${homeAnalysis.wins} wins in their last 5 games.`);
-    } else if (homeAnalysis.wins <= 1) {
-      reasoningParts.push(`${fixture.home.name} have struggled recently with only ${homeAnalysis.wins} win in their last 5.`);
-    }
-    
-    if (awayAnalysis.wins >= 4) {
-      reasoningParts.push(`${fixture.away.name} arrive in excellent form with ${awayAnalysis.wins} wins from their last 5 matches.`);
-    } else if (awayAnalysis.wins <= 1) {
-      reasoningParts.push(`${fixture.away.name}'s poor form (${awayAnalysis.wins} win in 5) suggests they'll struggle here.`);
-    }
+    const hf = analyzeForm(homeForm.form);
+    const af = analyzeForm(awayForm.form);
+    if (hf.wins >= 4) parts.push(`${fixture.home.name} in flying form (${hf.wins}W in last 5).`);
+    else if (hf.wins <= 1) parts.push(`${fixture.home.name} struggling (${hf.wins}W in last 5).`);
+    if (af.wins >= 4) parts.push(`${fixture.away.name} in excellent form (${af.wins}W in last 5).`);
+    else if (af.wins <= 1) parts.push(`${fixture.away.name} poor recent form (${af.wins}W in 5).`);
   }
-  
-  // H2H analysis
+
+  // H2H
   if (h2h.length > 0) {
-    const homeH2HWins = h2h.filter(match => 
-      (match.home === fixture.home.name && match.homeGoals > match.awayGoals) ||
-      (match.away === fixture.home.name && match.awayGoals > match.homeGoals)
+    const homeH2HWins = h2h.filter(m =>
+      (m.home === fixture.home.name && m.homeGoals > m.awayGoals) ||
+      (m.away === fixture.home.name && m.awayGoals > m.homeGoals)
     ).length;
-    
-    const awayH2HWins = h2h.filter(match => 
-      (match.home === fixture.away.name && match.homeGoals > match.awayGoals) ||
-      (match.away === fixture.away.name && match.awayGoals > match.homeGoals)
-    ).length;
-    
-    if (homeH2HWins > awayH2HWins && homeH2HWins >= 3) {
-      reasoningParts.push(`History favors ${fixture.home.name} — they've won ${homeH2HWins} of the last ${h2h.length} meetings.`);
-    } else if (awayH2HWins > homeH2HWins && awayH2HWins >= 3) {
-      reasoningParts.push(`${fixture.away.name} hold the edge historically with ${awayH2HWins} wins in the last ${h2h.length} encounters.`);
-    }
+    if (homeH2HWins >= 3) parts.push(`${fixture.home.name} won ${homeH2HWins} of last ${h2h.length} H2H meetings.`);
+    else if (h2h.length - homeH2HWins >= 3) parts.push(`${fixture.away.name} hold the H2H edge.`);
   }
-  
-  // Injury analysis
-  const homeInjuries = injuries.filter(inj => inj.team === fixture.home.name);
-  const awayInjuries = injuries.filter(inj => inj.team === fixture.away.name);
-  
-  if (homeInjuries.length > 2) {
-    reasoningParts.push(`${fixture.home.name} are weakened by key injuries including ${homeInjuries[0].player}.`);
-  }
-  if (awayInjuries.length > 2) {
-    reasoningParts.push(`${fixture.away.name} are missing important players like ${awayInjuries[0].player}.`);
-  }
-  
-  // Odds value analysis
+
+  // Injuries
+  const homeInj = injuries.filter(i => i.team === fixture.home.name);
+  const awayInj = injuries.filter(i => i.team === fixture.away.name);
+  if (homeInj.length > 2) parts.push(`${fixture.home.name} weakened by ${homeInj.length} injuries.`);
+  if (awayInj.length > 2) parts.push(`${fixture.away.name} missing key players.`);
+
+  // Market value
   if (odds.length > 0) {
-    const avgHomeOdds = odds.reduce((sum, odd) => sum + odd.home, 0) / odds.length;
-    const avgAwayOdds = odds.reduce((sum, odd) => sum + odd.away, 0) / odds.length;
-    const avgDrawOdds = odds.reduce((sum, odd) => sum + odd.draw, 0) / odds.length;
-    
-    const marketHomeProb = Math.round((1 / avgHomeOdds) * 100);
-    const marketAwayProb = Math.round((1 / avgAwayOdds) * 100);
-    const marketDrawProb = Math.round((1 / avgDrawOdds) * 100);
-    
-    if (pick.includes("Win") && homeWinPct > marketHomeProb + 5) {
-      reasoningParts.push(`The market has ${fixture.home.name} at ${marketHomeProb}% implied probability, but our analysis suggests ${homeWinPct}% — solid value.`);
-    } else if (pick.includes(fixture.away.name) && awayWinPct > marketAwayProb + 5) {
-      reasoningParts.push(`Market underprices ${fixture.away.name} at ${marketAwayProb}% when they should be closer to ${awayWinPct}%.`);
+    const mkt = getMarketProbs(odds);
+    if (mkt) {
+      const mktPct = pick.includes(fixture.home.name) ? Math.round(mkt.home * 100) :
+        pick.includes(fixture.away.name) ? Math.round(mkt.away * 100) : Math.round(mkt.draw * 100);
+      const aiPct = pick.includes(fixture.home.name) ? homeWinPct :
+        pick.includes(fixture.away.name) ? awayWinPct : drawPct;
+      if (aiPct > mktPct + 5) {
+        parts.push(`Market at ${mktPct}%, AI sees ${aiPct}% — value edge.`);
+      } else if (Math.abs(aiPct - mktPct) <= 3) {
+        parts.push(`AI and market agree at ~${mktPct}%.`);
+      }
     }
   }
-  
-  // Fallback reasoning if no specific factors found
-  if (reasoningParts.length === 0) {
-    reasoningParts.push(`Based on current form and team strength analysis, ${pick.replace(" Win", "")} represents the most likely outcome.`);
+
+  if (parts.length === 0) {
+    parts.push(`Based on available data, ${pick.replace(" Win", "")} represents the most likely outcome.`);
   }
-  
-  return reasoningParts.slice(0, 3).join(" ");
+
+  return parts.slice(0, 3).join(" ");
 }
 
-// Main function to generate auto verdict
+// ══════════════════════════════════════════════════════════════
+//  MAIN VERDICT GENERATOR
+// ══════════════════════════════════════════════════════════════
+
 export function generateAutoVerdict(
   fixture: LeagueFixture,
   homeForm: TeamForm | null,
@@ -205,210 +233,329 @@ export function generateAutoVerdict(
   odds: FixtureOdds[],
   marketExtras?: MarketExtras
 ): AutoVerdict {
-  // Calculate team strengths
+  const hasOdds = odds.length > 0;
+  const marketProbs = getMarketProbs(odds);
+  const expectedTotal = getExpectedTotal(marketExtras);
+  const bttsProb = getBttsProb(marketExtras);
+  const ahLine = marketExtras?.ahLine; // negative = home favored
+  const ahDerived = marketExtras?.ahDerived ?? true;
+
+  // ── 1. COMPOSITE PROBABILITY MODEL ──
+  // Weighted blend: market (40%) + AH-adjusted (20%) + O/U context (15%) + BTTS (10%) + strength (10%) + form (5%)
+
   const homeStrength = getTeamStrength(fixture.home.name, fixture.league.id);
   const awayStrength = getTeamStrength(fixture.away.name, fixture.league.id);
+
+  // Base from team strength (fallback layer)
   const strengthDiff = homeStrength - awayStrength;
-  
-  // Base probabilities from strength difference
-  let homeProb = 0.40 + (strengthDiff * 0.01);
-  let drawProb = 0.28 - (Math.abs(strengthDiff) * 0.003);
-  let awayProb = 1 - homeProb - drawProb;
-  
-  // Form adjustments
+  let strengthHome = 0.40 + (strengthDiff * 0.008);
+  let strengthDraw = 0.28 - (Math.abs(strengthDiff) * 0.003);
+  let strengthAway = 1 - strengthHome - strengthDraw;
+  strengthHome = Math.max(0.15, Math.min(0.70, strengthHome));
+  strengthAway = Math.max(0.15, Math.min(0.70, strengthAway));
+  strengthDraw = Math.max(0.15, Math.min(0.40, strengthDraw));
+  const stTotal = strengthHome + strengthDraw + strengthAway;
+  strengthHome /= stTotal; strengthDraw /= stTotal; strengthAway /= stTotal;
+
+  // Form adjustment
+  let formHome = 0, formAway = 0;
   if (homeForm && awayForm) {
-    const homeFormBonus = (analyzeForm(homeForm.form).wins * 0.02) - 0.04;
-    const awayFormBonus = (analyzeForm(awayForm.form).wins * 0.02) - 0.04;
-    
-    homeProb += homeFormBonus;
-    awayProb += awayFormBonus;
-    drawProb = 1 - homeProb - awayProb;
+    formHome = (analyzeForm(homeForm.form).wins * 0.02) - 0.04;
+    formAway = (analyzeForm(awayForm.form).wins * 0.02) - 0.04;
   }
-  
-  // H2H adjustments
-  if (h2h.length > 0) {
-    const homeH2HWins = h2h.filter(match => 
-      (match.home === fixture.home.name && match.homeGoals > match.awayGoals) ||
-      (match.away === fixture.home.name && match.awayGoals > match.homeGoals)
-    ).length;
-    
-    const h2hBonus = (homeH2HWins / h2h.length - 0.5) * 0.1;
-    homeProb += h2hBonus;
-    awayProb -= h2hBonus;
+
+  // Calculate composite probabilities
+  let homeProb: number, drawProb: number, awayProb: number;
+
+  if (marketProbs) {
+    // Market-weighted composite
+    const mH = marketProbs.home;
+    const mD = marketProbs.draw;
+    const mA = marketProbs.away;
+
+    // AH-adjusted probabilities: use AH line to refine the market signal
+    let ahH = mH, ahD = mD, ahA = mA;
+    if (ahLine !== undefined) {
+      const absAH = Math.abs(ahLine);
+      // AH confirms/adjusts the favorite strength
+      // Large AH line → push probability toward the favorite
+      if (ahLine < -0.75) {
+        // Strong home favorite: boost home, reduce draw
+        const boost = Math.min(0.08, absAH * 0.04);
+        ahH = mH + boost;
+        ahD = mD - boost * 0.6;
+        ahA = mA - boost * 0.4;
+      } else if (ahLine > 0.75) {
+        // Strong away favorite: boost away, reduce draw
+        const boost = Math.min(0.08, absAH * 0.04);
+        ahA = mA + boost;
+        ahD = mD - boost * 0.6;
+        ahH = mH - boost * 0.4;
+      } else {
+        // Close match: boost draw probability slightly
+        const drawBoost = Math.min(0.04, (0.75 - absAH) * 0.06);
+        ahD = mD + drawBoost;
+        ahH = mH - drawBoost * 0.5;
+        ahA = mA - drawBoost * 0.5;
+      }
+      // Normalize
+      const ahTotal = ahH + ahD + ahA;
+      ahH /= ahTotal; ahD /= ahTotal; ahA /= ahTotal;
+    }
+
+    // O/U context: high totals reduce draw probability
+    let ouH = mH, ouD = mD, ouA = mA;
+    if (expectedTotal > 2.8) {
+      const drawReduce = Math.min(0.04, (expectedTotal - 2.8) * 0.03);
+      ouD = mD - drawReduce;
+      ouH = mH + drawReduce * 0.5;
+      ouA = mA + drawReduce * 0.5;
+    } else if (expectedTotal < 2.2) {
+      const drawBoost = Math.min(0.04, (2.2 - expectedTotal) * 0.04);
+      ouD = mD + drawBoost;
+      ouH = mH - drawBoost * 0.5;
+      ouA = mA - drawBoost * 0.5;
+    }
+
+    // BTTS context: both scoring reduces draw slightly, boosts favorite
+    let btH = mH, btD = mD, btA = mA;
+    if (bttsProb > 0.6) {
+      btD = mD - 0.02;
+      btH = mH + 0.01; btA = mA + 0.01;
+    } else if (bttsProb < 0.4) {
+      // Low BTTS = likely clean sheet for one side → boost favorite
+      const fav = mH > mA ? 'home' : 'away';
+      if (fav === 'home') { btH = mH + 0.02; btA = mA - 0.02; }
+      else { btA = mA + 0.02; btH = mH - 0.02; }
+    }
+
+    // Weighted blend
+    // Market: 40%, AH-adjusted: 20%, O/U: 15%, BTTS: 10%, Strength: 10%, Form: 5%
+    homeProb = mH * 0.40 + ahH * 0.20 + ouH * 0.15 + btH * 0.10 + strengthHome * 0.10 + (strengthHome + formHome) * 0.05;
+    drawProb = mD * 0.40 + ahD * 0.20 + ouD * 0.15 + btD * 0.10 + strengthDraw * 0.10 + strengthDraw * 0.05;
+    awayProb = mA * 0.40 + ahA * 0.20 + ouA * 0.15 + btA * 0.10 + strengthAway * 0.10 + (strengthAway + formAway) * 0.05;
+  } else {
+    // No market data — fallback to strength + form only
+    homeProb = strengthHome + formHome;
+    drawProb = strengthDraw;
+    awayProb = strengthAway + formAway;
   }
-  
-  // Normalize probabilities
-  homeProb = Math.max(0.15, Math.min(0.70, homeProb));
-  awayProb = Math.max(0.15, Math.min(0.70, awayProb));
-  drawProb = Math.max(0.15, Math.min(0.45, drawProb));
-  
-  const total = homeProb + drawProb + awayProb;
-  homeProb /= total;
-  drawProb /= total;
-  awayProb /= total;
-  
+
+  // Normalize
+  const probTotal = homeProb + drawProb + awayProb;
+  homeProb /= probTotal;
+  drawProb /= probTotal;
+  awayProb /= probTotal;
+
+  // Clamp extremes
+  homeProb = Math.max(0.10, Math.min(0.75, homeProb));
+  awayProb = Math.max(0.10, Math.min(0.75, awayProb));
+  drawProb = Math.max(0.12, Math.min(0.45, drawProb));
+  const clampTotal = homeProb + drawProb + awayProb;
+  homeProb /= clampTotal; drawProb /= clampTotal; awayProb /= clampTotal;
+
   const homeWinPct = Math.round(homeProb * 100);
   const drawPct = Math.round(drawProb * 100);
   const awayWinPct = 100 - homeWinPct - drawPct;
-  
-  // Determine pick and recommendation
+
+  // ── 2. PICK SELECTION ──
+
   let pick: string;
   let pickType: "home" | "draw" | "away";
-  let recommendation: AutoVerdict["recommendation"];
-  let valueRating: AutoVerdict["valueRating"];
-  let riskLevel: AutoVerdict["riskLevel"];
-  let confidencePct: number;
-  
-  // Find highest probability outcome
-  if (homeWinPct >= drawPct && homeWinPct >= awayWinPct) {
-    pick = `${fixture.home.name} Win`;
-    pickType = "home";
-  } else if (awayWinPct >= drawPct && awayWinPct >= homeWinPct) {
-    pick = `${fixture.away.name} Win`;
-    pickType = "away";
-  } else {
-    pick = "Draw";
-    pickType = "draw";
-  }
-  
-  // Calculate value vs market odds
-  let valueGap = 0;
-  if (odds.length > 0) {
-    const avgOdds = odds.reduce((sum, odd) => {
-      return sum + (pickType === "home" ? odd.home : pickType === "away" ? odd.away : odd.draw);
-    }, 0) / odds.length;
-    
-    const marketProb = 1 / avgOdds;
-    const aiProb = pickType === "home" ? homeProb : pickType === "away" ? awayProb : drawProb;
-    valueGap = (aiProb - marketProb) * 100;
-  }
-  
-  // Determine recommendation — blend odds-derived edge with model confidence
-  const strengthGap = Math.abs(homeStrength - awayStrength);
-  
-  // Base confidence from the pick's probability
-  const pickProb = pickType === "home" ? homeProb : pickType === "away" ? awayProb : drawProb;
-  const baseConfidence = Math.round(pickProb * 100);
+  const topProb = Math.max(homeProb, drawProb, awayProb);
 
-  // Adjust confidence with market agreement (if odds available)
-  let marketAgreement = 0;
-  if (odds.length > 0) {
-    const avgOddsForPick = odds.reduce((s, o) => s + (pickType === "home" ? o.home : pickType === "away" ? o.away : o.draw), 0) / odds.length;
-    const marketProb = 1 / avgOddsForPick;
-    // If market agrees with our pick (market also sees this as most likely), boost confidence
-    const allAvgOdds = odds.reduce((s, o) => ({ h: s.h + o.home, d: s.d + o.draw, a: s.a + o.away }), { h: 0, d: 0, a: 0 });
-    const mktFav = Math.min(allAvgOdds.h, allAvgOdds.d, allAvgOdds.a);
-    if (Math.abs(avgOddsForPick - mktFav / odds.length) < 0.3) {
-      marketAgreement = 8; // Market agrees with AI pick
+  if (homeProb >= drawProb && homeProb >= awayProb) {
+    pick = `${fixture.home.name} Win`; pickType = "home";
+  } else if (awayProb >= drawProb && awayProb >= homeProb) {
+    pick = `${fixture.away.name} Win`; pickType = "away";
+  } else {
+    pick = "Draw"; pickType = "draw";
+  }
+
+  const pickProb = pickType === "home" ? homeProb : pickType === "away" ? awayProb : drawProb;
+
+  // ── 3. CONFIDENCE GATE + SKIP DISCIPLINE ──
+
+  // Calculate value gap vs market
+  let valueGap = 0;
+  let marketPickProb = 0;
+  if (marketProbs) {
+    marketPickProb = pickType === "home" ? marketProbs.home : pickType === "away" ? marketProbs.away : marketProbs.draw;
+    valueGap = (pickProb - marketPickProb) * 100; // percentage points
+  }
+
+  // Data quality score (0-1) — affects confidence
+  let dataQuality = 0;
+  if (hasOdds) dataQuality += 0.5;
+  if (ahLine !== undefined && !ahDerived) dataQuality += 0.2; // real AH data
+  else if (ahLine !== undefined) dataQuality += 0.1; // derived AH
+  if (marketExtras?.overOdds) dataQuality += 0.1;
+  if (marketExtras?.bttsYes) dataQuality += 0.05;
+  if (homeForm) dataQuality += 0.1;
+  if (h2h.length > 0) dataQuality += 0.05;
+
+  // Confidence: blend of pick probability + data quality
+  let confidencePct = Math.round(pickProb * 80 + dataQuality * 20);
+  confidencePct = Math.min(92, Math.max(30, confidencePct));
+
+  // Market agreement bonus
+  if (marketProbs) {
+    const marketFav = marketProbs.home > marketProbs.away && marketProbs.home > marketProbs.draw ? "home"
+      : marketProbs.away > marketProbs.home && marketProbs.away > marketProbs.draw ? "away" : "draw";
+    if (marketFav === pickType) confidencePct = Math.min(92, confidencePct + 5);
+  }
+
+  // ── CONFIDENCE GATES (force SKIP on unclear matches) ──
+  let forceSkip = false;
+  let skipReason = "";
+
+  // Gate 1: Top probability too low — too close to call
+  if (topProb < 0.40) {
+    forceSkip = true;
+    skipReason = "Too close to call — no outcome above 40%.";
+  }
+
+  // Gate 2: Home vs away spread too tight with high draw chance
+  if (!forceSkip && Math.abs(homeProb - awayProb) < 0.05 && drawProb > 0.28) {
+    forceSkip = true;
+    skipReason = "Near-equal probabilities — coin flip match.";
+  }
+
+  // Gate 3: No odds data — flying blind
+  if (!forceSkip && !hasOdds) {
+    forceSkip = true;
+    skipReason = "No market data available.";
+  }
+
+  // ── AH-BASED OVERRIDES (conservative brake) ──
+  let ahCap: "BET" | "LEAN" | "SKIP" | null = null;
+
+  if (ahLine !== undefined) {
+    const absAH = Math.abs(ahLine);
+
+    // Picking home but AH says it's nearly even → cap at LEAN
+    if (pickType === "home" && ahLine > -0.25 && ahLine <= 0) {
+      ahCap = "LEAN";
+    }
+    // Picking away but AH says home is heavy favorite → cap at LEAN
+    if (pickType === "away" && ahLine < -1.25) {
+      ahCap = "LEAN";
+    }
+    // Picking draw but AH says clear winner expected → SKIP
+    if (pickType === "draw" && absAH > 1.0) {
+      forceSkip = true;
+      skipReason = "Draw pick conflicts with strong AH line.";
+    }
+
+    // AH confirms pick direction?
+    const ahConfirmsPick =
+      (pickType === "home" && ahLine < -0.5) ||
+      (pickType === "away" && ahLine > 0.5) ||
+      (pickType === "draw" && absAH < 0.5);
+
+    // If AH disagrees with pick direction, reduce confidence
+    if (!ahConfirmsPick && !forceSkip) {
+      confidencePct = Math.max(30, confidencePct - 8);
     }
   }
 
-  confidencePct = Math.min(92, Math.max(38, baseConfidence + marketAgreement));
+  // ── 4. RECOMMENDATION ──
 
-  if (valueGap > 5 && confidencePct >= 65) {
-    recommendation = "BET";
-    valueRating = 5;
-  } else if (valueGap > 2 && confidencePct >= 55) {
-    recommendation = "BET";
-    valueRating = 4;
-  } else if (valueGap > 0 || confidencePct >= 55) {
-    recommendation = "LEAN";
-    valueRating = 3;
-  } else if (valueGap > -5) {
+  let recommendation: AutoVerdict["recommendation"];
+  let valueRating: AutoVerdict["valueRating"];
+  let riskLevel: AutoVerdict["riskLevel"];
+
+  if (forceSkip) {
     recommendation = "SKIP";
     valueRating = 2;
   } else {
-    recommendation = "AVOID";
-    valueRating = 1;
+    // AH confirmation check
+    const ahConfirms = ahLine !== undefined && (
+      (pickType === "home" && ahLine < -0.5) ||
+      (pickType === "away" && ahLine > 0.5) ||
+      (pickType === "draw" && Math.abs(ahLine) < 0.5)
+    );
+
+    if (valueGap > 10 && confidencePct >= 72 && ahConfirms) {
+      recommendation = "BET"; valueRating = 5; // Strong BET
+    } else if (valueGap > 7 && confidencePct >= 65 && ahConfirms) {
+      recommendation = "BET"; valueRating = 4;
+    } else if (valueGap > 3 && confidencePct >= 58) {
+      recommendation = "LEAN"; valueRating = 3;
+    } else if (valueGap < -8) {
+      recommendation = "AVOID"; valueRating = 1;
+    } else {
+      recommendation = "SKIP"; valueRating = 2;
+    }
+
+    // Apply AH cap
+    if (ahCap) {
+      const rankOrder = { "BET": 3, "LEAN": 2, "SKIP": 1, "AVOID": 0 };
+      if (rankOrder[recommendation] > rankOrder[ahCap]) {
+        recommendation = ahCap;
+        valueRating = Math.min(valueRating, 3) as AutoVerdict["valueRating"];
+      }
+    }
   }
-  
-  // Risk level based on league, team strength difference, and injuries
+
+  // ── 5. RISK LEVEL ──
+
+  const strengthGap = Math.abs(homeStrength - awayStrength);
   const majorInjuries = injuries.length;
-  if (strengthGap > 15 && majorInjuries < 2) {
+  const absAHLine = ahLine !== undefined ? Math.abs(ahLine) : 0;
+
+  if (absAHLine > 1.5 && strengthGap > 15 && majorInjuries < 2) {
     riskLevel = "LOW";
-  } else if (strengthGap > 8 || fixture.league.id === 2) { // Champions League is riskier
+  } else if (absAHLine > 0.75 || strengthGap > 10) {
     riskLevel = "MEDIUM";
-  } else if (strengthGap > 3) {
+  } else if (absAHLine > 0.25 || strengthGap > 5) {
     riskLevel = "HIGH";
   } else {
     riskLevel = "VERY HIGH";
   }
-  
-  // === PREDICTED SCORE — Poisson model from market-implied xG ===
+
+  // ── 6. AH-CALIBRATED SCORE PREDICTION ──
 
   let homeXG: number;
   let awayXG: number;
-  let expectedTotal: number;
-  let bttsProb = 0.5; // default
 
-  if (odds.length > 0) {
-    // 1. Derive implied probabilities from 1X2 odds (remove overround)
-    const avgHomeOdds = odds.reduce((s, o) => s + o.home, 0) / odds.length;
-    const avgDrawOdds = odds.reduce((s, o) => s + o.draw, 0) / odds.length;
-    const avgAwayOdds = odds.reduce((s, o) => s + o.away, 0) / odds.length;
-    const rawTotal = 1/avgHomeOdds + 1/avgDrawOdds + 1/avgAwayOdds;
-    const mktHome = (1/avgHomeOdds) / rawTotal;
-    const mktDraw = (1/avgDrawOdds) / rawTotal;
-    const mktAway = (1/avgAwayOdds) / rawTotal;
-
-    // 2. Expected total goals from over/under market (most accurate source)
-    if (marketExtras?.overOdds && marketExtras?.underOdds) {
-      const overRaw = 1 / marketExtras.overOdds;
-      const underRaw = 1 / marketExtras.underOdds;
-      const ouOverround = overRaw + underRaw;
-      const overProb = overRaw / ouOverround;
-      const line = marketExtras.totalLine || 2.5;
-      // overProb > 0.5 means market expects more goals than the line
-      // Map: overProb 0.3 → total ~1.8, overProb 0.5 → total ~2.5, overProb 0.7 → total ~3.2
-      expectedTotal = line + (overProb - 0.5) * 3.0;
-    } else {
-      // Fallback: derive from draw probability
-      expectedTotal = Math.max(1.6, Math.min(3.5, 3.8 - (mktDraw * 5.0)));
-    }
-    expectedTotal = Math.max(1.4, Math.min(4.0, expectedTotal));
-
-    // 3. BTTS probability from market
-    if (marketExtras?.bttsYes && marketExtras?.bttsNo) {
-      const bttsRaw = 1 / marketExtras.bttsYes;
-      const bttsNoRaw = 1 / marketExtras.bttsNo;
-      bttsProb = bttsRaw / (bttsRaw + bttsNoRaw);
-    }
-
-    // 4. Split expected total between home and away
-    // Use 1X2 probabilities as strength proxy
-    const homeShare = 0.5 + (mktHome - mktAway) * 0.4; // range ~0.3–0.7
+  if (ahLine !== undefined && expectedTotal > 0) {
+    // AH line = expected margin. Combined with O/U total → precise xG split.
+    // ahLine is negative when home is favored, so expectedMargin is -ahLine for home advantage
+    const expectedMargin = -(ahLine); // positive = home expected to win by this much
+    homeXG = (expectedTotal + expectedMargin) / 2;
+    awayXG = (expectedTotal - expectedMargin) / 2;
+  } else if (hasOdds && marketProbs) {
+    // Fallback: derive from market probs (old method but less precise)
+    const homeShare = 0.5 + (marketProbs.home - marketProbs.away) * 0.4;
     homeXG = expectedTotal * Math.max(0.3, Math.min(0.7, homeShare));
     awayXG = expectedTotal - homeXG;
   } else {
-    // Fallback: team strength model
+    // Pure strength fallback
     homeXG = 0.8 + ((homeStrength - 50) / 50) * 1.0;
     awayXG = 0.6 + ((awayStrength - 50) / 50) * 0.8;
-    expectedTotal = homeXG + awayXG;
   }
 
   // Form fine-tuning (±0.2 max)
   if (homeForm?.goalsFor) homeXG += Math.min(0.2, Math.max(-0.2, (homeForm.goalsFor / 5 - 1.2) * 0.1));
   if (awayForm?.goalsFor) awayXG += Math.min(0.2, Math.max(-0.2, (awayForm.goalsFor / 5 - 1.0) * 0.1));
 
-  // Clamp
-  homeXG = Math.max(0.3, Math.min(3.0, homeXG));
-  awayXG = Math.max(0.2, Math.min(2.5, awayXG));
+  // Clamp to realistic bounds
+  homeXG = Math.max(0.3, Math.min(3.5, homeXG));
+  awayXG = Math.max(0.2, Math.min(3.0, awayXG));
 
-  // 5. Build Poisson score probability grid
+  // Build Poisson score grid
   const scoreGrid = buildScoreGrid(homeXG, awayXG);
 
-  // 6. Filter scores consistent with pick, then rank by probability
+  // Filter scores consistent with pick
   const consistentScores = scoreGrid.filter(s => {
     if (pickType === "home") return s.home > s.away;
     if (pickType === "away") return s.away > s.home;
-    return s.home === s.away; // draw
+    return s.home === s.away;
   });
 
-  // Primary score = highest probability consistent score
   const primary = consistentScores[0] || { home: pickType === "away" ? 0 : 1, away: pickType === "home" ? 0 : 1, prob: 0 };
-  // Alternate score = second most likely
   const alternate = consistentScores[1] || null;
-  // Longshot = a higher-total consistent score, only if BTTS is likely or totals are high
   const longshot = (bttsProb > 0.55 || expectedTotal > 2.8)
     ? consistentScores.find(s => (s.home + s.away) >= 3 && s.home > 0 && s.away > 0 && s !== primary && s !== alternate) || null
     : null;
@@ -421,17 +568,23 @@ export function generateAutoVerdict(
     ? `${fixture.home.name} ${longshot.home}–${longshot.away} ${fixture.away.name}`
     : undefined;
 
-  // 7. Generate explanation
-  let scoreExplanation = `Primary ${primary.home}–${primary.away} is the highest-probability ${pickType === 'home' ? 'home win' : pickType === 'away' ? 'away win' : 'draw'} scoreline from market-implied goal distribution (${Math.round(primary.prob * 100)}% within category).`;
-  if (longshot) {
-    scoreExplanation += ` Longshot ${longshot.home}–${longshot.away} included because ${bttsProb > 0.55 ? 'BTTS market suggests both teams likely to score' : 'high expected total increases tail-score probability'}.`;
+  // Score explanation
+  let scoreExplanation = `Primary ${primary.home}–${primary.away} from ${ahLine !== undefined ? 'AH-calibrated' : 'market-implied'} xG model (H ${homeXG.toFixed(1)} / A ${awayXG.toFixed(1)}).`;
+  if (ahLine !== undefined) {
+    scoreExplanation += ` AH line ${ahLine > 0 ? '+' : ''}${ahLine.toFixed(2)} → expected margin ${Math.abs(ahLine).toFixed(1)} goals.`;
   }
-  
+  if (longshot) {
+    scoreExplanation += ` Longshot ${longshot.home}–${longshot.away}: ${bttsProb > 0.55 ? 'BTTS likely' : 'high expected total'}.`;
+  }
+
+  // ── 7. REASONING ──
+
   const reasoning = generateReasoning(
     fixture, homeForm, awayForm, h2h, injuries, odds,
-    homeWinPct, awayWinPct, drawPct, pick
+    homeWinPct, awayWinPct, drawPct, pick,
+    ahLine, ahDerived,
   );
-  
+
   return {
     fixtureId: fixture.id,
     league: fixture.league.name,
@@ -447,7 +600,7 @@ export function generateAutoVerdict(
     valueRating,
     riskLevel,
     confidencePct,
-    reasoning,
+    reasoning: forceSkip ? `SKIP: ${skipReason} ${reasoning}` : reasoning,
     homeForm: homeForm?.form || "NNNNN",
     awayForm: awayForm?.form || "NNNNN",
     h2h,

@@ -84,13 +84,17 @@ export function generateVerdict(
   let valueRating: Verdict["valueRating"];
   let valueLabel: string;
 
-  if (valueGapPct > 8) {
+  // Tightened thresholds — conservative, fewer BETs
+  const confMap2: Record<string, number> = { "VERY HIGH": 88, "HIGH": 75, "MEDIUM": 60, "LOW": 42 };
+  const confPct = confMap2[analysis.confidence] || 55;
+
+  if (valueGapPct > 10 && confPct >= 72) {
     recommendation = "BET"; valueRating = 5; valueLabel = "Strong Value";
-  } else if (valueGapPct > 4) {
+  } else if (valueGapPct > 7 && confPct >= 65) {
     recommendation = "BET"; valueRating = 4; valueLabel = "Good Value";
-  } else if (valueGapPct > 1) {
+  } else if (valueGapPct > 3 && confPct >= 58) {
     recommendation = "LEAN"; valueRating = 3; valueLabel = "Fair Price";
-  } else if (valueGapPct > -3) {
+  } else if (valueGapPct > -8) {
     recommendation = "SKIP"; valueRating = 2; valueLabel = "Overpriced";
   } else {
     recommendation = "AVOID"; valueRating = 1; valueLabel = "No Value";

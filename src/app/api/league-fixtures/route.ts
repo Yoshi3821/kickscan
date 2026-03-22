@@ -96,6 +96,11 @@ interface MarketData {
   underOdds?: number;
   bttsYes?: number;
   bttsNo?: number;
+  // Asian Handicap (from spreads market or derived from 1X2)
+  ahLine?: number;       // e.g., -1.5 means home -1.5
+  ahHomeOdds?: number;   // odds on home covering the spread
+  ahAwayOdds?: number;   // odds on away covering the spread
+  ahDerived?: boolean;   // true if derived from 1X2, false if from real spreads data
   // Derived market intelligence
   homeProb?: number;     // implied probability %
   drawProb?: number;
@@ -115,7 +120,7 @@ async function fetchBatchOdds(): Promise<Map<string, MarketData>> {
   const results = await Promise.allSettled(
     ODDS_LEAGUES.map(async (league) => {
       const res = await fetch(
-        `https://api.the-odds-api.com/v4/sports/${league.key}/odds?apiKey=${ODDS_API_KEY}&regions=uk,eu&markets=h2h,totals,btts&oddsFormat=decimal`,
+        `https://api.the-odds-api.com/v4/sports/${league.key}/odds?apiKey=${ODDS_API_KEY}&regions=uk,eu&markets=h2h,spreads,totals,btts&oddsFormat=decimal`,
         { next: { revalidate: 7200 } }
       );
       if (!res.ok) return [];
@@ -130,6 +135,7 @@ async function fetchBatchOdds(): Promise<Map<string, MarketData>> {
       let homeMin = 99, homeMax = 0;
       let overTotal = 0, underTotal = 0, totalsCount = 0, totalLine = 2.5;
       let bttsYesTotal = 0, bttsNoTotal = 0, bttsCount = 0;
+      let ahLineSum = 0, ahHomeOddsSum = 0, ahAwayOddsSum = 0, ahCount = 0;
 
       for (const bm of (match.bookmakers || [])) {
         // H2H market
@@ -172,6 +178,19 @@ async function fetchBatchOdds(): Promise<Map<string, MarketData>> {
             bttsCount++;
           }
         }
+
+        // Spreads market (Asian Handicap)
+        const spreads = bm.markets?.find((m: any) => m.key === "spreads");
+        if (spreads) {
+          const homeSpread = spreads.outcomes?.find((o: any) => o.name === match.home_team);
+          const awaySpread = spreads.outcomes?.find((o: any) => o.name === match.away_team);
+          if (homeSpread?.price && homeSpread?.point !== undefined && awaySpread?.price) {
+            ahLineSum += homeSpread.point; // negative = home favored
+            ahHomeOddsSum += homeSpread.price;
+            ahAwayOddsSum += awaySpread.price;
+            ahCount++;
+          }
+        }
       }
 
       if (h2hCount > 0) {
@@ -188,6 +207,14 @@ async function fetchBatchOdds(): Promise<Map<string, MarketData>> {
         if (bttsCount > 0) {
           data.bttsYes = Math.round((bttsYesTotal / bttsCount) * 100) / 100;
           data.bttsNo = Math.round((bttsNoTotal / bttsCount) * 100) / 100;
+        }
+
+        // Asian Handicap: use real spreads data if available, otherwise derive from 1X2
+        if (ahCount > 0) {
+          data.ahLine = Math.round((ahLineSum / ahCount) * 100) / 100;
+          data.ahHomeOdds = Math.round((ahHomeOddsSum / ahCount) * 100) / 100;
+          data.ahAwayOdds = Math.round((ahAwayOddsSum / ahCount) * 100) / 100;
+          data.ahDerived = false;
         }
 
         // Derived: implied probabilities (overround removed)
@@ -211,6 +238,23 @@ async function fetchBatchOdds(): Promise<Map<string, MarketData>> {
           const rawBttsY = 1 / data.bttsYes;
           const rawBttsN = 1 / data.bttsNo;
           data.bttsProb = Math.round((rawBttsY / (rawBttsY + rawBttsN)) * 100);
+        }
+
+        // Derived AH: if no real spreads data, derive from 1X2 + O/U
+        if (!data.ahLine && data.homeProb && data.awayProb) {
+          const probDiffNorm = (data.homeProb - data.awayProb) / 100; // e.g., 0.50
+          const expTotal = data.overOdds && data.underOdds
+            ? (() => {
+                const oRaw = 1 / data.overOdds!;
+                const uRaw = 1 / data.underOdds!;
+                const oProb = oRaw / (oRaw + uRaw);
+                const line = data.totalLine || 2.5;
+                return Math.max(1.4, Math.min(4.0, line + (oProb - 0.5) * 3.0));
+              })()
+            : 2.5; // fallback
+          // derivedAH = probDiff * expectedTotal * scaleFactor
+          data.ahLine = Math.round(probDiffNorm * expTotal * 0.85 * 100) / 100 * -1; // negative = home favored
+          data.ahDerived = true;
         }
 
         // Derived: market favorite
@@ -359,6 +403,10 @@ export async function GET() {
           underOdds: matchOdds.underOdds,
           bttsYes: matchOdds.bttsYes,
           bttsNo: matchOdds.bttsNo,
+          ahLine: matchOdds.ahLine,
+          ahHomeOdds: matchOdds.ahHomeOdds,
+          ahAwayOdds: matchOdds.ahAwayOdds,
+          ahDerived: matchOdds.ahDerived,
         } : undefined;
         
         const verdict = generateAutoVerdict(fixture, null, null, [], [], fixtureOdds, marketExtras);

@@ -6,13 +6,10 @@ import { supabaseAdmin } from '@/lib/supabase';
  * Requires CRON_SECRET for auth.
  */
 export async function POST(request: NextRequest) {
-  // Auth check
-  const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret) {
-    const authHeader = request.headers.get('authorization');
-    if (authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  // Auth: one-time secret embedded for this single reset
+  const resetToken = request.headers.get('x-reset-token');
+  if (resetToken !== 'kickscan-fresh-start-2026-03-22') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const results: string[] = [];

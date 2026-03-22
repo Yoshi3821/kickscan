@@ -270,29 +270,19 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Failed to create prediction" }, { status: 500 });
       }
 
-      // Update user's booster count and total predictions
-      const updateData: any = { 
-        total_predictions: (user.total_predictions || 0) + 1 
-      };
-
-      if (useBooster) {
-        const newBoostersUsed = user.last_booster_date === today ? user.boosters_used_today + 1 : 1;
-        updateData.boosters_used_today = newBoostersUsed;
-        updateData.last_booster_date = today;
-      }
-
+      // Update user's total predictions only
       const { error: userUpdateError } = await supabaseAdmin
         .from('users')
-        .update(updateData)
+        .update({ 
+          total_predictions: (user.total_predictions || 0) + 1 
+        })
         .eq('id', userId);
 
       if (userUpdateError) {
         console.error("Error updating user stats:", userUpdateError);
       }
 
-      const remainingBoosters = useBooster ? 
-        Math.max(0, 1 - updateData.boosters_used_today) : 
-        Math.max(0, 1 - (user.boosters_used_today || 0));
+      const remainingBoosters = 1;
 
       return NextResponse.json({
         prediction: newPrediction,

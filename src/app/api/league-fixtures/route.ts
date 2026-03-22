@@ -239,7 +239,7 @@ async function fetchBatchOdds(): Promise<Map<string, MarketData>> {
   const results = await Promise.allSettled(
     ODDS_LEAGUES.map(async (league) => {
       const res = await fetch(
-        `https://api.the-odds-api.com/v4/sports/${league.key}/odds?apiKey=${ODDS_API_KEY}&regions=uk,eu&markets=h2h,spreads,totals,btts&oddsFormat=decimal`,
+        `https://api.the-odds-api.com/v4/sports/${league.key}/odds?apiKey=${ODDS_API_KEY}&regions=uk,eu&markets=h2h,spreads,totals&oddsFormat=decimal`,
         { next: { revalidate: 7200 } }
       );
       if (!res.ok) return [];

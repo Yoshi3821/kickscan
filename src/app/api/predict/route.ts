@@ -195,9 +195,19 @@ export async function POST(request: NextRequest) {
     const { userId, token, matchId, predictedResult, predictedScore, useBooster, homeTeam, awayTeam, marketFavorite } = body;
 
     // Validation
-    if (!userId || !token || !matchId || !predictedResult || !predictedScore) {
+    if (!userId || !token || !matchId || !predictedResult) {
       return NextResponse.json({ 
-        error: "userId, token, matchId, predictedResult, and predictedScore required" 
+        error: "userId, token, matchId, and predictedResult required" 
+      }, { status: 400 });
+    }
+
+    // Check if predictions are locked for this match
+    const { checkPredictionLock } = await import('@/lib/odds-manager');
+    const lockStatus = await checkPredictionLock(matchId);
+    
+    if (lockStatus.isLocked) {
+      return NextResponse.json({
+        error: "Predictions are locked for this match (less than 5 minutes until kickoff)"
       }, { status: 400 });
     }
 

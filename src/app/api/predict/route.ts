@@ -457,7 +457,9 @@ export async function POST(request: NextRequest) {
     console.error("POST prediction error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-}: newPrediction,
+
+  return NextResponse.json({
+    prediction: newPrediction,
         boostersRemaining: remainingBoosters,
         created: true
       });

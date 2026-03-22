@@ -77,10 +77,10 @@ async function handleOddsRefresh() {
 
   } catch (error) {
     console.error('Odds refresh error:', error);
-    return {
+    return NextResponse.json({
       success: false,
       error: 'Failed to refresh odds'
-    };
+    });
   }
 }
 

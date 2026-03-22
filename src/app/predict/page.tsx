@@ -738,14 +738,14 @@ function PredictPageContent() {
 
       const data = await response.json();
       
-      if (data.success) {
+      if (data.prediction) {
         // Update local predictions
         setPredictions(prev => ({
           ...prev,
           [matchId]: data.prediction
         }));
         
-        setBoostersRemaining(data.boostersRemaining);
+        setBoostersRemaining(data.boostersRemaining ?? 1);
         
         // Skip expensive refreshes - prediction save already returns updated user data
       } else {

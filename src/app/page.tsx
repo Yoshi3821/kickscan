@@ -398,7 +398,7 @@ export default function HomePage() {
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-center text-sm">
                 <div>
                   <div className="text-lg mb-1">✅</div>
-                  <div className="font-bold">Correct result: 3 pts</div>
+                  <div className="font-bold">Correct 1X2: 1-11 pts (odds-based)</div>
                 </div>
                 <div>
                   <div className="text-lg mb-1">🎯</div>

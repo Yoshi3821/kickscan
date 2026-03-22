@@ -687,7 +687,7 @@ function PredictPageContent() {
         localStorage.setItem("kickscan_user", JSON.stringify(userData));
         window.dispatchEvent(new Event("kickscan_auth_change"));
         
-        fetchLeaderboard();
+        // Skip leaderboard fetch - will load on page navigation
       } else {
         setError(data.error || "Login failed");
       }

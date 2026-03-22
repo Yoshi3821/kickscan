@@ -312,16 +312,11 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Failed to update prediction" }, { status: 500 });
       }
 
-      // Get updated user data to calculate remaining boosters
-      const { data: updatedUser } = await supabaseAdmin
-        .from('users')
-        .select('boosters_used_today, last_booster_date')
-        .eq('id', userId)
-        .single();
-
-      const remainingBoosters = (updatedUser?.last_booster_date === today) 
-        ? 2 - (updatedUser?.boosters_used_today || 0)
-        : 2;
+      // Calculate remaining boosters without extra DB call
+      const currentUsed = user.last_booster_date === today ? user.boosters_used_today : 0;
+      const boosterChange = useBooster && !existingPrediction.boosted ? 1 : 
+                           (!useBooster && existingPrediction.boosted ? -1 : 0);
+      const remainingBoosters = Math.max(0, 2 - (currentUsed + boosterChange));
 
       return NextResponse.json({
         success: true,

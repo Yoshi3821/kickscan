@@ -500,7 +500,7 @@ export async function GET() {
     const enrichmentPromise = fetchBatchEnrichment().catch((): BatchEnrichment => ({ formMap: {}, injuryMap: {} }));
     
     // Try API-Football for upcoming
-    const fixtures = await getAllLeagueFixtures(12);
+    const fixtures = await getAllLeagueFixtures(20);
     const [oddsMap, todayFixtures, enrichment] = await Promise.all([
       oddsMapPromise, todayFixturesPromise, enrichmentPromise,
     ]);

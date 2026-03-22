@@ -510,12 +510,21 @@ export function generateAutoVerdict(
       (pickType === "draw" && Math.abs(ahLine) < 0.5)
     );
 
+    // Two paths to BET/LEAN:
+    // Path A: Value gap — AI sees meaningful edge over market
+    // Path B: High confidence + AH confirms — strong consensus pick even if gap is small
+    //         (gap is naturally small because model is ~40% market-weighted)
+
     if (valueGap > 10 && confidencePct >= 72 && ahConfirms) {
-      recommendation = "BET"; valueRating = 5; // Strong BET
+      recommendation = "BET"; valueRating = 5; // Strong value BET
     } else if (valueGap > 7 && confidencePct >= 65 && ahConfirms) {
-      recommendation = "BET"; valueRating = 4;
+      recommendation = "BET"; valueRating = 4; // Good value BET
+    } else if (confidencePct >= 72 && ahConfirms && pickProb >= 0.55) {
+      recommendation = "BET"; valueRating = 4; // High-confidence consensus BET
     } else if (valueGap > 3 && confidencePct >= 58) {
       recommendation = "LEAN"; valueRating = 3;
+    } else if (confidencePct >= 60 && pickProb >= 0.45) {
+      recommendation = "LEAN"; valueRating = 3; // Moderate-confidence LEAN
     } else if (valueGap < -8) {
       recommendation = "AVOID"; valueRating = 1;
     } else {

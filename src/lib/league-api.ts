@@ -80,13 +80,19 @@ async function apiCall(endpoint: string): Promise<any> {
 // Fetch upcoming fixtures for a league (includes today's matches)
 export async function getLeagueFixtures(leagueId: number, next: number = 10): Promise<LeagueFixture[]> {
   const year = new Date().getFullYear();
+  const month = new Date().getMonth(); // 0-indexed
   const today = new Date().toISOString().split('T')[0];
 
-  // Helper: try current year, fallback to previous year
+  // European cross-year leagues (Aug-May): use previous year for Jan-Jul
+  const CROSS_YEAR = [39, 140, 135, 78, 2]; // EPL, La Liga, Serie A, Bundesliga, UCL
+  const primarySeason = CROSS_YEAR.includes(leagueId) && month < 7 ? year - 1 : year;
+  const fallbackSeason = primarySeason === year ? year - 1 : year;
+
+  // Helper: try primary season, fallback to alternate
   const fetchWithSeasonFallback = async (params: string): Promise<any[]> => {
-    let data = await apiCall(`/fixtures?league=${leagueId}&season=${year}&${params}`).catch(() => []);
+    let data = await apiCall(`/fixtures?league=${leagueId}&season=${primarySeason}&${params}`).catch(() => []);
     if (!data || data.length === 0) {
-      data = await apiCall(`/fixtures?league=${leagueId}&season=${year - 1}&${params}`).catch(() => []);
+      data = await apiCall(`/fixtures?league=${leagueId}&season=${fallbackSeason}&${params}`).catch(() => []);
     }
     return data || [];
   };

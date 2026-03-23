@@ -67,7 +67,7 @@ export default function VerdictsPage() {
             🎯 <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent">THE VERDICTS</span>
           </h1>
           <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-            Every match. One clear call. AI-powered verdicts for all 72 World Cup 2026 group stage matches.
+            Every match. One clear call. AI-powered verdicts for all 98 World Cup 2026 matches — group stage, qualifiers &amp; friendlies.
           </p>
         </div>
 
@@ -110,7 +110,7 @@ export default function VerdictsPage() {
               onChange={e => setSelectedGroup(e.target.value)}
               className="px-3 py-2 rounded-xl text-sm font-bold bg-white/[0.06] border border-white/[0.1] text-white"
             >
-              {groups.map(g => <option key={g} value={g}>Group {g}</option>)}
+              {groups.map(g => <option key={g} value={g}>{g === "WCQ" ? "🏆 WC Qualifiers" : g === "FRI" ? "⚽ Friendlies" : `Group ${g}`}</option>)}
             </select>
           )}
 
@@ -151,7 +151,7 @@ export default function VerdictsPage() {
                 {/* Match header */}
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                    Group {match.group} · {match.date}
+                    {match.group === "WCQ" ? "WC Qualifier" : match.group === "FRI" ? "Friendly" : `Group ${match.group}`} · {match.date}
                   </span>
                   <span className={`text-xs font-black px-2 py-0.5 rounded-full ${cfg.bg} border ${cfg.border} ${cfg.text}`}>
                     {cfg.emoji} {verdict.recommendation}

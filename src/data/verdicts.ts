@@ -387,6 +387,140 @@ const verdictContent: Record<number, { reasoning: string; keyInsight: string; wa
     keyInsight: "Croatia have made the semi-finals or better at 3 of the last 4 World Cups — no team manages knockout-context group games better",
     watchOut: "Ghana's aerial threat from set pieces is their best weapon against Croatia's compact but smaller defensive unit",
   },
+
+  // ==================== WC QUALIFIER PLAYOFFS ====================
+  73: {
+    reasoning: "The pressure on Italy is almost unbearable — missing a third consecutive World Cup would be a footballing catastrophe for the four-time champions. Playing at the Gewiss Stadium in Bergamo (Atalanta's fortress) gives them a hostile atmosphere, and the Azzurri's talent pool is deep enough to overpower Northern Ireland. But Italy's tournament qualification record since 2018 has been cursed with late drama. Expect them to win, but don't expect it to be comfortable.",
+    keyInsight: "Italy failed to qualify for the 2018 and 2022 World Cups — a third miss would be the worst drought in their 100+ year history",
+    watchOut: "Northern Ireland are specialists at organized low blocks and set-piece goals — if they score first, Italian nerves could become crippling",
+  },
+  74: {
+    reasoning: "Wales have genuine World Cup pedigree now after their 2022 appearance, and Cardiff's atmosphere under the lights is genuinely intimidating. Bosnia have talent — Džeko may be aging but Demirović and Kolašinac add steel — but they've historically crumbled in away playoff environments. Wales' direct style and home crowd make them clear favorites, and the market underrates the fortress factor.",
+    keyInsight: "Wales are unbeaten in 12 home competitive matches at Cardiff City Stadium — the Bosnian midfield will struggle with the intensity",
+    watchOut: "Bosnia's counter-attacking quality through Demirović can punish Wales if they overcommit chasing an early goal",
+  },
+  75: {
+    reasoning: "A neutral venue in Valencia strips Ukraine of any home advantage, but it also removes Sweden's Scandinavian comfort. Ukraine's squad has been hardened by years of playing on neutral grounds due to the war, giving them a unique psychological edge in displaced environments. Sweden are solid but lack the creative spark they had with Ibrahimović. Ukraine's Mudryk and Dovbyk axis gives them the cutting edge Sweden can't match.",
+    keyInsight: "Ukraine have played every 'home' game at neutral venues since 2022 — no team in world football is more adapted to this exact scenario",
+    watchOut: "Sweden's set-piece delivery remains elite, and their aerial presence from Isak and defenders is a genuine route to goal",
+  },
+  76: {
+    reasoning: "Poland at the PGE Narodowy is a daunting trip for Albania. Lewandowski may be in the twilight of his career but he's still the most clinical finisher in European football when given half a chance. Albania impressed at Euro 2024 with their defensive organization, but a playoff semifinal against a desperate Poland in Warsaw is a different beast. The crowd factor tips this firmly toward the hosts.",
+    keyInsight: "Lewandowski has 83 international goals — more than any active European player — and he treats qualifiers like Champions League finals",
+    watchOut: "Albania's defensive discipline frustrated Italy, Spain, and Croatia at Euro 2024 — they won't be pushovers even in Warsaw",
+  },
+  77: {
+    reasoning: "Turkey's golden generation is running out of time. With Çalhanoğlu orchestrating from midfield and a raucous Istanbul crowd at the Atatürk Olympic, they have the tools to dominate Romania. But Turkey's qualifying campaigns are historically erratic — brilliant one game, chaotic the next. Romania are pragmatic and well-coached under Iordănescu, and they upset Ukraine at Euro 2024. This is closer than the market suggests.",
+    keyInsight: "Turkey have the 3rd-youngest squad in European football — raw talent is there but composure under playoff pressure is unproven",
+    watchOut: "Romania's tactical discipline and counter-attacking speed through Man and Drăguș shocked bigger teams at Euro 2024",
+  },
+  78: {
+    reasoning: "Slovakia are a reliable tournament team — they've qualified for the last two Euros and gave England a serious scare in the 2024 knockouts. At home in Bratislava, they're organized, physical, and hard to beat. Kosovo have improved rapidly but still lack experience in high-pressure knockout fixtures. Slovakia's big-game composure and Škriniar's defensive leadership make them solid favorites.",
+    keyInsight: "Slovakia have won 8 of their last 10 home qualifiers — Tehelné pole is a genuine fortress for competitive games",
+    watchOut: "Kosovo's pace in transition through Zhegrova can hurt any team that pushes too high — Slovakia must stay disciplined",
+  },
+  79: {
+    reasoning: "Denmark at Parken against North Macedonia is about as comfortable a playoff draw as you can get. The Danes reached the Euro 2020 semis, the 2022 World Cup, and Euro 2024 — they know how to qualify. Eriksen's creativity, Højlund's pace, and a deep squad make this a clear mismatch. North Macedonia's fairy tale qualifying runs have dried up since Pandev retired. Denmark should handle this professionally.",
+    keyInsight: "Denmark have qualified for every major tournament since 2020 — their qualifying consistency is borderline automatic at this point",
+    watchOut: "Complacency is the only real danger — if Denmark start slowly, North Macedonia's defensive resilience could make it a nervy night",
+  },
+  80: {
+    reasoning: "Czechia at the Eden Arena will be confident against an Ireland side that has struggled for goals throughout qualifying. The Czech Republic have a strong home record and a squad blending Bundesliga and Premier League experience through Schick, Souček, and Coufal. Ireland's style under the current setup is defensively solid but toothless in attack — they need set pieces and luck to score. Value on Czechia to win to nil.",
+    keyInsight: "Republic of Ireland have scored just 8 goals in their last 10 competitive away games — creating chances against organized defenses is their Achilles heel",
+    watchOut: "Ireland's set-piece delivery and aerial threat from defenders can conjure a goal from nothing — the Czechs must win every header",
+  },
+  81: {
+    reasoning: "Jamaica's quality advantage over New Caledonia is enormous. Leon Bailey, Michail Antonio, and a squad full of Premier League and Championship players outclass the OFC minnows in every department. The neutral venue in Guadalajara negates any familiarity factor. This should be routine for the Reggae Boyz, who are desperate to reach their first World Cup since 1998.",
+    keyInsight: "Jamaica's squad has a combined value 50x higher than New Caledonia's — this is the biggest quality gap in the entire playoff round",
+    watchOut: "New Caledonia's players have nothing to lose and everything to gain — early aggression and crowd neutrality could create a brief spell of chaos",
+  },
+  82: {
+    reasoning: "Bolivia have significant CONMEBOL experience that Suriname simply can't match. Playing at sea level in Monterrey removes Bolivia's famous altitude advantage, but their technical quality and tournament know-how from South American qualifiers still outclasses a Suriname side that primarily plays in CONCACAF's lower tiers. Bolivia should advance, but the sea-level factor means it won't be a blowout.",
+    keyInsight: "Bolivia have never qualified for a World Cup without home altitude advantage — this neutral venue in Monterrey is their biggest test of actual squad quality",
+    watchOut: "Suriname's Dutch-heritage players from the Eredivisie bring genuine technical quality that could cause Bolivia problems in midfield",
+  },
+
+  // ==================== PRE-WC FRIENDLIES ====================
+  83: {
+    reasoning: "A blockbuster friendly between two World Cup heavyweights in Foxborough. Brazil are desperate to prove they've recovered from the 2022 quarter-final disaster, while France arrive as the reigning runners-up with arguably the deepest squad in world football. Both coaches will treat this as a tactical rehearsal for the World Cup. Expect rotated but still star-studded XIs and an open, entertaining game.",
+    keyInsight: "Brazil vs France has produced 4+ goals in 6 of their last 8 meetings — both teams prioritize attacking football even in friendlies",
+    watchOut: "Squad rotation means key players may only get 60 minutes — second-half quality drop is almost guaranteed in pre-tournament friendlies",
+  },
+  84: {
+    reasoning: "Colombia's current generation under Néstor Lorenzo is arguably their best ever — Copa América 2024 finalists with Luís Díaz, James Rodríguez, and a fearsome pressing system. Croatia bring their trademark control and Modrić's genius, but this feels like a changing-of-the-guard encounter. In Orlando's humid conditions, Colombia's intensity and pace should cause Croatia problems.",
+    keyInsight: "Colombia are unbeaten in 30+ matches under Lorenzo — the longest active unbeaten run by any South American team",
+    watchOut: "Croatia's ability to slow games down and control tempo can neutralize Colombia's pressing — expect Modrić to dictate the pace",
+  },
+  85: {
+    reasoning: "Wembley friendlies against South American opposition have a pattern: England dominate possession, the visitors stay compact and counter. Uruguay under Bielsa are tactically sophisticated and will treat this as genuine World Cup preparation. England's depth means even a rotated side is packed with quality, but Uruguay's defensive organization makes a high-scoring game unlikely.",
+    keyInsight: "Uruguay have lost just once in their last 12 games against European opposition — they consistently punch above their weight in these matchups",
+    watchOut: "England's tendency to experiment with formations in friendlies can lead to defensive disorganization against Uruguay's clinical counter-attacks",
+  },
+  86: {
+    reasoning: "Switzerland hosting Germany in Zurich is a genuine tactical chess match between two teams that know each other inside out from Bundesliga connections. Germany under Nagelsmann have been rejuvenated, but the Swiss are the ultimate tournament disruptors — compact, organized, and technically excellent. St. Jakob-Park will be rocking for the hosts, making this a tricky night for Germany.",
+    keyInsight: "Switzerland have beaten Germany in 3 of their last 5 meetings — including a Nations League win that ended a 17-year German winning streak in the fixture",
+    watchOut: "Germany's counter-pressing intensity under Nagelsmann has improved dramatically — Switzerland's build-up play could be suffocated",
+  },
+  87: {
+    reasoning: "Spain at the Bernabéu against Serbia is an intriguing style clash. La Roja's tiki-taka evolution under De la Fuente has produced the youngest, most exciting squad in Europe — Euro 2024 champions playing at home. Serbia have genuine quality through Mitrović, Vlahović, and Tadić, but their defensive fragility against elite pressing teams is well-documented.",
+    keyInsight: "Spain have won their last 7 home matches — the Bernabéu's intimidation factor plus Yamal and Williams' pace makes them almost unplayable domestically",
+    watchOut: "Serbia's physicality and set-piece threat through Mitrović and Vlahović can steal a goal against any defense in world football",
+  },
+  88: {
+    reasoning: "Argentina vs Mauritania at the Monumental is a massive mismatch. The world champions will use this as a glorified training session to test formations and give fringe players minutes. Mauritania, making their World Cup debut, will be overwhelmed by the occasion and the quality gap. This is about Argentina managing minutes for Messi (if selected) and building squad depth.",
+    keyInsight: "Argentina have scored 3+ goals in 9 of their last 12 home matches — even rotated, their attacking depth is ridiculous",
+    watchOut: "The only risk is Argentina treating this too casually — Scaloni may rest so many starters that the first-half intensity drops",
+  },
+  89: {
+    reasoning: "A North African derby of sorts in Riyadh. Saudi Arabia's home advantage and the local crowd will be a factor, but Egypt's squad quality — led by Salah — is significantly higher. Both teams are in the same World Cup group, making this a genuine tactical scouting mission. Expect cagey play with neither coach wanting to reveal too much of their hand.",
+    keyInsight: "Saudi Arabia and Egypt are in the same World Cup group — this friendly doubles as a tactical chess match where information management matters as much as the result",
+    watchOut: "Both managers may deliberately hide their best tactical setups — the scoreline here could be misleading for World Cup predictions",
+  },
+  90: {
+    reasoning: "USA hosting Belgium in Atlanta is a perfect World Cup tune-up. The Americans want to prove they belong among the elite on home soil, while Belgium's golden generation has evolved into a more balanced squad. Mercedes-Benz Stadium's atmosphere will be electric, giving the USA a genuine boost. Expect Pulisic, Reyna, and McKennie to start and attack with intensity.",
+    keyInsight: "USA are unbeaten in 14 home matches at Mercedes-Benz Stadium — Atlanta's atmosphere is the closest thing to a European cauldron in American football",
+    watchOut: "Belgium's transition speed through Doku and Trossard can expose the USA's high defensive line — the Americans must stay compact",
+  },
+  91: {
+    reasoning: "Mexico hosting Portugal at the Azteca without Ronaldo changes the dynamic significantly. Portugal's depth means they're still dangerous — Bernardo Silva, Bruno Fernandes, and Leão are elite — but the absence of their talisman reduces the fear factor. Mexico's altitude advantage and raucous home crowd at 2,240m will test Portugal's fitness and composure. The hosts should be competitive.",
+    keyInsight: "Ronaldo's absence means Portugal lose their all-time leading scorer and primary penalty taker — the psychological impact on both squads is significant",
+    watchOut: "Portugal without Ronaldo actually play more fluidly as a team — they may be more dangerous in open play without the obligation to feed their star",
+  },
+  92: {
+    reasoning: "Colombia vs France in Washington DC is a rematch of sorts after years of near-misses at major tournaments. Colombia's pressing intensity under Lorenzo against France's measured build-up creates a fascinating tactical battle. The neutral venue in DC suits France more — they're used to playing big games away from home. But Colombia's confidence after their Copa run makes this a genuine coin flip.",
+    keyInsight: "France have lost just 3 of their last 40 competitive and friendly matches — their consistency under Deschamps is remarkable regardless of rotation",
+    watchOut: "Colombia's high press can be bypassed by France's quality in transition — Mbappé needs just one moment of space to punish",
+  },
+  93: {
+    reasoning: "Germany vs Ghana is a World Cup rematch callback — their 2014 group stage clash was one of the games of the tournament. Germany's Nagelsmann revolution has them playing aggressive, high-tempo football, while Ghana's new generation is athletic and technically improved from previous cycles. At a TBD venue, this lacks the home advantage factor, making it a pure quality test.",
+    keyInsight: "Germany have won 5 of their last 6 friendlies under Nagelsmann — the tactical identity transformation is producing consistent results",
+    watchOut: "Ghana's pace in wide areas and physical midfield presence can disrupt Germany's pressing game if the Bundesliga core isn't fully focused",
+  },
+  94: {
+    reasoning: "Spain vs Egypt is a classic stylistic mismatch — Spain's possession dominance against Egypt's deep defensive block and counter-attacking threat through Salah. The Euro 2024 champions will likely dominate territory but Egypt's defensive discipline makes clean sheets rare. Both teams are in full World Cup preparation mode, so expect tactical experimentation over pure entertainment.",
+    keyInsight: "Spain average 68% possession in friendlies — Egypt will need to be clinical with the limited chances they create from deep-lying counters",
+    watchOut: "Salah in transition against Spain's high line is a genuine threat — one lapse in concentration could cost the European champions",
+  },
+  95: {
+    reasoning: "England vs Japan at Wembley is a fascinating modern matchup. Japan's technical revolution — led by players across the Bundesliga, Premier League, and La Liga — makes them genuine contenders to upset any European team. England's home record at Wembley is strong, but Japan's pressing intensity and quick passing in tight spaces can embarrass slow-footed defenses.",
+    keyInsight: "Japan have beaten Germany and Spain at the last World Cup and in recent friendlies — they are no longer an upset story, they're a consistent threat to elite teams",
+    watchOut: "Japan's high press is relentless for 60 minutes but intensity drops in the final 30 — England's bench strength could exploit late fatigue",
+  },
+  96: {
+    reasoning: "USA vs Portugal in Atlanta is the marquee friendly of the pre-World Cup window. Without Ronaldo, Portugal still boast incredible depth, but the USA's home advantage at Mercedes-Benz Stadium is significant. This is a statement game for the Americans — proving they can compete with elite European opposition on home soil before the World Cup kicks off. Expect a high-intensity, open game.",
+    keyInsight: "The USA have never beaten Portugal in a competitive match — this friendly represents a psychological barrier they desperately want to break before hosting the World Cup",
+    watchOut: "Portugal's technical quality in midfield through Bernardo Silva and Vitinha could suffocate the USA's build-up play and force uncomfortable long balls",
+  },
+  97: {
+    reasoning: "Argentina vs Zambia at the Monumental is another heavy mismatch for the world champions. Scaloni will use this as final preparation, giving extended minutes to borderline squad players while protecting established stars. Zambia's enthusiasm and athleticism won't be enough to bridge the enormous quality gap. Expect Argentina to control this comfortably.",
+    keyInsight: "Argentina's second-string XI would be competitive in most World Cup groups — their squad depth is the deepest it's been in 30 years",
+    watchOut: "Zambia's physical athleticism and pace can cause problems if Argentina's rotated defense switches off — early goals settle nerves, but a slow start creates doubt",
+  },
+  98: {
+    reasoning: "Algeria vs Uruguay is the most intriguing of the lesser-profile friendlies. Algeria's squad is loaded with Ligue 1 and Serie A talent, and under Petkovic they've found defensive solidity. Uruguay under Bielsa play with an intensity that belies friendly status — expect them to treat this as a competitive fixture. The neutral venue makes this a pure football contest.",
+    keyInsight: "Uruguay under Bielsa have the highest pressing intensity of any South American team — they run 8-10km more per game than the continental average",
+    watchOut: "Algeria's set-piece delivery from Belaïli and Mahrez (if selected) is world-class — Uruguay must be alert from dead balls",
+  },
 };
 
 // Pre-compute all verdicts

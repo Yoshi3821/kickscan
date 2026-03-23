@@ -13,8 +13,11 @@ import { getUserTimezone, formatDateTime } from "@/lib/timezone";
    DATA PREPARATION
    ═══════════════════════════════════════════════════════════ */
 
-// Featured matches for Section B (first 6)
-const featuredMatches = allMatches.slice(0, 6);
+// Featured matches for Section B — prioritize upcoming playoffs & friendlies
+const playoffMatches = allMatches.filter(m => m.group === "WCQ");
+const friendlyMatches = allMatches.filter(m => m.group === "FRI").slice(0, 2);
+const groupMatches = allMatches.filter(m => !["WCQ", "FRI"].includes(m.group)).slice(0, 2);
+const featuredMatches = [...playoffMatches.slice(0, 4), ...friendlyMatches].slice(0, 6);
 
 
 
@@ -354,7 +357,7 @@ export default function HomePage() {
             href="/verdicts"
             className="inline-block px-8 py-3.5 rounded-xl font-bold text-white bg-gradient-to-r from-purple-600 to-cyan-500 hover:from-purple-500 hover:to-cyan-400 transition-all shadow-lg shadow-purple-500/25"
           >
-            🎯 View All 72 Verdicts →
+            🎯 View All 98 Verdicts →
           </Link>
         </div>
       </section>

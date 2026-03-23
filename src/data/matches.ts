@@ -472,7 +472,7 @@ export const wcFixtureIdMap: Record<number, number> = {
   98: 1528280, // Algeria vs Uruguay
 };
 
-export const groups = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"];
+export const groups = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "WCQ", "FRI"];
 export const matchDates = [...new Set(allMatches.map(m => m.date))].sort();
 
 /**

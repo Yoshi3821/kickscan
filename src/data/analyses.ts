@@ -1043,6 +1043,374 @@ const analysisData: Record<number, MatchAnalysisData> = {
     formGuide: { home: ["W", "D", "W", "W", "L"], away: ["W", "D", "W", "L", "W"] },
     suggestedAngle: "Croatia Win or Draw — Their tournament experience means they get the result they need"
   },
+
+  // ==================== WC QUALIFIER PLAYOFFS ====================
+
+  // Match 73: Italy vs Northern Ireland
+  73: {
+    summary: "Italy face their biggest qualifying nightmare for the third consecutive cycle. The Azzurri cannot afford another World Cup absence — the sporting, financial, and cultural damage would be catastrophic. Playing at Atalanta's Gewiss Stadium in Bergamo gives them a compact, hostile atmosphere rather than the often-silent San Siro. Spalletti's squad has the talent through Barella, Tonali, and Retegui, but Northern Ireland's disciplined low block and set-piece threat could make this a frustrating evening if Italy don't score early.",
+    keyFactors: [
+      "🔥 Existential pressure — Italy haven't been at a World Cup since 2014",
+      "🏟️ Bergamo's Gewiss Stadium is far more intimidating than the San Siro for qualifiers",
+      "🛡️ Northern Ireland's deep defensive block frustrated Spain and Denmark in qualifying",
+      "⚽ Retegui's emergence gives Italy a genuine focal point in attack",
+      "😰 Italian qualifying trauma — they lost to Sweden (2018) and North Macedonia (2022) in playoffs"
+    ],
+    formGuide: { home: ["W", "W", "D", "W", "W"], away: ["D", "L", "D", "L", "L"] },
+    suggestedAngle: "Italy Win & Under 3.5 Goals — The Azzurri will be cautious despite home advantage"
+  },
+
+  // Match 74: Wales vs Bosnia & Herzegovina
+  74: {
+    summary: "Wales return to Cardiff City Stadium with World Cup dreams alive. The 2022 experience — their first World Cup since 1958 — gave this squad a taste of the biggest stage, and they're desperate to return. Bale may be retired but the squad has evolved around Brennan Johnson, Harry Wilson, and a solid defensive core. Bosnia bring talent through Demirović and the evergreen Džeko, but away playoff atmospheres have historically been their undoing.",
+    keyFactors: [
+      "🏴 Cardiff's atmosphere under lights is worth an extra man for Wales",
+      "⚡ Brennan Johnson's pace stretches defenses and creates space for others",
+      "🎯 Džeko's big-game experience — but he's now 40 and managing minutes",
+      "🛡️ Wales' 3-5-2 system is tailor-made for knockout football",
+      "📊 Bosnia have lost 4 of their last 5 away playoff matches across all competitions"
+    ],
+    formGuide: { home: ["W", "W", "W", "D", "W"], away: ["W", "L", "D", "L", "L"] },
+    suggestedAngle: "Wales Win — Home advantage and playoff experience give the Welsh a clear edge"
+  },
+
+  // Match 75: Ukraine vs Sweden
+  75: {
+    summary: "A fascinating neutral-venue clash in Valencia's Mestalla stadium. Ukraine have become the world's most experienced team at playing 'away from home' — every competitive match since 2022 has been at neutral grounds due to the ongoing conflict. This gives them a unique psychological edge that most opponents underestimate. Sweden are solid and organized but lack the individual brilliance that marked their Ibrahimović era. Isak leads the line but creative supply is inconsistent.",
+    keyFactors: [
+      "🇪🇸 Mestalla in Valencia is truly neutral — neither team has meaningful fan support",
+      "🇺🇦 Ukraine's emotional resilience from playing in extraordinary circumstances",
+      "⚽ Dovbyk's clinical finishing and Mudryk's explosive pace form a devastating partnership",
+      "🔒 Sweden's defensive organization under Tomasson is their greatest asset",
+      "🏃 Isak vs Ukraine's center-backs — pace and movement against physical defending"
+    ],
+    formGuide: { home: ["W", "D", "W", "L", "W"], away: ["W", "W", "L", "D", "W"] },
+    suggestedAngle: "Ukraine Win — Their neutral-venue experience is an underrated advantage"
+  },
+
+  // Match 76: Poland vs Albania
+  76: {
+    summary: "Poland welcome Albania to the PGE Narodowy in Warsaw for a playoff semifinal with World Cup berths at stake. Lewandowski remains the talisman despite his advancing years — his 83 international goals speak to a relentless scoring instinct that elevates Poland's ceiling. Albania's Euro 2024 campaign proved they can compete with anyone for 90 minutes, but sustaining that level in an away playoff environment against Lewandowski is a different challenge entirely. Warsaw's passionate crowd adds another layer.",
+    keyFactors: [
+      "⚽ Lewandowski's big-game scoring record — goals in 9 of his last 12 competitive home starts",
+      "🛡️ Albania's defensive system frustrated Italy, Spain, and Croatia at Euro 2024",
+      "🏟️ PGE Narodowy sold out — 58,000 creating a wall of sound",
+      "🎯 Zieliński's creativity from midfield gives Poland a different attacking dimension",
+      "💪 Albania's physicality and organization make them dangerous from set pieces"
+    ],
+    formGuide: { home: ["W", "W", "W", "D", "W"], away: ["D", "W", "L", "D", "L"] },
+    suggestedAngle: "Poland Win & BTTS No — Expect a controlled home performance"
+  },
+
+  // Match 77: Turkey vs Romania
+  77: {
+    summary: "Istanbul's Atatürk Olympic Stadium will be a cauldron for this playoff clash. Turkey's golden generation — led by Çalhanoğlu's vision, Güler's flair, and Yıldız's explosiveness — is the most talented Turkish squad in a decade. But talent hasn't always translated to results in qualifying. Romania shocked everyone at Euro 2024 by topping their group, and Iordănescu's pragmatic approach makes them extremely difficult to beat. This is closer than the bookmakers suggest.",
+    keyFactors: [
+      "🔥 Turkish crowd in Istanbul — one of the most hostile atmospheres in world football",
+      "⭐ Arda Güler's creative brilliance can unlock any defense on his day",
+      "🛡️ Romania topped their Euro 2024 group — their defensive organization is elite",
+      "🎯 Çalhanoğlu's set-piece delivery is a weapon — Turkey score heavily from dead balls",
+      "😤 Turkey's emotional volatility — they can go from brilliant to chaotic within 10 minutes"
+    ],
+    formGuide: { home: ["W", "D", "W", "W", "L"], away: ["W", "W", "D", "W", "D"] },
+    suggestedAngle: "Turkey Win but tight — Consider Turkey & Under 3.5 Goals for value"
+  },
+
+  // Match 78: Slovakia vs Kosovo
+  78: {
+    summary: "Slovakia's tournament reliability faces Kosovo's exciting but inexperienced squad at Tehelné pole in Bratislava. The Slovaks have made the Euros twice in a row and gave England a genuine scare in the 2024 knockouts. Škriniar anchors the defense, Lobotka controls midfield, and Haraslín provides attacking thrust. Kosovo's rapid rise through the rankings has been impressive, but they lack the big-game experience that playoff football demands.",
+    keyFactors: [
+      "🏟️ Tehelné pole is a fortress — Slovakia have won 8 of their last 10 home qualifiers",
+      "🛡️ Škriniar's defensive leadership sets the tone — Kosovo will find chances scarce",
+      "⚡ Zhegrova's pace and dribbling ability is Kosovo's primary creative outlet",
+      "🎯 Lobotka's midfield control ensures Slovakia dictate tempo",
+      "📊 Kosovo have never qualified for a World Cup or Euros — the psychological weight of a playoff is new territory"
+    ],
+    formGuide: { home: ["W", "W", "D", "W", "W"], away: ["W", "D", "L", "W", "L"] },
+    suggestedAngle: "Slovakia Win to Nil — Their defensive solidity should contain Kosovo's threat"
+  },
+
+  // Match 79: Denmark vs North Macedonia
+  79: {
+    summary: "Denmark at Parken should be the most straightforward playoff of the round. The Danes have become one of Europe's most consistent qualifiers — reaching every major tournament since Euro 2020. Eriksen's creativity, Højlund's movement, and a defensively solid backline make them clear favorites. North Macedonia's magic run — beating Germany in qualifying and reaching Euro 2020 — feels like ancient history now. Without Pandev and with an aging squad, they lack the quality to trouble Denmark.",
+    keyFactors: [
+      "🇩🇰 Denmark have qualified for 4 consecutive major tournaments — consistency personified",
+      "⚽ Højlund's development at Manchester United gives Denmark a genuine top-level striker",
+      "🎨 Eriksen's set-piece delivery and through balls are the creative engine",
+      "📉 North Macedonia have declined significantly since their 2020-21 peak",
+      "🏟️ Parken Stadium with 38,000 Danes — expect a dominant atmosphere"
+    ],
+    formGuide: { home: ["W", "W", "W", "W", "D"], away: ["L", "D", "L", "L", "W"] },
+    suggestedAngle: "Denmark -1.5 Handicap — Comfortable home win expected"
+  },
+
+  // Match 80: Czechia vs Rep. of Ireland
+  80: {
+    summary: "Czechia host Ireland at the Eden Arena in Prague knowing their superior technical quality should prevail. Schick remains a goal threat, Souček's aerial presence dominates midfield, and Coufal provides attacking width. Ireland's style is fundamentally defensive — they sit deep, stay compact, and hope to nick something from set pieces or counter-attacks. It works against better teams more often than you'd expect, but the Eden Arena's bouncy pitch suits Czechia's passing game.",
+    keyFactors: [
+      "🎯 Schick's movement and finishing — he averages a goal every 2.1 international games",
+      "💪 Souček's box-to-box energy and aerial threat gives Czechia midfield dominance",
+      "🛡️ Ireland's defensive discipline — they've conceded fewer than 1 goal per game in their last 8",
+      "🏟️ Eden Arena suits Czechia's technical passing game perfectly",
+      "⚽ Ireland have scored just 8 goals in their last 10 away competitive matches"
+    ],
+    formGuide: { home: ["W", "D", "W", "W", "W"], away: ["D", "L", "D", "L", "D"] },
+    suggestedAngle: "Czechia Win & Under 2.5 Goals — Low-scoring home win is the likely outcome"
+  },
+
+  // Match 81: New Caledonia vs Jamaica
+  81: {
+    summary: "Jamaica's Reggae Boyz face OFC minnows New Caledonia at the Estadio Akron in Guadalajara — a neutral venue that suits neither side but where Jamaica's superior athleticism and squad quality should dominate. With Bailey, Antonio, and a contingent of Premier League and Championship players, Jamaica's squad is lightyears ahead of the semi-professional New Caledonian side. This is about margin of victory, not the result.",
+    keyFactors: [
+      "⭐ Leon Bailey's electrifying pace and dribbling will torment New Caledonia's defense",
+      "💪 Michail Antonio's physical presence gives Jamaica an aerial and hold-up advantage",
+      "📊 Squad value comparison is approximately 50:1 in Jamaica's favor",
+      "🏟️ Neutral venue in Guadalajara — heat and humidity may slow the pace",
+      "🇯🇲 Jamaica haven't been to a World Cup since 1998 — motivation is sky-high"
+    ],
+    formGuide: { home: ["W", "W", "D", "W", "W"], away: ["L", "L", "L", "D", "L"] },
+    suggestedAngle: "Jamaica -2.5 Handicap — The quality gap is enormous"
+  },
+
+  // Match 82: Bolivia vs Suriname
+  82: {
+    summary: "Bolivia meet Suriname in Monterrey at the Estadio BBVA — a sea-level neutral venue that removes Bolivia's legendary altitude advantage. Without the 3,600m La Paz factor, Bolivia are a much more modest proposition, but they still carry CONMEBOL qualifying experience that Suriname can't match. Suriname's Dutch-heritage players from the Eredivisie bring genuine technical quality, but the step up to a World Cup playoff is significant. Bolivia should edge this, but it won't be comfortable.",
+    keyFactors: [
+      "🏔️ Sea-level venue completely neutralizes Bolivia's altitude advantage",
+      "🇸🇷 Suriname's Eredivisie contingent brings genuine quality — not a typical minnow",
+      "📊 Bolivia's CONMEBOL qualifying experience provides tactical awareness advantage",
+      "🏟️ Estadio BBVA is a world-class venue — the occasion may overwhelm Suriname",
+      "⚽ Bolivia's defensive vulnerabilities at sea level — they concede more without altitude protection"
+    ],
+    formGuide: { home: ["L", "D", "W", "L", "W"], away: ["W", "W", "D", "W", "L"] },
+    suggestedAngle: "Bolivia Win but consider BTTS Yes — Sea-level Bolivia are vulnerable at the back"
+  },
+
+  // ==================== PRE-WC FRIENDLIES ====================
+
+  // Match 83: Brazil vs France
+  83: {
+    summary: "The glamour friendly of the pre-World Cup window. Brazil and France meet at Gillette Stadium in Foxborough in what promises to be a showcase of global football's two most iconic brands. Brazil are rebuilding under a new identity post-Neymar, with Vinícius Jr., Rodrygo, and Endrick leading a new wave. France's depth under Deschamps is simply absurd — even a rotated XI features multiple Champions League winners. Expect an open, entertaining match with both sides using this as a genuine tactical test.",
+    keyFactors: [
+      "⭐ Vinícius Jr. vs Mbappé — two of the world's top 3 players on the same pitch",
+      "🔄 Both sides will rotate — but the quality off the bench is still world-class",
+      "🏟️ Foxborough's moderate climate suits both teams — no extreme weather factor",
+      "📊 Brazil vs France has produced 4+ goals in 6 of their last 8 meetings",
+      "🎯 Both coaches treating this as genuine World Cup preparation — not a throwaway friendly"
+    ],
+    formGuide: { home: ["W", "D", "W", "W", "L"], away: ["W", "W", "W", "D", "W"] },
+    suggestedAngle: "Both Teams to Score — Two attacking powerhouses will prioritize offense"
+  },
+
+  // Match 84: Colombia vs Croatia
+  84: {
+    summary: "Colombia's relentless pressing system under Néstor Lorenzo meets Croatia's controlled possession game in Orlando. This is a genuine clash of philosophies — Colombia's high-energy press against Modrić's ability to slow the game to his preferred tempo. The Inter&Co Stadium in Orlando provides a warm, humid environment that suits Colombia's physical approach. With an extraordinary unbeaten run behind them, Colombia carry serious momentum.",
+    keyFactors: [
+      "🔥 Colombia's 30+ match unbeaten run is the longest in South American football",
+      "🧙 Modrić's game management — can he slow Colombia's frenetic pressing?",
+      "⚡ Luís Díaz's directness on the left wing causes constant problems",
+      "🌡️ Orlando humidity favors Colombia's conditioning and pressing tolerance",
+      "📊 Croatia's average age suggests fatigue management is critical this close to the World Cup"
+    ],
+    formGuide: { home: ["W", "W", "W", "D", "W"], away: ["W", "D", "W", "W", "L"] },
+    suggestedAngle: "Colombia Win or Draw — Their pressing intensity overwhelms most opponents"
+  },
+
+  // Match 85: England vs Uruguay
+  85: {
+    summary: "Wembley hosts a fascinating tactical duel between England's expansive attacking play and Uruguay's disciplined, counter-attacking approach under Bielsa. England will dominate possession — likely 65%+ — but Uruguay's defensive shape and clinical transitions make them dangerous regardless of territory. Kane, Bellingham, and Saka form arguably the most creative attacking trio in world football, but Valverde's box-to-box energy can disrupt England's rhythm.",
+    keyFactors: [
+      "🏟️ Wembley under lights — England's strongest home advantage factor",
+      "🛡️ Uruguay's defensive organization under Bielsa is paradoxically their best asset",
+      "⚽ Kane's scoring record at Wembley — 30+ goals in 40+ appearances",
+      "⚡ Valverde's engine in midfield can match England's intensity box-to-box",
+      "🔄 Both teams will rotate — but core tactical setups will be tested"
+    ],
+    formGuide: { home: ["W", "W", "D", "W", "W"], away: ["W", "D", "W", "W", "D"] },
+    suggestedAngle: "Under 2.5 Goals — Uruguay's defensive discipline keeps this tight"
+  },
+
+  // Match 86: Switzerland vs Germany
+  86: {
+    summary: "A derby of sorts — the Swiss-German football connection runs deep through Bundesliga pipelines. Switzerland hosting at St. Jakob-Park in Basel gives them a genuine edge against a German side that has been transformed under Nagelsmann. The Swiss' tournament pedigree — reaching the knockout stages of every major event — makes them perpetual dark horses. Xhaka's leadership and Ndoye's pace give them genuine attacking outlets, while Germany's pressing intensity under Nagelsmann will test Swiss composure.",
+    keyFactors: [
+      "📊 Switzerland have beaten Germany in 3 of their last 5 meetings — a genuine bogey team",
+      "🎯 Xhaka's midfield control dictates Switzerland's attacking rhythm",
+      "🔥 Nagelsmann's Germany play at an intensity most teams can't match",
+      "⚡ Ndoye's pace on the wing gives Switzerland a counter-attacking outlet",
+      "🏟️ St. Jakob-Park — compact, loud, and Switzerland's preferred venue"
+    ],
+    formGuide: { home: ["W", "D", "W", "W", "D"], away: ["W", "W", "W", "D", "W"] },
+    suggestedAngle: "Draw — These two consistently produce tight, cagey encounters"
+  },
+
+  // Match 87: Spain vs Serbia
+  87: {
+    summary: "European champions Spain host Serbia at the Santiago Bernabéu in what should be a showcase of their generational talent. Yamal, Williams, Pedri, and the rejuvenated Spanish system under De la Fuente have made La Roja the most exciting team in world football. Serbia have genuine quality through Mitrović, Vlahović, and Tadić, but their defensive fragility against elite pressing teams has been exposed repeatedly. The Bernabéu crowd will be expectant.",
+    keyFactors: [
+      "🏆 Spain are reigning European champions — confidence and system are at peak levels",
+      "⭐ Lamine Yamal at 18 is already one of Europe's most dangerous attackers",
+      "💪 Mitrović and Vlahović's physical aerial presence threatens any defense",
+      "🏟️ Bernabéu atmosphere — 80,000 expecting a statement performance",
+      "📊 Spain have won 7 consecutive home matches under De la Fuente"
+    ],
+    formGuide: { home: ["W", "W", "W", "W", "D"], away: ["W", "L", "D", "W", "L"] },
+    suggestedAngle: "Spain Win & Over 2.5 Goals — They attack relentlessly at home"
+  },
+
+  // Match 88: Argentina vs Mauritania
+  88: {
+    summary: "The world champions host World Cup debutants Mauritania at the Estadio Monumental in what will be an enormous occasion for the visitors and a training exercise for Argentina. Scaloni will rotate heavily — this is about giving fringe players minutes and managing the fitness of key stars. Even Argentina's B-team would be heavy favorites here. The Monumental crowd will enjoy the party atmosphere, but the competitive edge will be minimal.",
+    keyFactors: [
+      "🏆 Argentina are world champions — their depth is unprecedented in South American football",
+      "🔄 Heavy rotation expected — Messi likely rested or limited to a cameo",
+      "🇲🇷 Mauritania's first-ever World Cup — the occasion may overwhelm them",
+      "📊 Argentina have scored 3+ goals in 9 of 12 recent home matches",
+      "🏟️ Monumental will be a celebration rather than a high-intensity contest"
+    ],
+    formGuide: { home: ["W", "W", "W", "W", "W"], away: ["W", "L", "L", "D", "L"] },
+    suggestedAngle: "Argentina -3.5 Handicap — Even a rotated Albiceleste should dominate"
+  },
+
+  // Match 89: Saudi Arabia vs Egypt
+  89: {
+    summary: "A strategically significant friendly given both teams are in the same World Cup group. Saudi Arabia hosting in Riyadh at King Fahd Stadium gives them a passionate crowd, but Egypt's squad quality — anchored by Salah — is notably higher. Both managers face a dilemma: play to win or protect tactical secrets for the World Cup group stage. Expect a cagey, chess-like encounter where neither team reveals their full hand.",
+    keyFactors: [
+      "🔍 Same World Cup group — tactical information management overrides result importance",
+      "⭐ Salah's presence transforms Egypt from a solid team to a genuinely dangerous one",
+      "🏟️ King Fahd Stadium crowd will create a hostile atmosphere for Egypt",
+      "🤔 Both coaches likely to hide key tactical setups — misleading lineups possible",
+      "📊 Saudi Arabia stunned Argentina at the 2022 World Cup — they can't be underestimated at home"
+    ],
+    formGuide: { home: ["W", "D", "W", "L", "W"], away: ["W", "W", "D", "W", "D"] },
+    suggestedAngle: "Under 2.5 Goals — Neither team wants to reveal too much before the World Cup"
+  },
+
+  // Match 90: USA vs Belgium
+  90: {
+    summary: "The USA's World Cup preparation intensifies with Belgium visiting Mercedes-Benz Stadium in Atlanta. This is a venue where the Americans are virtually unbeatable — the atmosphere is electric and the pitch dimensions suit their high-pressing style. Belgium's golden generation has evolved into a more balanced, less star-dependent squad, with Doku, Trossard, and Onana providing fresh energy. Pulisic, Reyna, and McKennie will look to make a statement.",
+    keyFactors: [
+      "🏟️ Mercedes-Benz Stadium — USA are unbeaten in 14 home matches here",
+      "⚡ Pulisic's big-game mentality — he elevates for prestige friendlies",
+      "🔥 Doku's dribbling and pace can trouble any fullback in world football",
+      "🇺🇸 Home World Cup motivation — every friendly is about building momentum",
+      "📊 Belgium have struggled in friendlies recently — their away form is inconsistent"
+    ],
+    formGuide: { home: ["W", "W", "D", "W", "W"], away: ["D", "W", "L", "W", "D"] },
+    suggestedAngle: "USA Win — Home advantage and motivation give them a genuine edge"
+  },
+
+  // Match 91: Mexico vs Portugal
+  91: {
+    summary: "Mexico welcome Portugal to the Azteca — but without Cristiano Ronaldo, who misses out through injury. Portugal's depth means they're still fielding a side packed with elite talent: Bernardo Silva, Bruno Fernandes, Leão, and João Félix can all start. But the Azteca at 2,240m altitude is a unique challenge that few European squads handle well. Mexico will be physical, direct, and backed by 87,000 passionate fans.",
+    keyFactors: [
+      "🏔️ Azteca's 2,240m altitude — European teams historically lose 15% aerobic capacity",
+      "❌ Ronaldo absent — Portugal lose their talisman and penalty specialist",
+      "🔥 Mexico's crowd factor — 87,000 at the Azteca is overwhelming for visitors",
+      "⭐ Bruno Fernandes and Bernardo Silva still give Portugal elite creative quality",
+      "📊 Mexico are unbeaten in 9 home matches in Mexico City"
+    ],
+    formGuide: { home: ["W", "W", "D", "W", "W"], away: ["W", "D", "W", "W", "L"] },
+    suggestedAngle: "Mexico Win or Draw — Altitude and crowd make the Azteca a fortress"
+  },
+
+  // Match 92: Colombia vs France
+  92: {
+    summary: "Colombia and France meet again in Washington DC, this time at Audi Field. Colombia's pressing intensity under Lorenzo is relentless, but France's quality in transition — even with rotation — is lethal. This is a genuine high-level test for both squads with the World Cup weeks away. The neutral venue in DC suits France, who are well-practiced at performing away from home. Colombia's confidence from their unbeaten run makes this a fascinating contest.",
+    keyFactors: [
+      "🔥 Colombia's extraordinary unbeaten run continues — 30+ matches without defeat",
+      "⚡ Mbappé in transition needs just one moment — Colombia must stay disciplined",
+      "🎯 James Rodríguez's set-piece delivery against France's aerial vulnerability",
+      "📊 France have lost just 3 of their last 40 matches — unmatched consistency",
+      "🏟️ Neutral DC venue — slight advantage to France who thrive in away environments"
+    ],
+    formGuide: { home: ["W", "W", "W", "D", "W"], away: ["W", "W", "W", "D", "W"] },
+    suggestedAngle: "Draw — Two evenly matched powerhouses in World Cup preparation mode"
+  },
+
+  // Match 93: Germany vs Ghana
+  93: {
+    summary: "A callback to their dramatic 2014 World Cup group stage encounter. Germany under Nagelsmann are a completely different beast — aggressive, high-pressing, and clinical. Ghana's new generation brings pace and physicality but lacks the household names of previous cycles. At a TBD venue, this becomes a pure quality test where Germany's tactical sophistication should prevail. Expect Germany to use this as a final tactical drill.",
+    keyFactors: [
+      "🔥 Nagelsmann's Germany have won 5 of 6 recent friendlies — system is clicking",
+      "⚡ Musiala and Wirtz — the most exciting young midfield duo in world football",
+      "💪 Ghana's athleticism in wide areas can disrupt Germany's pressing structure",
+      "📊 Germany's tactical evolution under Nagelsmann is the story of 2025-26",
+      "🔄 Both teams will rotate — Germany's depth is vastly superior"
+    ],
+    formGuide: { home: ["W", "W", "W", "D", "W"], away: ["W", "L", "D", "W", "L"] },
+    suggestedAngle: "Germany Win & Over 2.5 — Nagelsmann's Germany are scoring freely"
+  },
+
+  // Match 94: Spain vs Egypt
+  94: {
+    summary: "European champions Spain take on Egypt in what should be a one-sided affair in terms of possession and territory. But Egypt's defensive organization and Salah's counter-attacking threat make them dangerous regardless. Spain will likely dominate with 70%+ possession, creating constant half-chances through Yamal, Williams, and Pedri's intricate interplay. The question is whether Egypt's deep block can frustrate Spain into impotence.",
+    keyFactors: [
+      "🏆 Spain's Euro 2024 triumph has given them supreme confidence in their system",
+      "⭐ Salah in transition against Spain's high line — a genuine match-winning threat",
+      "🎨 Yamal and Williams' width stretches any defense — Egypt will need to stay narrow",
+      "🛡️ Egypt's defensive discipline under their current system is genuinely impressive",
+      "📊 Spain average 68% possession in friendlies — Egypt must be clinical with limited chances"
+    ],
+    formGuide: { home: ["W", "W", "W", "W", "D"], away: ["W", "D", "W", "L", "D"] },
+    suggestedAngle: "Spain Win but consider Under 3.5 — Egypt's defense will frustrate"
+  },
+
+  // Match 95: England vs Japan
+  95: {
+    summary: "England host Japan at Wembley in arguably the most tactically interesting friendly of the window. Japan's evolution into a genuine global force — beating Germany and Spain at the 2022 World Cup — makes them a serious test. Their high-pressing, quick-passing style from the Bundesliga and La Liga contingent can embarrass any team that isn't fully focused. England's quality should prevail at home, but Japan will test their concentration for the full 90 minutes.",
+    keyFactors: [
+      "🇯🇵 Japan have beaten Germany and Spain in recent tournaments — they fear nobody",
+      "⚡ Japan's pressing intensity is among the highest in world football",
+      "🏟️ Wembley advantage — England's record at home is excellent",
+      "🎯 Mitoma and Kubo provide Japan with genuine creative quality",
+      "📊 Japan's intensity typically drops after 60 minutes — England's bench can exploit late"
+    ],
+    formGuide: { home: ["W", "W", "D", "W", "W"], away: ["W", "W", "W", "D", "L"] },
+    suggestedAngle: "England Win but BTTS Yes — Japan's quality ensures they'll create chances"
+  },
+
+  // Match 96: USA vs Portugal
+  96: {
+    summary: "The headline friendly of the USA's pre-World Cup preparation. Portugal without Ronaldo still field a fearsome squad, and this is the kind of game that defines whether the USA can compete with established European powers. Mercedes-Benz Stadium will be sold out, and the atmosphere could be the difference. Pulisic and Reyna represent genuine quality, but Portugal's technical midfield of Bernardo Silva and Vitinha could suffocate American build-up play.",
+    keyFactors: [
+      "🏟️ Mercedes-Benz Stadium sold out — USA's home fortress",
+      "⭐ Bernardo Silva orchestrating from midfield — USA must match his intensity",
+      "🇺🇸 Statement game — the USA have never beaten Portugal in a competitive fixture",
+      "🔥 Pulisic vs Portugal's left-back — a critical individual matchup",
+      "📊 Portugal's possession dominance averages 62% in friendlies — USA must press high"
+    ],
+    formGuide: { home: ["W", "W", "D", "W", "W"], away: ["W", "W", "D", "W", "L"] },
+    suggestedAngle: "USA Win or Draw — Home crowd and motivation give them an edge"
+  },
+
+  // Match 97: Argentina vs Zambia
+  97: {
+    summary: "Another mismatch at the Monumental as Argentina face Zambia in their final pre-World Cup home friendly. Scaloni will use this to finalize squad decisions and give borderline players a last audition. Zambia's enthusiasm and pace will test Argentina's rotated backline, but the quality chasm is vast. Expect Argentina to control this without exerting themselves, saving energy for the World Cup while still providing a comfortable winning margin.",
+    keyFactors: [
+      "🔄 Massive rotation expected — Messi likely rested entirely",
+      "📊 Argentina's B-team is stronger than many nations' first XIs",
+      "🏟️ Monumental in party mode — World Cup send-off atmosphere",
+      "⚡ Zambia's pace and athleticism — their best weapon against a rotated defense",
+      "🎯 Final squad auditions — fringe players will be desperate to impress"
+    ],
+    formGuide: { home: ["W", "W", "W", "W", "W"], away: ["L", "D", "L", "W", "L"] },
+    suggestedAngle: "Argentina -2.5 Handicap — Even rotated, the quality gap is enormous"
+  },
+
+  // Match 98: Algeria vs Uruguay
+  98: {
+    summary: "An intriguing matchup between Algeria's Ligue 1/Serie A talent pool and Uruguay's Bielsa-driven intensity. Algeria under Petkovic have found defensive solidity while maintaining creative threat through their European-based players. Uruguay under Bielsa treat every match — friendly or competitive — with maximum intensity, making them dangerous opponents regardless of context. The neutral venue creates a pure quality test with no external factors.",
+    keyFactors: [
+      "🔥 Uruguay under Bielsa press relentlessly — highest work rate in South American football",
+      "⚽ Algeria's Serie A and Ligue 1 contingent provides genuine European-level quality",
+      "🏟️ Neutral venue — no crowd advantage for either side",
+      "📊 Uruguay's pressing intensity means they outrun most opponents by 8-10km per match",
+      "🎯 Set-piece quality from both sides — Belaïli and Valverde both deliver dangerous balls"
+    ],
+    formGuide: { home: ["W", "D", "W", "L", "W"], away: ["W", "W", "D", "W", "W"] },
+    suggestedAngle: "Uruguay Win — Bielsa's intensity overmatches most opponents in friendlies"
+  },
 };
 
 // Build full analyses combining computed predictions with hand-written content

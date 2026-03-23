@@ -2162,27 +2162,40 @@ function MatchCard({
                 </div>
               </div>
             )}
-            {/* AI Prediction + link to full verdict */}
+            {/* AI Analysis - Enhanced reasoning */}
             {signals.aiPick && (
-              <div className="flex items-center gap-3">
-                <span className="text-gray-400 text-sm w-14 flex-shrink-0">🧠 AI</span>
-                <span className={`text-sm font-bold ${
-                  signals.aiVerdict === 'BET' ? 'text-green-400' :
-                  signals.aiVerdict === 'LEAN' ? 'text-amber-400' :
-                  signals.aiVerdict === 'SKIP' ? 'text-gray-400' : 'text-red-400'
-                }`}>
-                  {signals.aiPick}
-                </span>
-                {signals.aiConfidence && (
-                  <span className="text-gray-500 text-xs">({signals.aiConfidence}%)</span>
-                )}
-                <a
-                  href={matchId.startsWith('league_') ? `/leagues/${matchId.replace('league_', '')}` : matchId.startsWith('wc_') ? `/match/${matchId.replace('wc_', '')}` : '#'}
-                  className="ml-auto text-purple-400 hover:text-purple-300 text-xs font-medium transition flex items-center gap-0.5"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  View <span className="text-sm">→</span>
-                </a>
+              <div className="bg-white/[0.02] border border-white/[0.05] rounded-lg p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-gray-400 text-sm">🧠 AI Analysis</span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                    signals.aiVerdict === 'BET' ? 'bg-green-500/20 text-green-400' :
+                    signals.aiVerdict === 'LEAN' ? 'bg-amber-500/20 text-amber-400' :
+                    signals.aiVerdict === 'SKIP' ? 'bg-gray-500/20 text-gray-400' : 'bg-red-500/20 text-red-400'
+                  }`}>
+                    {signals.aiVerdict || 'ANALYZE'}
+                  </span>
+                  {signals.aiConfidence && (
+                    <span className="text-gray-500 text-xs">({signals.aiConfidence}%)</span>
+                  )}
+                </div>
+                
+                {/* Enhanced AI reasoning */}
+                <div className="text-sm text-gray-300 leading-relaxed">
+                  {(() => {
+                    const confidence = signals.aiConfidence || 50;
+                    const verdict = signals.aiVerdict || 'ANALYZE';
+                    const pick = signals.aiPick;
+                    
+                    // Generate market-aware reasoning based on available data
+                    const reasoning = `${pick} looks ${confidence > 60 ? 'strong' : confidence > 45 ? 'viable' : 'uncertain'} based on current market positioning. ` +
+                      `${avgOdds ? `With odds of ${pick.includes(home) ? avgOdds.home.toFixed(2) : pick.includes('Draw') ? avgOdds.draw.toFixed(2) : avgOdds.away.toFixed(2)}, ` : ''}` +
+                      `${marketIntel?.consensusLevel === 'strong' ? 'bookmakers strongly agree on this outcome' : marketIntel?.consensusLevel === 'moderate' ? 'bookmaker consensus is moderate' : 'market shows mixed signals'}. ` +
+                      `${confidence > 55 ? 'Model confidence suggests decent value here' : 'Lower confidence indicates higher risk'}. ` +
+                      `${verdict === 'BET' ? 'Strong recommendation with good value spotted' : verdict === 'LEAN' ? 'Moderate lean with acceptable risk-reward' : 'Proceed with caution or skip for better spots'}.`;
+                    
+                    return reasoning;
+                  })()}
+                </div>
               </div>
             )}
             {/* Market Prediction */}

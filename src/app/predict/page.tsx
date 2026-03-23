@@ -101,11 +101,22 @@ interface GroupMember {
 type Competition = 'league' | 'wc2026';
 
 function PredictPageContent() {
-  const searchParams = useSearchParams();
-  const joinCode = searchParams.get('join');
-  const router = useRouter();
+  const [joinCode, setJoinCode] = useState<string>('');
+  const [router, setRouter] = useState<any>(null);
+  
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      setJoinCode(params.get('join') || '');
+      setRouter(require('next/navigation').useRouter());
+    }
+  }, []);
   const goToProfile = (username: string, isAI: boolean) => {
-    router.push(`/profile/${isAI ? 'kickscan_ai' : encodeURIComponent(username)}`);
+    if (router) {
+      router.push(`/profile/${isAI ? 'kickscan_ai' : encodeURIComponent(username)}`);
+    } else if (typeof window !== 'undefined') {
+      window.location.href = `/profile/${isAI ? 'kickscan_ai' : encodeURIComponent(username)}`;
+    }
   };
 
   const [user, setUser] = useState<User | null>(null);

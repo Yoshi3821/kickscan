@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState, Suspense } from "react";
-import { allMatches } from "@/data/matches";
+import { allMatches, getAllMatchesWithOdds } from "@/data/matches";
 import { getMatchAnalysis } from "@/data/analyses";
 import { getPlayersByTier, getCountryColor } from "@/data/players";
 import { getVerdict } from "@/data/verdicts";
@@ -86,12 +86,67 @@ function LeagueMatchesClient() {
   }, []);
 
   if (loading) return <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">{[1,2,3].map(i => <div key={i} className="bg-white/5 rounded-2xl p-6 h-48 animate-pulse" />)}</div>;
-  if (matches.length === 0) return (
-    <div className="text-center py-8">
-      <p className="text-gray-400 mb-2">⏸️ International break — league matches resume soon</p>
-      <p className="text-xs text-gray-600">Check the Leagues page for the latest schedule</p>
-    </div>
-  );
+  if (matches.length === 0) {
+    // During international break, show upcoming WC playoff/friendly matches
+    const wcMatches = getAllMatchesWithOdds().filter(m => ["WCQ", "FRI"].includes(m.group));
+    if (wcMatches.length > 0) {
+      const recColors: Record<string, string> = { BET: "bg-green-500/20 text-green-400 border-green-500/30", LEAN: "bg-amber-500/20 text-amber-400 border-amber-500/30", SKIP: "bg-gray-500/20 text-gray-400 border-gray-500/30", AVOID: "bg-red-500/20 text-red-400 border-red-500/30" };
+      return (
+        <div>
+          <div className="text-center mb-4">
+            <p className="text-purple-400 font-bold text-sm">🔥 International window — WC Qualifiers & Friendlies this week!</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {wcMatches.slice(0, 6).map((m) => {
+              const avgHome = m.bookmakers.reduce((s, b) => s + b.home, 0) / m.bookmakers.length;
+              const avgDraw = m.bookmakers.reduce((s, b) => s + b.draw, 0) / m.bookmakers.length;
+              const avgAway = m.bookmakers.reduce((s, b) => s + b.away, 0) / m.bookmakers.length;
+              const isQualifier = m.group === "WCQ";
+              return (
+                <Link key={m.id} href={`/match/${m.id}`} className={`block backdrop-blur-xl border rounded-2xl p-5 hover:bg-white/[0.08] transition-all ${isQualifier ? 'bg-yellow-500/[0.04] border-yellow-500/20' : 'bg-cyan-500/[0.04] border-cyan-500/20'}`}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-sm">{isQualifier ? '🏆' : '⚽'}</span>
+                    <span className="text-[10px] text-gray-400">{isQualifier ? 'WC Qualifier' : 'Pre-WC Friendly'}</span>
+                    <span className="ml-auto text-[10px] text-gray-500">{m.date}</span>
+                  </div>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <span className="text-xl">{m.homeFlag}</span>
+                      <span className="text-sm font-bold text-white truncate">{m.home}</span>
+                    </div>
+                    <span className="text-xs text-gray-500 px-2 font-bold">vs</span>
+                    <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
+                      <span className="text-sm font-bold text-white truncate">{m.away}</span>
+                      <span className="text-xl">{m.awayFlag}</span>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-center text-[10px]">
+                    <div className="bg-white/5 rounded-lg py-1.5">
+                      <div className="text-gray-500">1</div>
+                      <div className="text-white font-bold">{avgHome.toFixed(2)}</div>
+                    </div>
+                    <div className="bg-white/5 rounded-lg py-1.5">
+                      <div className="text-gray-500">X</div>
+                      <div className="text-white font-bold">{avgDraw.toFixed(2)}</div>
+                    </div>
+                    <div className="bg-white/5 rounded-lg py-1.5">
+                      <div className="text-gray-500">2</div>
+                      <div className="text-white font-bold">{avgAway.toFixed(2)}</div>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-400 mb-2">⏸️ No matches scheduled — check back soon</p>
+      </div>
+    );
+  }
 
   const recColors: Record<string, string> = { BET: "bg-green-500/20 text-green-400 border-green-500/30", LEAN: "bg-amber-500/20 text-amber-400 border-amber-500/30", SKIP: "bg-gray-500/20 text-gray-400 border-gray-500/30", AVOID: "bg-red-500/20 text-red-400 border-red-500/30" };
   const riskColors: Record<string, string> = { LOW: "text-green-400", MEDIUM: "text-yellow-400", HIGH: "text-orange-400", "VERY HIGH": "text-red-400" };

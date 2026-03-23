@@ -1,6 +1,21 @@
 "use client";
 import { useEffect, useState, Suspense } from "react";
-import { allMatches, getKickoffISO } from "@/data/matches";
+import { allMatches, getKickoffISO, getAllMatchesWithOdds } from "@/data/matches";
+
+// Precompute average odds for WC matches (playoffs + friendlies + group stage)
+const wcMatchOdds: Record<number, { home: number; draw: number; away: number }> = {};
+getAllMatchesWithOdds().forEach(m => {
+  if (m.bookmakers && m.bookmakers.length > 0) {
+    const avgHome = m.bookmakers.reduce((s, b) => s + b.home, 0) / m.bookmakers.length;
+    const avgDraw = m.bookmakers.reduce((s, b) => s + b.draw, 0) / m.bookmakers.length;
+    const avgAway = m.bookmakers.reduce((s, b) => s + b.away, 0) / m.bookmakers.length;
+    wcMatchOdds[m.id] = {
+      home: Math.round(avgHome * 100) / 100,
+      draw: Math.round(avgDraw * 100) / 100,
+      away: Math.round(avgAway * 100) / 100,
+    };
+  }
+});
 import { getUserTimezone, formatDateTime, getTimezoneLabel, setUserTimezone, TIMEZONE_OPTIONS } from "@/lib/timezone";
 // removed useSearchParams/useRouter to prevent client-side bailout
 
@@ -1433,6 +1448,7 @@ function PredictPageContent() {
                       boostersRemaining={boostersRemaining}
                       onPredict={handlePrediction}
                       kickoffISO={getKickoffISO(match.date, match.time)}
+                      avgOdds={wcMatchOdds[match.id] || null}
                     />
                   ))}
                 </div>
@@ -1457,6 +1473,7 @@ function PredictPageContent() {
                       boostersRemaining={boostersRemaining}
                       onPredict={handlePrediction}
                       kickoffISO={getKickoffISO(match.date, match.time)}
+                      avgOdds={wcMatchOdds[match.id] || null}
                     />
                   ))}
                 </div>
@@ -1480,6 +1497,7 @@ function PredictPageContent() {
                       boostersRemaining={boostersRemaining}
                       onPredict={handlePrediction}
                       kickoffISO={getKickoffISO(match.date, match.time)}
+                      avgOdds={wcMatchOdds[match.id] || null}
                     />
                   ))}
                 </div>

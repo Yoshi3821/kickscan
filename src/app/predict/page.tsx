@@ -801,6 +801,12 @@ function PredictPageContent() {
   }
 
   if (!user) {
+    // Guest users see the full predict page below (no gate)
+    // Just skip to the main return
+  }
+
+  if (false) {
+    // OLD GUEST-ONLY VIEW - kept for reference but never shown
     return (
       <main className="min-h-screen bg-[#06060f] text-white">
         <div className="max-w-6xl mx-auto px-4 py-12">
@@ -1106,15 +1112,28 @@ function PredictPageContent() {
           <p className="text-sm md:text-xl text-gray-400">Predict match results, earn points, beat the AI</p>
         </div>
 
+        {/* Login prompt for guests */}
+        {!user && (
+          <div className="bg-gradient-to-r from-purple-500/10 to-cyan-500/10 border border-purple-500/20 rounded-2xl p-4 mb-4 text-center">
+            <p className="text-sm text-gray-300 mb-2">📋 Log in or sign up to start predicting and earn points!</p>
+            <button 
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="px-6 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-cyan-500 text-white font-bold text-sm hover:from-purple-500 hover:to-cyan-400 transition"
+            >
+              Sign Up / Login
+            </button>
+          </div>
+        )}
+
         {/* User Stats Bar — premium layout */}
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 md:p-6 mb-6">
+        {user && <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 md:p-6 mb-6">
           {/* Player name + timezone — single row */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <span className="text-xl">{selectedAvatar}</span>
               <div>
-                <div className="text-sm font-bold text-white">{user.username}</div>
-                <div className="text-[10px] text-gray-500">Rank #{user.rank || 0}</div>
+                <div className="text-sm font-bold text-white">{user?.username}</div>
+                <div className="text-[10px] text-gray-500">Rank #{user?.rank || 0}</div>
               </div>
             </div>
             <div className="flex items-center gap-1.5 text-[10px] text-gray-500 bg-white/5 px-2 py-1 rounded-lg">
@@ -1160,7 +1179,7 @@ function PredictPageContent() {
               <div className="text-[10px] md:text-xs text-gray-500">Best Streak</div>
             </div>
           </div>
-        </div>
+        </div>}
 
         {/* Timezone picker (expandable) */}
         {showTzPicker && (
@@ -1670,7 +1689,7 @@ function PredictPageContent() {
                     className={`flex items-center justify-between p-3 rounded-xl border text-sm cursor-pointer hover:bg-white/[0.06] ${
                       entry.isAI 
                         ? 'bg-cyan-500/10 border-cyan-500/30' 
-                        : entry.username === user.username
+                        : entry.username === user?.username
                         ? 'bg-purple-500/10 border-purple-500/30'
                         : 'bg-white/5 border-white/10'
                     }`}
@@ -1683,7 +1702,7 @@ function PredictPageContent() {
                       {entry.isAI && <span>🧠</span>}
                       <span className={`font-bold truncate ${
                         entry.isAI ? 'text-cyan-400' : 
-                        entry.username === user.username ? 'text-purple-400' : 'text-white'
+                        entry.username === user?.username ? 'text-purple-400' : 'text-white'
                       }`}>
                         {entry.username}
                       </span>
@@ -1763,7 +1782,7 @@ function PredictPageContent() {
                   <div
                     key={member.userId}
                     className={`flex items-center justify-between p-3 rounded-xl border ${
-                      member.username === user.username
+                      member.username === user?.username
                         ? 'bg-purple-500/10 border-purple-500/30'
                         : 'bg-white/5 border-white/10'
                     }`}
@@ -1774,10 +1793,10 @@ function PredictPageContent() {
                       {index === 1 && <span>🥈</span>}
                       {index === 2 && <span>🥉</span>}
                       <span className={`font-bold ${
-                        member.username === user.username ? 'text-purple-400' : 'text-white'
+                        member.username === user?.username ? 'text-purple-400' : 'text-white'
                       }`}>
                         {member.username}
-                        {member.username === user.username && <span className="text-xs ml-2">← you</span>}
+                        {member.username === user?.username && <span className="text-xs ml-2">← you</span>}
                       </span>
                     </div>
                     <div className="font-bold text-green-400">{member.points} pts</div>

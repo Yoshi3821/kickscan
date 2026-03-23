@@ -1171,28 +1171,30 @@ function PredictPageContent() {
           </div>
         )}
 
-        {/* Competition Tabs — compact on mobile */}
-        <div className="mb-5">
-          <div className="flex gap-1.5 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-1.5 w-fit mx-auto">
+        {/* Competition Tabs — optimized mobile layout */}
+        <div className="mb-4">
+          <div className="flex gap-1 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-1 max-w-md mx-auto">
             <button
               onClick={() => setActiveTab('league')}
-              className={`px-4 md:px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${
+              className={`flex-1 px-2 md:px-4 py-2 rounded-lg text-xs md:text-sm font-bold transition-all text-center ${
                 activeTab === 'league'
                   ? 'bg-green-500/20 text-green-400 border border-green-500/30'
                   : 'text-gray-300 hover:bg-white/10'
               }`}
             >
-              🏟️ LEAGUES
+              <span className="block">🏟️</span>
+              <span className="block leading-tight">LEAGUES</span>
             </button>
             <button
               onClick={() => setActiveTab('wc2026')}
-              className={`px-4 md:px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${
+              className={`flex-1 px-2 md:px-4 py-2 rounded-lg text-xs md:text-sm font-bold transition-all text-center ${
                 activeTab === 'wc2026'
                   ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
                   : 'text-gray-300 hover:bg-white/10'
               }`}
             >
-              🏆 WORLD CUP 2026
+              <span className="block">🏆</span>
+              <span className="block leading-tight">WORLD CUP</span>
             </button>
           </div>
         </div>

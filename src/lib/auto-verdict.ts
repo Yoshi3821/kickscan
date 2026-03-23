@@ -173,18 +173,21 @@ function generateReasoning(
   
   const sections: string[] = [];
 
-  // 1. MARKET POSITIONING (AH line + odds)
-  if (ahLine !== undefined) {
-    // Snap to valid quarter-goal increments (0, 0.25, 0.5, 0.75, etc.)
-    ahLine = Math.round(ahLine * 4) / 4;
-    const absLine = Math.abs(ahLine);
-    const favored = ahLine < 0 ? home : away;
-    if (absLine >= 1.5) {
-      sections.push(`The Asian Handicap market heavily favors ${favored} at ${ahLine > 0 ? '+' : ''}${ahLine.toFixed(2)}, signaling a dominant performance is expected.`);
-    } else if (absLine >= 0.75) {
-      sections.push(`Bookmakers price ${favored} as a clear favorite with AH ${ahLine > 0 ? '+' : ''}${ahLine.toFixed(2)}, reflecting a projected ${absLine.toFixed(1)}-goal margin.`);
+  // 1. MARKET POSITIONING (based on 1X2 odds)
+  if (homeWinPct > 0 && awayWinPct > 0) {
+    const maxPct = Math.max(homeWinPct, awayWinPct, drawPct);
+    const favored = homeWinPct >= awayWinPct && homeWinPct >= drawPct ? home
+      : awayWinPct >= homeWinPct && awayWinPct >= drawPct ? away : null;
+    const gap = Math.abs(homeWinPct - awayWinPct);
+
+    if (favored && maxPct >= 60) {
+      sections.push(`The 1X2 market strongly favors ${favored} at ${maxPct}% implied probability, suggesting bookmakers expect a one-sided affair.`);
+    } else if (favored && maxPct >= 45) {
+      sections.push(`Bookmakers give ${favored} the edge at ${maxPct}% implied probability, though this is not a runaway favorite situation.`);
+    } else if (gap <= 10) {
+      sections.push(`The 1X2 odds paint a tight, competitive fixture with little separating the two sides — bookmakers see this as a coin-flip.`);
     } else {
-      sections.push(`The AH line of ${ahLine.toFixed(2)} indicates bookmakers see this as a competitive, closely-contested fixture with little separating the sides.`);
+      sections.push(`The market leans toward ${favored || home} but without strong conviction, leaving room for an upset.`);
     }
   }
 
@@ -522,7 +525,7 @@ export function generateAutoVerdict(
     // Picking draw but AH says clear winner expected → SKIP
     if (pickType === "draw" && absAH > 1.0) {
       forceSkip = true;
-      skipReason = "Draw pick conflicts with strong AH line.";
+      skipReason = "Draw pick conflicts with strong market signals favoring a decisive result.";
     }
 
     // AH confirms pick direction?

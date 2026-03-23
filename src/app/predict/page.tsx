@@ -1413,10 +1413,59 @@ function PredictPageContent() {
                   </div>
                 </div>
 
-                {/* WC Matches */}
-                <h2 className="text-2xl font-bold mb-6 text-purple-400">🏆 World Cup 2026 Group Matches</h2>
+                {/* Section 1: WC Qualifiers */}
+                <h2 className="text-2xl font-bold mb-4 text-yellow-400">🔥 WC Qualifiers — Playoffs</h2>
+                <p className="text-sm text-gray-400 mb-4">March 26-31 · UEFA & Inter-Confederation Playoffs</p>
                 <div className="space-y-4 mb-8">
-                  {allMatches.slice(0, 8).map((match) => (
+                  {allMatches.filter(m => m.group === "WCQ").map((match) => (
+                    <MatchCard
+                      key={`wc_${match.id}_${userTz}`}
+                      matchId={`wc_${match.id}`}
+                      home={match.home}
+                      away={match.away}
+                      homeFlag={match.homeFlag}
+                      awayFlag={match.awayFlag}
+                      date={formatDateTime(getKickoffISO(match.date, match.time), userTz)}
+                      time=""
+                      league="WC 2026 Qualifier"
+                      leagueFlag="🏆"
+                      prediction={predictions[`wc_${match.id}`]}
+                      boostersRemaining={boostersRemaining}
+                      onPredict={handlePrediction}
+                      kickoffISO={getKickoffISO(match.date, match.time)}
+                    />
+                  ))}
+                </div>
+
+                {/* Section 2: Pre-WC Friendlies */}
+                <h2 className="text-2xl font-bold mb-4 text-cyan-400">⚽ Pre-WC Friendlies</h2>
+                <p className="text-sm text-gray-400 mb-4">March 26-31 · World Cup warm-up matches</p>
+                <div className="space-y-4 mb-8">
+                  {allMatches.filter(m => m.group === "FRI").map((match) => (
+                    <MatchCard
+                      key={`wc_${match.id}_${userTz}`}
+                      matchId={`wc_${match.id}`}
+                      home={match.home}
+                      away={match.away}
+                      homeFlag={match.homeFlag}
+                      awayFlag={match.awayFlag}
+                      date={formatDateTime(getKickoffISO(match.date, match.time), userTz)}
+                      time=""
+                      league="Pre-WC Friendly"
+                      leagueFlag="⚽"
+                      prediction={predictions[`wc_${match.id}`]}
+                      boostersRemaining={boostersRemaining}
+                      onPredict={handlePrediction}
+                      kickoffISO={getKickoffISO(match.date, match.time)}
+                    />
+                  ))}
+                </div>
+
+                {/* Section 3: Group Stage */}
+                <h2 className="text-2xl font-bold mb-4 text-purple-400">🏟️ World Cup 2026 — Group Stage</h2>
+                <p className="text-sm text-gray-400 mb-4">June 11 - June 27 · 12 Groups · 72 Matches</p>
+                <div className="space-y-4 mb-8">
+                  {allMatches.filter(m => !["WCQ", "FRI"].includes(m.group)).slice(0, 8).map((match) => (
                     <MatchCard
                       key={`wc_${match.id}_${userTz}`}
                       matchId={`wc_${match.id}`}

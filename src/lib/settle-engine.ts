@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '@/lib/supabase';
 import { calculate1X2Points, calculateCSBonus } from './new-scoring-engine';
+import { wcFixtureIdMap } from '@/data/matches';
 
 const API_FOOTBALL_KEY = '3408fed656308fb4ade76a6b3212a975';
 
@@ -103,6 +104,14 @@ export async function runSettlement(): Promise<SettleResult> {
     if (pred.match_id.startsWith('league_')) {
       fixtureIds.add(pred.match_id.replace('league_', ''));
     }
+    // Also handle WC playoff/friendly matches with fixture IDs
+    if (pred.match_id.startsWith('wc_')) {
+      const wcId = parseInt(pred.match_id.replace('wc_', ''));
+      const fixtureId = wcFixtureIdMap[wcId];
+      if (fixtureId) {
+        fixtureIds.add(String(fixtureId));
+      }
+    }
   }
 
   // Fetch fixture results from API-Football
@@ -173,6 +182,17 @@ export async function runSettlement(): Promise<SettleResult> {
         actualHome = result.homeGoals;
         actualAway = result.awayGoals;
         isFinished = true;
+      }
+    } else if (pred.match_id.startsWith('wc_')) {
+      const wcId = parseInt(pred.match_id.replace('wc_', ''));
+      const fixtureId = wcFixtureIdMap[wcId];
+      if (fixtureId) {
+        const result = fixtureResults[String(fixtureId)];
+        if (result) {
+          actualHome = result.homeGoals;
+          actualAway = result.awayGoals;
+          isFinished = true;
+        }
       }
     }
 

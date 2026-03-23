@@ -78,6 +78,29 @@ const flags: Record<string, string> = {
   "Croatia": "🇭🇷",
   "Panama": "🇵🇦",
   "Ghana": "🇬🇭",
+  "Italy": "🇮🇹",
+  "Wales": "🏴󠁧󠁢󠁷󠁬󠁳󠁿",
+  "Bosnia & Herzegovina": "🇧🇦",
+  "Ukraine": "🇺🇦",
+  "Sweden": "🇸🇪",
+  "Poland": "🇵🇱",
+  "Albania": "🇦🇱",
+  "Turkey": "🇹🇷",
+  "Romania": "🇷🇴",
+  "Slovakia": "🇸🇰",
+  "Kosovo": "🇽🇰",
+  "Denmark": "🇩🇰",
+  "North Macedonia": "🇲🇰",
+  "Czechia": "🇨🇿",
+  "Rep. of Ireland": "🇮🇪",
+  "Northern Ireland": "🇬🇧",
+  "New Caledonia": "🇳🇨",
+  "Jamaica": "🇯🇲",
+  "Bolivia": "🇧🇴",
+  "Suriname": "🇸🇷",
+  "Serbia": "🇷🇸",
+  "Mauritania": "🇲🇷",
+  "Zambia": "🇿🇲",
 };
 
 export function getFlag(team: string): string {
@@ -169,6 +192,34 @@ export const allMatches: Match[] = [
   { id: 70, group: "L", date: "June 23", time: "7:00 PM ET", home: "Panama", away: "Croatia", venue: "BMO Field", city: "Toronto", homeFlag: "🇵🇦", awayFlag: "🇭🇷" },
   { id: 71, group: "L", date: "June 27", time: "5:00 PM ET", home: "Panama", away: "England", venue: "MetLife Stadium", city: "New York/New Jersey", homeFlag: "🇵🇦", awayFlag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
   { id: 72, group: "L", date: "June 27", time: "5:00 PM ET", home: "Croatia", away: "Ghana", venue: "Lincoln Financial Field", city: "Philadelphia", homeFlag: "🇭🇷", awayFlag: "🇬🇭" },
+  // WC Qualifier Playoffs
+  { id: 73, group: "WCQ", date: "March 26", time: "2:45 PM ET", home: "Italy", away: "Northern Ireland", venue: "Gewiss Stadium", city: "Bergamo", homeFlag: "🇮🇹", awayFlag: "🇬🇧" },
+  { id: 74, group: "WCQ", date: "March 26", time: "2:45 PM ET", home: "Wales", away: "Bosnia & Herzegovina", venue: "Cardiff City Stadium", city: "Cardiff", homeFlag: "🏴󠁧󠁢󠁷󠁬󠁳󠁿", awayFlag: "🇧🇦" },
+  { id: 75, group: "WCQ", date: "March 26", time: "2:45 PM ET", home: "Ukraine", away: "Sweden", venue: "Mestalla", city: "Valencia", homeFlag: "🇺🇦", awayFlag: "🇸🇪" },
+  { id: 76, group: "WCQ", date: "March 26", time: "2:45 PM ET", home: "Poland", away: "Albania", venue: "PGE Narodowy", city: "Warsaw", homeFlag: "🇵🇱", awayFlag: "🇦🇱" },
+  { id: 77, group: "WCQ", date: "March 26", time: "12:00 PM ET", home: "Turkey", away: "Romania", venue: "Atatürk Olympic Stadium", city: "Istanbul", homeFlag: "🇹🇷", awayFlag: "🇷🇴" },
+  { id: 78, group: "WCQ", date: "March 26", time: "2:45 PM ET", home: "Slovakia", away: "Kosovo", venue: "Tehelné pole", city: "Bratislava", homeFlag: "🇸🇰", awayFlag: "🇽🇰" },
+  { id: 79, group: "WCQ", date: "March 26", time: "2:45 PM ET", home: "Denmark", away: "North Macedonia", venue: "Parken Stadium", city: "Copenhagen", homeFlag: "🇩🇰", awayFlag: "🇲🇰" },
+  { id: 80, group: "WCQ", date: "March 26", time: "2:45 PM ET", home: "Czechia", away: "Rep. of Ireland", venue: "Eden Arena", city: "Prague", homeFlag: "🇨🇿", awayFlag: "🇮🇪" },
+  { id: 81, group: "WCQ", date: "March 26", time: "10:00 PM ET", home: "New Caledonia", away: "Jamaica", venue: "Estadio Akron", city: "Guadalajara", homeFlag: "🇳🇨", awayFlag: "🇯🇲" },
+  { id: 82, group: "WCQ", date: "March 26", time: "5:00 PM ET", home: "Bolivia", away: "Suriname", venue: "Estadio BBVA", city: "Monterrey", homeFlag: "🇧🇴", awayFlag: "🇸🇷" },
+  // Pre-WC Friendlies
+  { id: 83, group: "FRI", date: "March 26", time: "3:00 PM ET", home: "Brazil", away: "France", venue: "Gillette Stadium", city: "Foxborough", homeFlag: "🇧🇷", awayFlag: "🇫🇷" },
+  { id: 84, group: "FRI", date: "March 26", time: "6:30 PM ET", home: "Colombia", away: "Croatia", venue: "Inter&Co Stadium", city: "Orlando", homeFlag: "🇨🇴", awayFlag: "🇭🇷" },
+  { id: 85, group: "FRI", date: "March 27", time: "2:45 PM ET", home: "England", away: "Uruguay", venue: "Wembley Stadium", city: "London", homeFlag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", awayFlag: "🇺🇾" },
+  { id: 86, group: "FRI", date: "March 27", time: "2:45 PM ET", home: "Switzerland", away: "Germany", venue: "St. Jakob-Park", city: "Zurich", homeFlag: "🇨🇭", awayFlag: "🇩🇪" },
+  { id: 87, group: "FRI", date: "March 27", time: "3:00 PM ET", home: "Spain", away: "Serbia", venue: "Santiago Bernabéu", city: "Madrid", homeFlag: "🇪🇸", awayFlag: "🇷🇸" },
+  { id: 88, group: "FRI", date: "March 27", time: "6:15 PM ET", home: "Argentina", away: "Mauritania", venue: "Estadio Monumental", city: "Buenos Aires", homeFlag: "🇦🇷", awayFlag: "🇲🇷" },
+  { id: 89, group: "FRI", date: "March 27", time: "12:30 PM ET", home: "Saudi Arabia", away: "Egypt", venue: "King Fahd Stadium", city: "Riyadh", homeFlag: "🇸🇦", awayFlag: "🇪🇬" },
+  { id: 90, group: "FRI", date: "March 28", time: "2:30 PM ET", home: "USA", away: "Belgium", venue: "Mercedes-Benz Stadium", city: "Atlanta", homeFlag: "🇺🇸", awayFlag: "🇧🇪" },
+  { id: 91, group: "FRI", date: "March 28", time: "8:00 PM ET", home: "Mexico", away: "Portugal", venue: "Estadio Azteca", city: "Mexico City", homeFlag: "🇲🇽", awayFlag: "🇵🇹" },
+  { id: 92, group: "FRI", date: "March 29", time: "2:00 PM ET", home: "Colombia", away: "France", venue: "Audi Field", city: "Washington DC", homeFlag: "🇨🇴", awayFlag: "🇫🇷" },
+  { id: 93, group: "FRI", date: "March 30", time: "1:45 PM ET", home: "Germany", away: "Ghana", venue: "TBD", city: "TBD", homeFlag: "🇩🇪", awayFlag: "🇬🇭" },
+  { id: 94, group: "FRI", date: "March 31", time: "11:00 AM ET", home: "Spain", away: "Egypt", venue: "TBD", city: "TBD", homeFlag: "🇪🇸", awayFlag: "🇪🇬" },
+  { id: 95, group: "FRI", date: "March 31", time: "1:45 PM ET", home: "England", away: "Japan", venue: "Wembley Stadium", city: "London", homeFlag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", awayFlag: "🇯🇵" },
+  { id: 96, group: "FRI", date: "March 31", time: "6:00 PM ET", home: "USA", away: "Portugal", venue: "Mercedes-Benz Stadium", city: "Atlanta", homeFlag: "🇺🇸", awayFlag: "🇵🇹" },
+  { id: 97, group: "FRI", date: "March 31", time: "6:15 PM ET", home: "Argentina", away: "Zambia", venue: "Estadio Monumental", city: "Buenos Aires", homeFlag: "🇦🇷", awayFlag: "🇿🇲" },
+  { id: 98, group: "FRI", date: "March 31", time: "2:30 PM ET", home: "Algeria", away: "Uruguay", venue: "TBD", city: "TBD", homeFlag: "🇩🇿", awayFlag: "🇺🇾" },
 ];
 
 export const groupNames: Record<string, string[]> = {
@@ -184,6 +235,8 @@ export const groupNames: Record<string, string[]> = {
   J: ["Argentina", "Austria", "Algeria", "Jordan"],
   K: ["Portugal", "Colombia", "Uzbekistan", "ICP1"],
   L: ["England", "Croatia", "Panama", "Ghana"],
+  WCQ: ["Italy", "Northern Ireland", "Wales", "Bosnia & Herzegovina", "Ukraine", "Sweden", "Poland", "Albania", "Turkey", "Romania", "Slovakia", "Kosovo", "Denmark", "North Macedonia", "Czechia", "Rep. of Ireland", "New Caledonia", "Jamaica", "Bolivia", "Suriname"],
+  FRI: ["Brazil", "France", "Colombia", "Croatia", "England", "Uruguay", "Switzerland", "Germany", "Spain", "Serbia", "Argentina", "Mauritania", "Saudi Arabia", "Egypt", "USA", "Belgium", "Mexico", "Portugal", "Ghana", "Japan", "Zambia", "Algeria"],
 };
 
 // Generate sample odds for all matches
@@ -200,6 +253,11 @@ function generateOdds(home: string, away: string): MatchWithOdds["bookmakers"] {
     "Cape Verde": 62, "Haiti": 58, "Jordan": 67, "Curacao": 55, "Uzbekistan": 70,
     "UEFA playoff A": 72, "UEFA playoff B": 72, "UEFA playoff C": 72, "UEFA playoff D": 72,
     "ICP1": 65, "ICP2": 65,
+    "Italy": 86, "Wales": 74, "Bosnia & Herzegovina": 72, "Ukraine": 76, "Sweden": 78,
+    "Poland": 77, "Albania": 70, "Turkey": 78, "Romania": 73, "Slovakia": 72,
+    "Kosovo": 65, "Denmark": 80, "North Macedonia": 66, "Czechia": 75, "Rep. of Ireland": 71,
+    "Northern Ireland": 64, "New Caledonia": 45, "Jamaica": 68, "Bolivia": 62, "Suriname": 50,
+    "Serbia": 76, "Mauritania": 55, "Zambia": 60,
   };
   const hp = power[home] || 70;
   const ap = power[away] || 70;
@@ -252,6 +310,11 @@ function generatePrediction(match: Match): MatchPrediction {
     "Cape Verde": 62, "Haiti": 58, "Jordan": 67, "Curacao": 55, "Uzbekistan": 70,
     "South Africa": 71, "UEFA playoff A": 72, "UEFA playoff B": 72, "UEFA playoff C": 72,
     "UEFA playoff D": 72, "ICP1": 65, "ICP2": 65,
+    "Italy": 86, "Wales": 74, "Bosnia & Herzegovina": 72, "Ukraine": 76, "Sweden": 78,
+    "Poland": 77, "Albania": 70, "Turkey": 78, "Romania": 73, "Slovakia": 72,
+    "Kosovo": 65, "Denmark": 80, "North Macedonia": 66, "Czechia": 75, "Rep. of Ireland": 71,
+    "Northern Ireland": 64, "New Caledonia": 45, "Jamaica": 68, "Bolivia": 62, "Suriname": 50,
+    "Serbia": 76, "Mauritania": 55, "Zambia": 60,
   };
   const hp = power[match.home] || 70;
   const ap = power[match.away] || 70;
@@ -379,6 +442,35 @@ function generatePrediction(match: Match): MatchPrediction {
 export function getAllPredictions(): MatchPrediction[] {
   return allMatches.map(generatePrediction);
 }
+
+export const wcFixtureIdMap: Record<number, number> = {
+  73: 1487925, // Italy vs Northern Ireland
+  74: 1487929, // Wales vs Bosnia & Herzegovina
+  75: 1487928, // Ukraine vs Sweden
+  76: 1487926, // Poland vs Albania
+  77: 1487922, // Turkey vs Romania
+  78: 1487927, // Slovakia vs Kosovo
+  79: 1487924, // Denmark vs North Macedonia
+  80: 1487923, // Czechia vs Rep. of Ireland
+  81: 1530487, // New Caledonia vs Jamaica
+  82: 1530486, // Bolivia vs Suriname
+  83: 1501815, // Brazil vs France
+  84: 1512757, // Colombia vs Croatia
+  85: 1502470, // England vs Uruguay
+  86: 1502471, // Switzerland vs Germany
+  87: 1536910, // Spain vs Serbia
+  88: 1536911, // Argentina vs Mauritania
+  89: 1514461, // Saudi Arabia vs Egypt
+  90: 1503003, // USA vs Belgium
+  91: 1514464, // Mexico vs Portugal
+  92: 1514465, // Colombia vs France
+  93: 1501816, // Germany vs Ghana
+  94: 1511778, // Spain vs Egypt
+  95: 1502473, // England vs Japan
+  96: 1503004, // USA vs Portugal
+  97: 1536923, // Argentina vs Zambia
+  98: 1528280, // Algeria vs Uruguay
+};
 
 export const groups = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"];
 export const matchDates = [...new Set(allMatches.map(m => m.date))].sort();

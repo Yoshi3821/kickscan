@@ -163,68 +163,110 @@ function generateReasoning(
   ahLine?: number,
   ahDerived?: boolean,
 ): string {
-  const parts: string[] = [];
+  const home = fixture.home.name;
+  const away = fixture.away.name;
+  const pickedTeam = pick.replace(" Win", "").replace(" Draw", "Draw");
+  const isHomePick = pick.includes(home);
+  const isAwayPick = pick.includes(away);
+  const isDraw = pick.includes("Draw");
+  const aiPct = isHomePick ? homeWinPct : isAwayPick ? awayWinPct : drawPct;
+  
+  const sections: string[] = [];
 
-  // AH-based insight (most valuable)
+  // 1. MARKET POSITIONING (AH line + odds)
   if (ahLine !== undefined) {
     const absLine = Math.abs(ahLine);
-    const favored = ahLine < 0 ? fixture.home.name : fixture.away.name;
+    const favored = ahLine < 0 ? home : away;
     if (absLine >= 1.5) {
-      parts.push(`Market expects ${favored} to dominate (AH ${ahLine > 0 ? '+' : ''}${ahLine.toFixed(2)}).`);
+      sections.push(`The Asian Handicap market heavily favors ${favored} at ${ahLine > 0 ? '+' : ''}${ahLine.toFixed(2)}, signaling a dominant performance is expected.`);
     } else if (absLine >= 0.75) {
-      parts.push(`Market prices ${favored} as clear favorite (AH ${ahLine > 0 ? '+' : ''}${ahLine.toFixed(2)}).`);
-    } else if (absLine < 0.3) {
-      parts.push(`Tight match — AH line of ${ahLine.toFixed(2)} suggests near-even contest.`);
+      sections.push(`Bookmakers price ${favored} as a clear favorite with AH ${ahLine > 0 ? '+' : ''}${ahLine.toFixed(2)}, reflecting a projected ${absLine.toFixed(1)}-goal margin.`);
+    } else {
+      sections.push(`The AH line of ${ahLine.toFixed(2)} indicates bookmakers see this as a competitive, closely-contested fixture with little separating the sides.`);
     }
   }
 
-  // Form
+  // 2. FORM ANALYSIS
   if (homeForm && awayForm) {
     const hf = analyzeForm(homeForm.form);
     const af = analyzeForm(awayForm.form);
-    if (hf.wins >= 4) parts.push(`${fixture.home.name} in flying form (${hf.wins}W in last 5).`);
-    else if (hf.wins <= 1) parts.push(`${fixture.home.name} struggling (${hf.wins}W in last 5).`);
-    if (af.wins >= 4) parts.push(`${fixture.away.name} in excellent form (${af.wins}W in last 5).`);
-    else if (af.wins <= 1) parts.push(`${fixture.away.name} poor recent form (${af.wins}W in 5).`);
+    const homeFormStr = `${hf.wins}W-${hf.draws}D-${hf.losses}L`;
+    const awayFormStr = `${af.wins}W-${af.draws}D-${af.losses}L`;
+    
+    if (hf.wins >= 4 && af.wins <= 1) {
+      sections.push(`Form heavily favors ${home} (${homeFormStr} in last 5) while ${away} have been poor (${awayFormStr}), creating a clear momentum gap.`);
+    } else if (af.wins >= 4 && hf.wins <= 1) {
+      sections.push(`${away} arrive in outstanding form (${awayFormStr}) against a struggling ${home} side (${homeFormStr}), shifting the advantage away from home.`);
+    } else if (hf.wins >= 3) {
+      sections.push(`${home}'s recent form of ${homeFormStr} shows strong consistency, while ${away} sit at ${awayFormStr} heading into this fixture.`);
+    } else if (af.wins >= 3) {
+      sections.push(`${away} carry solid momentum (${awayFormStr} in recent games) into this away trip, while ${home}'s ${homeFormStr} record raises questions.`);
+    } else {
+      sections.push(`Both sides show mixed recent form — ${home} at ${homeFormStr} and ${away} at ${awayFormStr} — making this a harder call on current trajectory alone.`);
+    }
   }
 
-  // H2H
-  if (h2h.length > 0) {
+  // 3. H2H TREND
+  if (h2h.length >= 3) {
     const homeH2HWins = h2h.filter(m =>
-      (m.home === fixture.home.name && m.homeGoals > m.awayGoals) ||
-      (m.away === fixture.home.name && m.awayGoals > m.homeGoals)
+      (m.home === home && m.homeGoals > m.awayGoals) ||
+      (m.away === home && m.awayGoals > m.homeGoals)
     ).length;
-    if (homeH2HWins >= 3) parts.push(`${fixture.home.name} won ${homeH2HWins} of last ${h2h.length} H2H meetings.`);
-    else if (h2h.length - homeH2HWins >= 3) parts.push(`${fixture.away.name} hold the H2H edge.`);
+    const draws = h2h.filter(m => m.homeGoals === m.awayGoals).length;
+    const awayH2HWins = h2h.length - homeH2HWins - draws;
+    
+    if (homeH2HWins >= 3) {
+      sections.push(`Head-to-head history strongly backs ${home}, winning ${homeH2HWins} of the last ${h2h.length} meetings — a pattern that's hard to ignore.`);
+    } else if (awayH2HWins >= 3) {
+      sections.push(`${away} have dominated this fixture historically, taking ${awayH2HWins} of the last ${h2h.length} encounters regardless of venue.`);
+    } else if (draws >= 2) {
+      sections.push(`These teams tend to cancel each other out — ${draws} draws from their last ${h2h.length} meetings suggests goals could be hard to come by.`);
+    }
   }
 
-  // Injuries
-  const homeInj = injuries.filter(i => i.team === fixture.home.name);
-  const awayInj = injuries.filter(i => i.team === fixture.away.name);
-  if (homeInj.length > 2) parts.push(`${fixture.home.name} weakened by ${homeInj.length} injuries.`);
-  if (awayInj.length > 2) parts.push(`${fixture.away.name} missing key players.`);
+  // 4. INJURY IMPACT
+  const homeInj = injuries.filter(i => i.team === home);
+  const awayInj = injuries.filter(i => i.team === away);
+  if (homeInj.length > 2 && awayInj.length <= 1) {
+    sections.push(`${home} are dealing with ${homeInj.length} injury absences which could weaken their squad depth, giving ${away} an opportunity to exploit.`);
+  } else if (awayInj.length > 2 && homeInj.length <= 1) {
+    sections.push(`${away} travel without ${awayInj.length} players through injury, limiting their options and potentially disrupting their tactical setup.`);
+  }
 
-  // Market value
+  // 5. VALUE ASSESSMENT + VERDICT
   if (odds.length > 0) {
     const mkt = getMarketProbs(odds);
     if (mkt) {
-      const mktPct = pick.includes(fixture.home.name) ? Math.round(mkt.home * 100) :
-        pick.includes(fixture.away.name) ? Math.round(mkt.away * 100) : Math.round(mkt.draw * 100);
-      const aiPct = pick.includes(fixture.home.name) ? homeWinPct :
-        pick.includes(fixture.away.name) ? awayWinPct : drawPct;
+      const mktPct = isHomePick ? Math.round(mkt.home * 100) : isAwayPick ? Math.round(mkt.away * 100) : Math.round(mkt.draw * 100);
       if (aiPct > mktPct + 5) {
-        parts.push(`Market at ${mktPct}%, AI sees ${aiPct}% — value edge.`);
-      } else if (Math.abs(aiPct - mktPct) <= 3) {
-        parts.push(`AI and market agree at ~${mktPct}%.`);
+        sections.push(`Our model finds ${aiPct}% probability versus the market's ${mktPct}% — a meaningful value edge that makes this an attractive selection at current prices.`);
+      } else if (aiPct > mktPct) {
+        sections.push(`AI probability of ${aiPct}% slightly exceeds the market's ${mktPct}%, suggesting marginal value at the current odds.`);
+      } else {
+        sections.push(`At ${aiPct}% model probability against ${mktPct}% market consensus, the price is fair — no standout value, but the read still points to ${pickedTeam}.`);
       }
     }
   }
 
-  if (parts.length === 0) {
-    parts.push(`Based on available data, ${pick.replace(" Win", "")} represents the most likely outcome.`);
+  // Ensure minimum 38 words — add conclusion if needed
+  let reasoning = sections.slice(0, 4).join(" ");
+  const wordCount = reasoning.split(/\s+/).length;
+  
+  if (wordCount < 38) {
+    if (isDraw) {
+      reasoning += ` Both defenses look organized enough to limit clear-cut chances, and the balance of play suggests neither side will find a decisive breakthrough in 90 minutes.`;
+    } else {
+      reasoning += ` When weighing form, market signals, and tactical matchups together, ${pickedTeam} emerges as the stronger selection for this fixture based on our deep-scan analysis.`;
+    }
   }
 
-  return parts.slice(0, 3).join(" ");
+  // Cap at ~80 words
+  const words = reasoning.split(/\s+/);
+  if (words.length > 80) {
+    reasoning = words.slice(0, 78).join(" ") + ".";
+  }
+
+  return reasoning;
 }
 
 // ══════════════════════════════════════════════════════════════

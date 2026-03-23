@@ -159,7 +159,7 @@ const ScoringRules = () => {
             <div className="text-white font-medium">Scenario 2: Risky Pick + Correct Score</div>
             <div className="text-gray-300 text-xs mt-1">
               Predict Away @ 4.20 odds + Correct 2-1 score → 
-              <span className="text-blue-400 font-semibold ml-1">11 points</span> (8 pts + 3 pts CS bonus)
+              <span className="text-blue-400 font-semibold ml-1">12 points</span> (9 pts + 3 pts CS bonus)
             </div>
           </div>
           

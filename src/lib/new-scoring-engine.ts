@@ -237,14 +237,19 @@ export async function settleMatch(
 
     for (const pred of predictions) {
       try {
+        // Derive correctScoreEntered from predicted_score:
+        // Only "N-N" (both sides numeric) counts as active CS bet.
+        // "", "x-x", "2-x", "x-1", null → NO CS bet.
+        const hasActiveCS = /^\d+-\d+$/.test((pred.predicted_score || '').trim());
+
         const predictionData: PredictionToScore = {
           id: pred.id,
           userId: pred.user_id,
           matchId: pred.match_id,
           predictedResult: pred.predicted_result,
-          predictedScore: pred.predicted_score,
-          boosterUsed: pred.booster_used || false,
-          correctScoreEntered: pred.correct_score_entered || false,
+          predictedScore: pred.predicted_score || '',
+          boosterUsed: pred.boosted || false,
+          correctScoreEntered: hasActiveCS,
           lockedHomeOdds: oddsCache.average_home_odds,
           lockedDrawOdds: oddsCache.average_draw_odds,
           lockedAwayOdds: oddsCache.average_away_odds

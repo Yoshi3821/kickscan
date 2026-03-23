@@ -1682,34 +1682,68 @@ function PredictPageContent() {
             {/* Points System */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 lg:p-5 mb-4">
               <h3 className="text-lg font-bold mb-3">📋 HOW IT WORKS</h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>✅ Correct 1X2:</span>
-                  <span className="text-green-400 font-bold">1-11 pts (odds-based)</span>
+              <div className="space-y-3 text-sm">
+
+                {/* Overview */}
+                <div className="text-xs text-gray-400">
+                  All new players start with <span className="text-green-400 font-bold">20 points</span>. Points can go negative.
                 </div>
-                <div className="flex justify-between">
-                  <span>❌ Wrong 1X2:</span>
-                  <span className="text-red-400 font-bold">-1 pt</span>
+
+                {/* 1X2 System */}
+                <div>
+                  <div className="text-white font-semibold text-xs mb-1.5">⚽ 1X2 RESULT (required)</div>
+                  <div className="text-xs text-gray-400 mb-1.5">Pick Home (1), Draw (X), or Away (2). Points based on locked odds:</div>
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[11px]">
+                    <div className="flex justify-between"><span className="text-gray-500">1.01–1.29</span><span className="text-green-400">1 pt</span></div>
+                    <div className="flex justify-between"><span className="text-gray-500">2.70–3.19</span><span className="text-blue-400">7 pts</span></div>
+                    <div className="flex justify-between"><span className="text-gray-500">1.30–1.49</span><span className="text-green-400">2 pts</span></div>
+                    <div className="flex justify-between"><span className="text-gray-500">3.20–3.79</span><span className="text-blue-400">8 pts</span></div>
+                    <div className="flex justify-between"><span className="text-gray-500">1.50–1.74</span><span className="text-green-400">3 pts</span></div>
+                    <div className="flex justify-between"><span className="text-gray-500">3.80–4.49</span><span className="text-purple-400">9 pts</span></div>
+                    <div className="flex justify-between"><span className="text-gray-500">1.75–1.99</span><span className="text-green-400">4 pts</span></div>
+                    <div className="flex justify-between"><span className="text-gray-500">4.50–5.49</span><span className="text-purple-400">10 pts</span></div>
+                    <div className="flex justify-between"><span className="text-gray-500">2.00–2.29</span><span className="text-green-400">5 pts</span></div>
+                    <div className="flex justify-between"><span className="text-gray-500">5.50+</span><span className="text-yellow-400">11 pts</span></div>
+                    <div className="flex justify-between"><span className="text-gray-500">2.30–2.69</span><span className="text-green-400">6 pts</span></div>
+                    <div className="flex justify-between"><span className="text-red-400">Wrong 1X2</span><span className="text-red-400">-1 pt</span></div>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span>🎯 Correct score (optional):</span>
-                  <span className="text-green-400 font-bold">+3 to +7 bonus</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>❌ Wrong score:</span>
-                  <span className="text-red-400 font-bold">-1 pt</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>⏭️ Skip score:</span>
-                  <span className="text-gray-400 font-bold">0 pts</span>
-                </div>
+
                 <hr className="border-white/10" />
+
+                {/* CS System */}
+                <div>
+                  <div className="text-white font-semibold text-xs mb-1.5">🎯 CORRECT SCORE (optional)</div>
+                  <div className="text-xs text-gray-400 mb-1.5">Bonus based on total goals in the final score:</div>
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[11px]">
+                    <div className="flex justify-between"><span className="text-gray-500">0 goals (0-0)</span><span className="text-yellow-400">+4 pts</span></div>
+                    <div className="flex justify-between"><span className="text-gray-500">4–6 goals</span><span className="text-blue-400">+5 pts</span></div>
+                    <div className="flex justify-between"><span className="text-gray-500">1–3 goals</span><span className="text-green-400">+3 pts</span></div>
+                    <div className="flex justify-between"><span className="text-gray-500">7+ goals</span><span className="text-purple-400">+7 pts</span></div>
+                  </div>
+                  <div className="mt-1.5 text-[11px] text-gray-500 space-y-0.5">
+                    <div>• Wrong score = <span className="text-red-400">-1 pt</span></div>
+                    <div>• Skip (x-x) = <span className="text-gray-300">0 pts</span> (no penalty)</div>
+                    <div>• Only counts when both scores are entered</div>
+                  </div>
+                </div>
+
+                <hr className="border-white/10" />
+
+                {/* Booster */}
                 <div className="text-center">
-                  <p className="text-purple-400 font-bold">⚡ DAILY BOOSTER (×2)</p>
-                  <p className="text-xs text-gray-400 mt-1">
+                  <p className="text-purple-400 font-bold text-xs">⚡ DAILY BOOSTER (×2)</p>
+                  <p className="text-[11px] text-gray-400 mt-1">
                     1 per day • doubles 1X2 points only<br />
                     Does NOT double CS bonus or penalties
                   </p>
+                </div>
+
+                <hr className="border-white/10" />
+
+                {/* Lock Rule */}
+                <div className="text-center text-[11px] text-gray-500">
+                  🔒 Predictions lock 5 minutes before kickoff
                 </div>
               </div>
             </div>

@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase';
+import { calculate1X2Points, calculateCSBonus } from './new-scoring-engine';
 
 const API_FOOTBALL_KEY = '3408fed656308fb4ade76a6b3212a975';
 
@@ -15,7 +16,6 @@ export interface SettleResult {
  * Lock expires after 4 minutes (safe gap for 5-min cron).
  */
 export async function acquireLock(runId: string): Promise<boolean> {
-  // Try to upsert lock row — only succeed if no active lock exists
   const { data, error } = await supabaseAdmin.rpc('acquire_settle_lock', {
     p_run_id: runId,
     p_expire_minutes: 4,
@@ -23,8 +23,6 @@ export async function acquireLock(runId: string): Promise<boolean> {
 
   if (error) {
     console.error('[settle-lock] Failed to acquire lock:', error.message);
-    // If RPC doesn't exist yet, fall through without lock (backward compat)
-    // This lets the cron work even before the DB migration runs
     if (error.message.includes('acquire_settle_lock')) {
       console.warn('[settle-lock] RPC not found — running without lock');
       return true;
@@ -51,8 +49,34 @@ export async function releaseLock(runId: string): Promise<void> {
 }
 
 /**
- * Core settlement logic — shared between /api/settle and /api/cron/settle.
- * Finds unsettled predictions for finished matches, calculates points, updates users.
+ * Determine if a predicted_score string counts as an active CS bet.
+ * Only "N-N" (both sides numeric) counts. 
+ * "", "x-x", "2-x", "x-1", null, undefined → NO CS bet.
+ */
+function isActiveCSBet(predictedScore: string | null | undefined): boolean {
+  if (!predictedScore) return false;
+  return /^\d+-\d+$/.test(predictedScore.trim());
+}
+
+/**
+ * Core settlement logic — uses the approved 11-tier odds-based scoring system.
+ * 
+ * SCORING RULES (approved spec):
+ * ─────────────────────────────────────────────
+ * 1X2 (mandatory):
+ *   Correct → odds-based points (1-11 pts per band)
+ *   Wrong   → -1 point
+ *   Booster → doubles 1X2 points only (not CS, not penalties)
+ * 
+ * Correct Score (optional):
+ *   Correct → bonus based on total goals (0→+4, 1-3→+3, 4-6→+5, 7+→+7)
+ *   Wrong   → -1 point
+ *   Skipped → 0 points (no penalty)
+ * 
+ * Booster does NOT:
+ *   - Double CS bonus or CS penalty
+ *   - Multiply negative 1X2 points (wrong 1X2 = flat -1 even with booster)
+ * ─────────────────────────────────────────────
  */
 export async function runSettlement(): Promise<SettleResult> {
   const errors: string[] = [];
@@ -104,7 +128,6 @@ export async function runSettlement(): Promise<SettleResult> {
             status,
           };
         } else if (['PST', 'CANC', 'ABD', 'AWD', 'WO'].includes(status)) {
-          // Postponed/Cancelled/Abandoned/Awarded/Walkover — void the prediction
           fixtureResults[fixtureId] = {
             homeGoals: -1,
             awayGoals: -1,
@@ -117,7 +140,26 @@ export async function runSettlement(): Promise<SettleResult> {
     }
   }
 
+  // Get locked odds for all matches we need to settle
+  const matchIds = [...new Set(unsettled.map(p => p.match_id))];
+  const { data: allOdds } = await supabaseAdmin
+    .from('match_odds_cache')
+    .select('*')
+    .in('match_id', matchIds);
+
+  const oddsMap: Record<string, { home: number; draw: number; away: number }> = {};
+  if (allOdds) {
+    for (const odds of allOdds) {
+      oddsMap[odds.match_id] = {
+        home: odds.average_home_odds || 0,
+        draw: odds.average_draw_odds || 0,
+        away: odds.average_away_odds || 0,
+      };
+    }
+  }
+
   let settledCount = 0;
+  const finishedFixtureCount = Object.keys(fixtureResults).length;
 
   for (const pred of unsettled) {
     let actualHome: number | null = null;
@@ -136,9 +178,8 @@ export async function runSettlement(): Promise<SettleResult> {
 
     if (!isFinished || actualHome === null || actualAway === null) continue;
 
-    // Handle voided matches (postponed, cancelled, etc.)
+    // ── Handle voided matches (postponed, cancelled, etc.) ──
     if (actualHome === -1 && actualAway === -1) {
-      // Void: settle with 0 points, refund booster if used
       const { error: voidError } = await supabaseAdmin
         .from('predictions')
         .update({
@@ -146,6 +187,9 @@ export async function runSettlement(): Promise<SettleResult> {
           actual_result: 'void',
           actual_score: 'VOID',
           points_earned: 0,
+          final_1x2_points: 0,
+          final_cs_points: 0,
+          final_total_points: 0,
         })
         .eq('id', pred.id)
         .eq('settled', false);
@@ -157,15 +201,16 @@ export async function runSettlement(): Promise<SettleResult> {
 
       // Refund booster if used
       if (pred.boosted) {
+        const today = new Date().toISOString().split('T')[0];
         const { data: userData } = await supabaseAdmin
           .from('users')
-          .select('boosters')
+          .select('boosters_used_today, last_booster_date')
           .eq('id', pred.user_id)
           .single();
-        if (userData) {
+        if (userData && userData.last_booster_date === today) {
           await supabaseAdmin
             .from('users')
-            .update({ boosters: (userData.boosters || 0) + 1 })
+            .update({ boosters_used_today: Math.max(0, (userData.boosters_used_today || 1) - 1) })
             .eq('id', pred.user_id);
         }
       }
@@ -174,32 +219,88 @@ export async function runSettlement(): Promise<SettleResult> {
       continue;
     }
 
-    // Calculate actual result
-    const actualResult =
+    // ── Calculate actual result ──
+    const actualResult: 'home' | 'draw' | 'away' =
       actualHome > actualAway ? 'home' : actualAway > actualHome ? 'away' : 'draw';
     const actualScore = `${actualHome}-${actualAway}`;
 
-    // Calculate points
-    let points = 0;
+    // ── Get locked odds for this match ──
+    const odds = oddsMap[pred.match_id];
+
+    // ── 1X2 SCORING ──
+    let final1X2Points = 0;
+    let selectedOdds = 0;
     const resultCorrect = pred.predicted_result === actualResult;
-    const scoreCorrect = pred.predicted_score === actualScore;
 
     if (resultCorrect) {
-      points = 3;
-      if (pred.boosted) points *= 2;
-    }
-    if (scoreCorrect) {
-      points += 5;
+      // Get the odds for the outcome the user picked
+      if (odds) {
+        switch (pred.predicted_result) {
+          case 'home': selectedOdds = odds.home; break;
+          case 'draw': selectedOdds = odds.draw; break;
+          case 'away': selectedOdds = odds.away; break;
+        }
+      }
+
+      if (selectedOdds > 0) {
+        // Use the approved 11-tier odds-based system
+        const basePoints = calculate1X2Points(selectedOdds);
+        // Booster doubles 1X2 points only (correct picks only)
+        final1X2Points = pred.boosted ? basePoints * 2 : basePoints;
+      } else {
+        // No locked odds available — fallback: award minimum 1 point
+        final1X2Points = pred.boosted ? 2 : 1;
+        errors.push(`No locked odds for match ${pred.match_id}, prediction ${pred.id} — used fallback 1pt`);
+      }
+    } else {
+      // Wrong 1X2 = flat -1 (booster does NOT multiply penalties)
+      final1X2Points = -1;
     }
 
-    // Update prediction — use settled=false in WHERE as extra safety against double-settle
-    const { error: updateError, count } = await supabaseAdmin
+    // ── CORRECT SCORE SCORING ──
+    let finalCSPoints = 0;
+    const csEntered = isActiveCSBet(pred.predicted_score);
+
+    if (csEntered) {
+      const scoreCorrect = pred.predicted_score === actualScore;
+      if (scoreCorrect) {
+        // Bonus based on total goals in the actual final score
+        const totalGoals = actualHome + actualAway;
+        finalCSPoints = calculateCSBonus(totalGoals);
+      } else {
+        // Wrong CS = -1
+        finalCSPoints = -1;
+      }
+    }
+    // If CS not entered (x-x, partial, empty) → 0 points, no penalty
+
+    // ── TOTAL ──
+    const finalTotalPoints = final1X2Points + finalCSPoints;
+    const scoreCorrect = csEntered && pred.predicted_score === actualScore;
+
+    // ── Get points band description ──
+    let pointsBand = 'N/A';
+    if (selectedOdds > 0) {
+      const pts = calculate1X2Points(selectedOdds);
+      pointsBand = `${selectedOdds.toFixed(2)} = ${pts}pt${pts !== 1 ? 's' : ''}`;
+    }
+
+    // ── Update prediction ──
+    const { error: updateError } = await supabaseAdmin
       .from('predictions')
       .update({
         settled: true,
         actual_result: actualResult,
         actual_score: actualScore,
-        points_earned: points,
+        locked_home_odds: odds?.home || null,
+        locked_draw_odds: odds?.draw || null,
+        locked_away_odds: odds?.away || null,
+        locked_points_band: pointsBand,
+        final_1x2_points: final1X2Points,
+        final_cs_points: finalCSPoints,
+        final_total_points: finalTotalPoints,
+        points_earned: finalTotalPoints, // backward compatibility
+        scored_at: new Date().toISOString(),
       })
       .eq('id', pred.id)
       .eq('settled', false);
@@ -209,10 +310,7 @@ export async function runSettlement(): Promise<SettleResult> {
       continue;
     }
 
-    // If count is 0, another process already settled this — skip user update
-    // (Supabase JS v2 doesn't always return count, so we proceed but the .eq('settled', false) guard prevents double-write)
-
-    // Update user stats
+    // ── Update user stats ──
     const { data: userData } = await supabaseAdmin
       .from('users')
       .select('total_points, correct_results, correct_scores, current_streak, best_streak')
@@ -226,7 +324,7 @@ export async function runSettlement(): Promise<SettleResult> {
       await supabaseAdmin
         .from('users')
         .update({
-          total_points: (userData.total_points || 0) + points,
+          total_points: (userData.total_points || 0) + finalTotalPoints,
           correct_results: (userData.correct_results || 0) + (resultCorrect ? 1 : 0),
           correct_scores: (userData.correct_scores || 0) + (scoreCorrect ? 1 : 0),
           current_streak: newStreak,
@@ -241,7 +339,7 @@ export async function runSettlement(): Promise<SettleResult> {
   return {
     settled: settledCount,
     checked: unsettled.length,
-    finishedFixtures: Object.keys(fixtureResults).length,
+    finishedFixtures: finishedFixtureCount,
     errors,
   };
 }

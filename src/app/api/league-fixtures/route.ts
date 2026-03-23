@@ -372,7 +372,9 @@ async function fetchBatchOdds(): Promise<Map<string, MarketData>> {
               })()
             : 2.5; // fallback
           // derivedAH = probDiff * expectedTotal * scaleFactor
-          data.ahLine = Math.round(probDiffNorm * expTotal * 0.85 * 100) / 100 * -1; // negative = home favored
+          // Snap to valid quarter-goal increments (0, 0.25, 0.5, 0.75, 1.0, 1.25, etc.)
+          const rawAH = probDiffNorm * expTotal * 0.85 * -1; // negative = home favored
+          data.ahLine = Math.round(rawAH * 4) / 4;
           data.ahDerived = true;
         }
 

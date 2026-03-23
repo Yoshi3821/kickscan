@@ -175,6 +175,8 @@ function generateReasoning(
 
   // 1. MARKET POSITIONING (AH line + odds)
   if (ahLine !== undefined) {
+    // Snap to valid quarter-goal increments (0, 0.25, 0.5, 0.75, etc.)
+    ahLine = Math.round(ahLine * 4) / 4;
     const absLine = Math.abs(ahLine);
     const favored = ahLine < 0 ? home : away;
     if (absLine >= 1.5) {

@@ -567,13 +567,61 @@ function VerdictHistorySection() {
                       </div>
                     </div>
 
+                    {/* Locked odds at prediction time */}
+                    {pred.locked_home_odds && pred.locked_draw_odds && pred.locked_away_odds && (
+                      <div className="bg-white/5 rounded-lg p-2.5">
+                        <div className="text-[10px] text-gray-500 uppercase tracking-wider font-bold mb-1.5">🔒 Your Locked Odds</div>
+                        <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                          <div>
+                            <div className="text-gray-500">Home</div>
+                            <div className={`font-bold ${pred.predicted_result === 'home' ? 'text-yellow-400' : 'text-gray-300'}`}>
+                              {Number(pred.locked_home_odds).toFixed(2)}
+                              {pred.predicted_result === 'home' && ' ←'}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-gray-500">Draw</div>
+                            <div className={`font-bold ${pred.predicted_result === 'draw' ? 'text-yellow-400' : 'text-gray-300'}`}>
+                              {Number(pred.locked_draw_odds).toFixed(2)}
+                              {pred.predicted_result === 'draw' && ' ←'}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-gray-500">Away</div>
+                            <div className={`font-bold ${pred.predicted_result === 'away' ? 'text-yellow-400' : 'text-gray-300'}`}>
+                              {Number(pred.locked_away_odds).toFixed(2)}
+                              {pred.predicted_result === 'away' && ' ←'}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Points breakdown */}
-                    <div className={`text-xs font-bold text-center py-2 rounded-lg ${
-                      isCorrect ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"
+                    <div className={`text-xs py-2 px-3 rounded-lg ${
+                      isCorrect ? "bg-green-500/10" : "bg-red-500/10"
                     }`}>
-                      {pred.points_earned > 0
-                        ? `+${pred.points_earned} points${pred.points_earned >= 8 ? " (exact score bonus!)" : pred.points_earned >= 6 ? " (boosted)" : ""}`
-                        : "0 points — prediction incorrect"}
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-400">1X2 Result:</span>
+                        <span className={`font-bold ${(pred.final_1x2_points || 0) > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {(pred.final_1x2_points || 0) > 0 ? `+${pred.final_1x2_points}` : pred.final_1x2_points || (isCorrect ? '+' : '-1')}
+                          {pred.boosted && (pred.final_1x2_points || 0) > 0 && ' ⚡'}
+                        </span>
+                      </div>
+                      {pred.predicted_score && /^\d+-\d+$/.test(pred.predicted_score) && (
+                        <div className="flex justify-between items-center mt-0.5">
+                          <span className="text-gray-400">CS ({pred.predicted_score}):</span>
+                          <span className={`font-bold ${(pred.final_cs_points || 0) > 0 ? 'text-green-400' : (pred.final_cs_points || 0) < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                            {(pred.final_cs_points || 0) > 0 ? `+${pred.final_cs_points}` : pred.final_cs_points || '0'}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center mt-1 pt-1 border-t border-white/10">
+                        <span className="text-white font-bold">Total:</span>
+                        <span className={`font-bold ${(pred.final_total_points || pred.points_earned || 0) > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {(pred.final_total_points || pred.points_earned || 0) > 0 ? '+' : ''}{pred.final_total_points || pred.points_earned || 0} pts
+                        </span>
+                      </div>
                     </div>
                   </div>
                 );

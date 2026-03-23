@@ -1206,8 +1206,20 @@ function PredictPageContent() {
             {/* World Cup Tab Content */}
             {activeTab === 'wc2026' && (
               <>
-                {/* Private Groups Section for WC */}
-                <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 lg:p-5 mb-4 lg:mb-6">
+                {/* Private Games Shortcut */}
+                <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 mb-4 text-center">
+                  <h3 className="text-lg font-bold mb-2 text-purple-400">👥 Private Games</h3>
+                  <p className="text-sm text-gray-400 mb-3">Create or join your own private competition</p>
+                  <button 
+                    onClick={() => window.location.href = '#account'}
+                    className="px-6 py-2 rounded-xl bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition font-medium"
+                  >
+                    Manage Private Games
+                  </button>
+                </div>
+
+                {/* Hidden - will be moved to account area */}
+                <div style={{display: 'none'}} className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 lg:p-5 mb-4 lg:mb-6">
                   <h3 className="text-xl font-bold mb-6 text-purple-400">👥 Private Groups</h3>
                   
                   {/* My Groups */}
@@ -1357,8 +1369,20 @@ function PredictPageContent() {
             {/* League Tab Content */}
             {activeTab === 'league' && (
               <>
-                {/* Private Groups for League */}
-                <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 md:p-6 mb-6">
+                {/* Private Games Shortcut - League */}
+                <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 mb-4 text-center">
+                  <h3 className="text-lg font-bold mb-2 text-green-400">👥 Private Games</h3>
+                  <p className="text-sm text-gray-400 mb-3">Create or join your own private competition</p>
+                  <button 
+                    onClick={() => window.location.href = '#account'}
+                    className="px-6 py-2 rounded-xl bg-green-500/20 text-green-400 hover:bg-green-500/30 transition font-medium"
+                  >
+                    Manage Private Games
+                  </button>
+                </div>
+
+                {/* Hidden - will be moved to account area */}
+                <div style={{display: 'none'}} className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 md:p-6 mb-6">
                   <h3 className="text-lg font-bold mb-4 text-green-400">👥 League Private Groups</h3>
                   
                   {/* My League Groups */}

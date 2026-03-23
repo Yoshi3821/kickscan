@@ -267,7 +267,12 @@ function PredictPageContent() {
   useEffect(() => {
     if (user && userId) {
       loadUserPredictions();
-      loadUserGroups();
+      
+      // Defer non-critical loads for faster perceived login
+      setTimeout(() => {
+        loadUserGroups();
+        fetchLeaderboard();
+      }, 100);
     }
   }, [user, userId, leagueMatches]);
 

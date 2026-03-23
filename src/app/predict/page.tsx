@@ -1618,32 +1618,35 @@ function PredictPageContent() {
           {/* Right Column - Leaderboard & Rules */}
           <div>
             {/* Points System */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 mb-6">
-              <h3 className="text-lg font-bold mb-4">🎯 How Points Work</h3>
-              <div className="space-y-3 text-sm">
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 lg:p-5 mb-4">
+              <h3 className="text-lg font-bold mb-3">📋 HOW IT WORKS</h3>
+              <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span>✅ Correct 1X2:</span>
-                  <span className="text-green-400 font-bold">1-11 pts</span>
+                  <span className="text-green-400 font-bold">1-11 pts (odds-based)</span>
                 </div>
                 <div className="flex justify-between">
                   <span>❌ Wrong 1X2:</span>
                   <span className="text-red-400 font-bold">-1 pt</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>🎯 Correct score:</span>
-                  <span className="text-green-400 font-bold">+3 to +7</span>
+                  <span>🎯 Correct score (optional):</span>
+                  <span className="text-green-400 font-bold">+3 to +7 bonus</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>❌ Wrong:</span>
+                  <span>❌ Wrong score:</span>
+                  <span className="text-red-400 font-bold">-1 pt</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>⏭️ Skip score:</span>
                   <span className="text-gray-400 font-bold">0 pts</span>
                 </div>
                 <hr className="border-white/10" />
                 <div className="text-center">
                   <p className="text-purple-400 font-bold">⚡ DAILY BOOSTER (×2)</p>
                   <p className="text-xs text-gray-400 mt-1">
-                    2 per day • doubles base pts<br />
-                    Does NOT apply to CS bonus or penalties<br />
-                    Use wisely — pick your best!
+                    1 per day • doubles 1X2 points only<br />
+                    Does NOT double CS bonus or penalties
                   </p>
                 </div>
               </div>

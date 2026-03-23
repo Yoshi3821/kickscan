@@ -120,7 +120,7 @@ function PredictPageContent() {
   const [loginPassword, setLoginPassword] = useState<string>("");
   
   const [loading, setLoading] = useState<boolean>(false);
-  const [authChecking, setAuthChecking] = useState<boolean>(true);
+  const [authChecking, setAuthChecking] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [usernameStatus, setUsernameStatus] = useState<string>(""); // "", "checking", "available", "taken", "invalid"
   const [emailError, setEmailError] = useState<string>("");

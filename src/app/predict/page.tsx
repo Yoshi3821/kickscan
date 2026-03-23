@@ -1,9 +1,14 @@
 "use client";
 import { useEffect, useState, Suspense } from "react";
 import { allMatches, getKickoffISO, getAllMatchesWithOdds } from "@/data/matches";
+import { getVerdict } from "@/data/verdicts";
+import { getMatchAnalysis } from "@/data/analyses";
 
-// Precompute average odds for WC matches (playoffs + friendlies + group stage)
+// Precompute average odds + signals + marketIntel for WC matches
 const wcMatchOdds: Record<number, { home: number; draw: number; away: number }> = {};
+const wcMatchSignals: Record<number, MatchSignals> = {};
+const wcMatchIntel: Record<number, MarketIntel> = {};
+
 getAllMatchesWithOdds().forEach(m => {
   if (m.bookmakers && m.bookmakers.length > 0) {
     const avgHome = m.bookmakers.reduce((s, b) => s + b.home, 0) / m.bookmakers.length;
@@ -13,6 +18,34 @@ getAllMatchesWithOdds().forEach(m => {
       home: Math.round(avgHome * 100) / 100,
       draw: Math.round(avgDraw * 100) / 100,
       away: Math.round(avgAway * 100) / 100,
+    };
+
+    // Generate signals from verdict data
+    const verdict = getVerdict(m.id);
+    const analysis = getMatchAnalysis(m.id);
+    if (verdict) {
+      wcMatchSignals[m.id] = {
+        aiPick: verdict.pick,
+        aiConfidence: verdict.confidencePct,
+        aiVerdict: verdict.recommendation,
+        aiReasoning: verdict.reasoning,
+        marketFavorite: avgHome < avgAway && avgHome < avgDraw ? `${m.home} Win` 
+          : avgAway < avgHome && avgAway < avgDraw ? `${m.away} Win` : 'Draw',
+      };
+    }
+
+    // Generate marketIntel from odds
+    const rawHome = 1 / avgHome;
+    const rawDraw = 1 / avgDraw;
+    const rawAway = 1 / avgAway;
+    const total = rawHome + rawDraw + rawAway;
+    wcMatchIntel[m.id] = {
+      homeProb: Math.round((rawHome / total) * 100),
+      drawProb: Math.round((rawDraw / total) * 100),
+      awayProb: Math.round((rawAway / total) * 100),
+      bookmakerCount: m.bookmakers.length,
+      consensusLevel: 'moderate' as const,
+      marketFavorite: avgHome < avgAway ? `${m.home} Win` : `${m.away} Win`,
     };
   }
 });
@@ -1449,6 +1482,8 @@ function PredictPageContent() {
                       onPredict={handlePrediction}
                       kickoffISO={getKickoffISO(match.date, match.time)}
                       avgOdds={wcMatchOdds[match.id] || null}
+                      signals={wcMatchSignals[match.id] || null}
+                      marketIntel={wcMatchIntel[match.id] || null}
                     />
                   ))}
                 </div>
@@ -1474,6 +1509,8 @@ function PredictPageContent() {
                       onPredict={handlePrediction}
                       kickoffISO={getKickoffISO(match.date, match.time)}
                       avgOdds={wcMatchOdds[match.id] || null}
+                      signals={wcMatchSignals[match.id] || null}
+                      marketIntel={wcMatchIntel[match.id] || null}
                     />
                   ))}
                 </div>
@@ -1498,6 +1535,8 @@ function PredictPageContent() {
                       onPredict={handlePrediction}
                       kickoffISO={getKickoffISO(match.date, match.time)}
                       avgOdds={wcMatchOdds[match.id] || null}
+                      signals={wcMatchSignals[match.id] || null}
+                      marketIntel={wcMatchIntel[match.id] || null}
                     />
                   ))}
                 </div>

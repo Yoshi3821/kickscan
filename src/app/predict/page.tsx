@@ -695,12 +695,19 @@ function PredictPageContent() {
     }
   };
 
+  const [submittingMatches, setSubmittingMatches] = useState<Set<string>>(new Set());
+
   const handlePrediction = async (matchId: string, result: "home" | "draw" | "away", score: string, useBooster: boolean = false, homeTeam?: string, awayTeam?: string, marketFavorite?: string) => {
     if (!userId || !token) return;
     
+    // Prevent double submission for same match
+    if (submittingMatches.has(matchId)) return;
+    setSubmittingMatches(prev => new Set(prev).add(matchId));
+
     // Score is optional in new scoring system
     if (score && score.trim() && !/^\d+-\d+$/.test(score)) {
       alert("Score must be in format '2-1' or leave empty");
+      setSubmittingMatches(prev => { const s = new Set(prev); s.delete(matchId); return s; });
       return;
     }
 
@@ -747,6 +754,8 @@ function PredictPageContent() {
       }
     } catch (err) {
       alert("Network error. Please try again.");
+    } finally {
+      setSubmittingMatches(prev => { const s = new Set(prev); s.delete(matchId); return s; });
     }
   };
 

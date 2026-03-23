@@ -152,13 +152,24 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Check for existing prediction
-    const { data: existingPrediction, error: predError } = await supabaseAdmin
+    // Check for existing prediction(s) - handle duplicates
+    const { data: existingPredictions, error: predError } = await supabaseAdmin
       .from('predictions')
       .select('*')
       .eq('user_id', userId)
       .eq('match_id', matchId)
-      .single();
+      .order('created_at', { ascending: false });
+
+    const existingPrediction = existingPredictions?.[0] || null;
+    
+    // Clean up duplicates if any exist
+    if (existingPredictions && existingPredictions.length > 1) {
+      const dupeIds = existingPredictions.slice(1).map(p => p.id);
+      await supabaseAdmin
+        .from('predictions')
+        .delete()
+        .in('id', dupeIds);
+    }
 
     const now = new Date().toISOString();
     const today = now.split('T')[0];

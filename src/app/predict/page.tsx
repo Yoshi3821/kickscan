@@ -247,8 +247,13 @@ function PredictPageContent() {
       setAuthChecking(false);
     }
     
+    // Failsafe timeout - always show page after 3 seconds
+    const failsafe = setTimeout(() => setAuthChecking(false), 3000);
+    
     fetchLeaderboard();
     fetchUpcomingMatches();
+    
+    return () => clearTimeout(failsafe);
   }, []);
 
   // Handle auto-join from URL

@@ -262,6 +262,29 @@ function PredictPageContent() {
     return () => clearTimeout(failsafe);
   }, []);
 
+  // Listen for auth changes (login from nav modal)
+  useEffect(() => {
+    const handleAuthChange = () => {
+      const savedUser = localStorage.getItem("kickscan_user");
+      if (savedUser) {
+        try {
+          const userData = JSON.parse(savedUser);
+          if (userData.id && userData.token) {
+            setUserId(userData.id);
+            setToken(userData.token);
+            validateSession(userData.id, userData.token);
+          }
+        } catch (err) {}
+      }
+    };
+    window.addEventListener("kickscan_auth_change", handleAuthChange);
+    window.addEventListener("storage", handleAuthChange);
+    return () => {
+      window.removeEventListener("kickscan_auth_change", handleAuthChange);
+      window.removeEventListener("storage", handleAuthChange);
+    };
+  }, []);
+
   // Handle auto-join from URL
   useEffect(() => {
     if (joinCode && user && userId) {
@@ -717,7 +740,10 @@ function PredictPageContent() {
   const [submittingMatches, setSubmittingMatches] = useState<Set<string>>(new Set());
 
   const handlePrediction = async (matchId: string, result: "home" | "draw" | "away", score: string, useBooster: boolean = false, homeTeam?: string, awayTeam?: string, marketFavorite?: string) => {
-    if (!userId || !token) return;
+    if (!userId || !token) {
+      alert("Please log in or sign up to submit predictions!");
+      return;
+    }
     
     // Prevent double submission for same match
     if (submittingMatches.has(matchId)) return;
@@ -1117,7 +1143,17 @@ function PredictPageContent() {
           <div className="bg-gradient-to-r from-purple-500/10 to-cyan-500/10 border border-purple-500/20 rounded-2xl p-4 mb-4 text-center">
             <p className="text-sm text-gray-300 mb-2">📋 Log in or sign up to start predicting and earn points!</p>
             <button 
-              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              onClick={() => {
+                // Trigger the nav Login button click
+                const loginBtn = document.querySelector('button') as HTMLElement;
+                const allBtns = document.querySelectorAll('nav button');
+                for (const btn of allBtns) {
+                  if (btn.textContent?.includes('Login') || btn.textContent?.includes('LOGIN')) {
+                    (btn as HTMLElement).click();
+                    return;
+                  }
+                }
+              }}
               className="px-6 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-cyan-500 text-white font-bold text-sm hover:from-purple-500 hover:to-cyan-400 transition"
             >
               Sign Up / Login

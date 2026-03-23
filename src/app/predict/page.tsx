@@ -386,26 +386,20 @@ function PredictPageContent() {
   const loadUserPredictions = async () => {
     if (!userId) return;
     
-    const allMatchIds = [
-      ...allMatches.slice(0, 10).map(m => `wc_${m.id}`),
-      ...leagueMatches.slice(0, 10).map(m => `league_${m.id}`)
-    ];
-
-    const userPredictions: Record<string, Prediction> = {};
-    
-    for (const matchId of allMatchIds) {
-      try {
-        const response = await fetch(`/api/predict?userId=${userId}&matchId=${matchId}`);
-        const data = await response.json();
-        if (data.prediction) {
-          userPredictions[matchId] = data.prediction;
+    try {
+      const response = await fetch(`/api/predictions?userId=${userId}&limit=100`);
+      const data = await response.json();
+      
+      if (data.predictions) {
+        const userPredictions: Record<string, Prediction> = {};
+        for (const pred of data.predictions) {
+          userPredictions[pred.match_id] = pred;
         }
-      } catch (err) {
-        console.error(`Failed to load prediction for ${matchId}:`, err);
+        setPredictions(userPredictions);
       }
+    } catch (err) {
+      console.error("Failed to load predictions:", err);
     }
-    
-    setPredictions(userPredictions);
   };
 
   const loadUserGroups = async () => {

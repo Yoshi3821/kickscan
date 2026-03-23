@@ -1979,10 +1979,14 @@ function MatchCard({
     prediction?.predicted_result || "home"
   );
   const [homeScore, setHomeScore] = useState<string>(
-    prediction?.predicted_score.split('-')[0] || "2"
+    prediction?.predicted_score && prediction.predicted_score !== "-" 
+      ? prediction.predicted_score.split('-')[0] 
+      : ""
   );
   const [awayScore, setAwayScore] = useState<string>(
-    prediction?.predicted_score.split('-')[1] || "1"
+    prediction?.predicted_score && prediction.predicted_score !== "-" 
+      ? prediction.predicted_score.split('-')[1] 
+      : ""
   );
   const [useBooster, setUseBooster] = useState<boolean>(prediction?.boosted || false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -2006,7 +2010,8 @@ function MatchCard({
   const minutesToLock = kickoffISO ? Math.max(0, Math.ceil((kickoffMs - LOCK_BEFORE_MS - now) / 60000)) : null;
 
   const handleSubmit = async () => {
-    const score = `${homeScore}-${awayScore}`;
+    // Only create score if both fields are filled
+    const score = (homeScore && awayScore) ? `${homeScore}-${awayScore}` : "";
     
     if (useBooster && boostersRemaining === 0) {
       alert("No boosters remaining today!");
@@ -2348,31 +2353,45 @@ function MatchCard({
 
           {/* Score Prediction — team names tied to inputs */}
           <div>
-            <div className="text-xs text-gray-500 mb-1.5 text-center">Predict score</div>
+            <div className="text-xs text-gray-500 mb-1.5 text-center">Correct score (optional)</div>
             <div className="flex items-center justify-center gap-3">
               <div className="text-center">
                 <div className="text-[10px] text-gray-500 mb-1 truncate max-w-[80px]">{home}</div>
                 <input
-                  type="number"
-                  min="0"
-                  max="9"
+                  type="text"
                   value={homeScore}
-                  onChange={(e) => setHomeScore(e.target.value)}
-                  className="w-14 h-12 text-center text-xl font-bold bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-purple-500/50 transition"
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '' || /^[0-9]$/.test(val)) {
+                      setHomeScore(val);
+                    }
+                  }}
+                  placeholder="x"
+                  maxLength={1}
+                  className="w-14 h-12 text-center text-xl font-bold bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 transition"
                 />
               </div>
               <span className="text-lg font-bold text-gray-600 mt-4">—</span>
               <div className="text-center">
                 <div className="text-[10px] text-gray-500 mb-1 truncate max-w-[80px]">{away}</div>
                 <input
-                  type="number"
-                  min="0"
-                  max="9"
+                  type="text"
                   value={awayScore}
-                  onChange={(e) => setAwayScore(e.target.value)}
-                  className="w-14 h-12 text-center text-xl font-bold bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-purple-500/50 transition"
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '' || /^[0-9]$/.test(val)) {
+                      setAwayScore(val);
+                    }
+                  }}
+                  placeholder="x"
+                  maxLength={1}
+                  className="w-14 h-12 text-center text-xl font-bold bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 transition"
                 />
               </div>
+            </div>
+            <div className="text-xs text-gray-400 text-center mt-2">
+              Pick both scores only if you want to bet exact score.<br/>
+              Correct = bonus points • Wrong = -1 • Skip = 0
             </div>
           </div>
 

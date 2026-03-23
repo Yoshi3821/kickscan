@@ -2253,7 +2253,11 @@ function MatchCard({
                     <span className="text-gray-500 text-xs">({signals.aiConfidence}%)</span>
                   )}
                   <a
-                    href={matchId.startsWith('league_') ? `/leagues/${matchId.replace('league_', '')}` : matchId.startsWith('wc_') ? `/match/${matchId.replace('wc_', '')}` : '#'}
+                    href={matchId.startsWith('league_') ? (
+                      /^\d+$/.test(matchId.replace('league_', '')) 
+                        ? `/leagues/${matchId.replace('league_', '')}` 
+                        : '/leagues'
+                    ) : matchId.startsWith('wc_') ? `/match/${matchId.replace('wc_', '')}` : '#'}
                     className="ml-auto text-purple-400 hover:text-purple-300 text-xs font-medium transition flex items-center gap-0.5"
                     onClick={(e) => e.stopPropagation()}
                   >

@@ -2,7 +2,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { allMatches, getKickoffISO } from "@/data/matches";
 import { getUserTimezone, formatDateTime, getTimezoneLabel, setUserTimezone, TIMEZONE_OPTIONS } from "@/lib/timezone";
-import { useSearchParams, useRouter } from 'next/navigation';
+// removed useSearchParams/useRouter to prevent client-side bailout
 
 interface User {
   id: string;
@@ -102,21 +102,15 @@ type Competition = 'league' | 'wc2026';
 
 function PredictPageContent() {
   const [joinCode, setJoinCode] = useState<string>('');
-  const [router, setRouter] = useState<any>(null);
   
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       setJoinCode(params.get('join') || '');
-      setRouter(require('next/navigation').useRouter());
     }
   }, []);
   const goToProfile = (username: string, isAI: boolean) => {
-    if (router) {
-      router.push(`/profile/${isAI ? 'kickscan_ai' : encodeURIComponent(username)}`);
-    } else if (typeof window !== 'undefined') {
-      window.location.href = `/profile/${isAI ? 'kickscan_ai' : encodeURIComponent(username)}`;
-    }
+    window.location.href = `/profile/${isAI ? 'kickscan_ai' : encodeURIComponent(username)}`;
   };
 
   const [user, setUser] = useState<User | null>(null);

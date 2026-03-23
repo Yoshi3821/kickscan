@@ -73,6 +73,7 @@ interface LeagueMatch {
   pick?: string;
   confidencePct?: number;
   scoreExplanation?: string;
+  aiReasoning?: string;
   matchStatus?: string;
   liveScore?: { home: number; away: number; minute: number; status: string } | null;
 }
@@ -1621,7 +1622,8 @@ function PredictPageContent() {
                         if (match.pick) { s.aiPick = match.pick; }
                         if (match.confidencePct) { s.aiConfidence = match.confidencePct; }
                         if (match.recommendation) { s.aiVerdict = match.recommendation; }
-                        if (match.scoreExplanation) { s.aiReasoning = match.scoreExplanation; }
+                        if (match.aiReasoning) { s.aiReasoning = match.aiReasoning; }
+                        else if (match.scoreExplanation) { s.aiReasoning = match.scoreExplanation; }
                         if (match.avgOdds) {
                           const o = match.avgOdds;
                           s.marketFavorite = o.home < o.away ? `${match.homeName} Win` : o.away < o.home ? `${match.awayName} Win` : "Even";

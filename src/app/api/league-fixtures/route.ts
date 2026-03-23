@@ -570,6 +570,7 @@ export async function GET() {
           confidencePct: verdict.confidencePct,
           predictedScore: verdict.predictedScore,
           scoreExplanation: verdict.scoreExplanation,
+          aiReasoning: verdict.reasoning,
           alternateScore: verdict.alternateScore,
           longshotScore: verdict.longshotScore,
           avgOdds: matchOdds ? { home: matchOdds.home, draw: matchOdds.draw, away: matchOdds.away } : null,

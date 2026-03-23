@@ -365,14 +365,15 @@ function PredictPageContent() {
         setToken(tok);
         setBoostersRemaining(Math.max(0, 1 - (data.user.boostersUsedToday || 0)));
       } else {
-        // Only logout on explicit auth failure, not network issues
-        if (data && data.error) {
+        // Only logout on explicit invalid token, not timeouts or server errors
+        if (data && data.error === "Invalid token") {
           localStorage.removeItem("kickscan_user");
         }
       }
     } catch (err) {
       console.error("Session validation failed:", err);
-      localStorage.removeItem("kickscan_user");
+      // Do NOT remove localStorage on network errors
+      // User stays logged in, will re-validate on next page load
     }
   };
 

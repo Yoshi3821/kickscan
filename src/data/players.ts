@@ -39,7 +39,7 @@ export const playerImages: Record<string, string> = {
   "davies": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/ff/Alphonso_Davies_in_2022.jpg/500px-Alphonso_Davies_in_2022.jpg",
   "pulisic": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/USMNT_vs._Trinidad_and_Tobago_%2848125059622%29_%28cropped%29.jpg/500px-USMNT_vs._Trinidad_and_Tobago_%2848125059622%29_%28cropped%29.jpg",
   "wirtz": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Florian_Wirtz_04012026_%283%29_%28extracted%29.jpg/500px-Florian_Wirtz_04012026_%283%29_%28extracted%29.jpg",
-  "alvarez": "",
+  "alvarez": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0e/Juli%C3%A1n_%C3%81lvarez_2022.jpg/500px-Juli%C3%A1n_%C3%81lvarez_2022.jpg",
 };
 
 export const countryColors: Record<string, string> = {

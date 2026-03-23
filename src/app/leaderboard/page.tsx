@@ -45,7 +45,7 @@ export default function LeaderboardPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#06060f] text-white">
+    <main className="bg-[#06060f] text-white pb-12">
       <div className="max-w-3xl mx-auto px-4 py-8 md:py-12">
         {/* Header */}
         <div className="text-center mb-8">
@@ -128,7 +128,7 @@ export default function LeaderboardPage() {
                       </span>
                     </div>
                     <div className="text-xs text-gray-500">
-                      {entry.predictions} picks · {entry.winRate}% win rate
+                      {entry.predictions} {entry.predictions === 1 ? 'pick' : 'picks'} · {entry.winRate}% win rate
                     </div>
                   </div>
                 </div>
@@ -177,7 +177,7 @@ export default function LeaderboardPage() {
                       </span>
                     </div>
                     <div className="text-[10px] text-gray-600">
-                      {entry.predictions} picks · {entry.winRate}%
+                      {entry.predictions} {entry.predictions === 1 ? 'pick' : 'picks'} · {entry.winRate}%
                     </div>
                   </div>
                 </div>
@@ -199,7 +199,7 @@ export default function LeaderboardPage() {
         )}
 
         {/* CTA */}
-        <div className="text-center mt-8">
+        <div className="text-center mt-8 pb-8">
           <a
             href="/predict"
             className="inline-block px-8 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-purple-600 to-cyan-500 hover:from-purple-500 hover:to-cyan-400 transition-all shadow-lg shadow-purple-500/20"

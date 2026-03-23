@@ -2099,9 +2099,9 @@ function MatchCard({
   };
 
   return (
-    <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 md:p-6">
+    <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-3 md:p-5">
       {/* Match Header */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5">
           {leagueFlag && <span className="text-xs">{leagueFlag}</span>}
           <span className="text-xs text-gray-400 font-bold">{league}</span>
@@ -2136,7 +2136,7 @@ function MatchCard({
 
       {/* Market Intelligence — confidence bar + signals */}
       {avgOdds && !isStarted && !isLive && !isFinished && (
-        <div className="mb-3 px-4 py-3 bg-white/[0.03] border border-white/[0.06] rounded-xl">
+        <div className="mb-2 px-3 py-2 md:px-4 md:py-3 bg-white/[0.03] border border-white/[0.06] rounded-xl">
           {/* Market Confidence % bar */}
           {marketIntel?.homeProb && (
             <>
@@ -2437,9 +2437,9 @@ function MatchCard({
           {/* Score Prediction — team names tied to inputs */}
           <div>
             <div className="text-xs text-gray-500 mb-1.5 text-center">Correct score (optional)</div>
-            <div className="flex items-center justify-center gap-3">
+            <div className="flex items-center justify-center gap-2">
               <div className="text-center">
-                <div className="text-[10px] text-gray-500 mb-1 truncate max-w-[80px]">{home}</div>
+                <div className="text-[10px] text-gray-500 mb-0.5 truncate max-w-[80px]">{home}</div>
                 <input
                   type="text"
                   value={homeScore}

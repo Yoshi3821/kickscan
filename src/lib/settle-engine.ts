@@ -81,10 +81,10 @@ function isActiveCSBet(predictedScore: string | null | undefined): boolean {
 export async function runSettlement(): Promise<SettleResult> {
   const errors: string[] = [];
 
-  // Get all unsettled predictions
+  // Get all unsettled predictions (include locked odds stored at prediction time)
   const { data: unsettled, error: fetchError } = await supabaseAdmin
     .from('predictions')
-    .select('id, user_id, match_id, predicted_result, predicted_score, boosted')
+    .select('id, user_id, match_id, predicted_result, predicted_score, boosted, locked_home_odds, locked_draw_odds, locked_away_odds')
     .eq('settled', false)
     .limit(50);
 
@@ -224,8 +224,12 @@ export async function runSettlement(): Promise<SettleResult> {
       actualHome > actualAway ? 'home' : actualAway > actualHome ? 'away' : 'draw';
     const actualScore = `${actualHome}-${actualAway}`;
 
-    // ── Get locked odds for this match ──
-    const odds = oddsMap[pred.match_id];
+    // ── Get locked odds ──
+    // Priority: odds stored on prediction (captured when user saved) > match_odds_cache (fallback)
+    const predOdds = (pred.locked_home_odds && pred.locked_draw_odds && pred.locked_away_odds)
+      ? { home: pred.locked_home_odds, draw: pred.locked_draw_odds, away: pred.locked_away_odds }
+      : null;
+    const odds = predOdds || oddsMap[pred.match_id] || null;
 
     // ── 1X2 SCORING ──
     let final1X2Points = 0;
@@ -292,9 +296,9 @@ export async function runSettlement(): Promise<SettleResult> {
         settled: true,
         actual_result: actualResult,
         actual_score: actualScore,
-        locked_home_odds: odds?.home || null,
-        locked_draw_odds: odds?.draw || null,
-        locked_away_odds: odds?.away || null,
+        locked_home_odds: odds?.home || pred.locked_home_odds || null,
+        locked_draw_odds: odds?.draw || pred.locked_draw_odds || null,
+        locked_away_odds: odds?.away || pred.locked_away_odds || null,
         locked_points_band: pointsBand,
         final_1x2_points: final1X2Points,
         final_cs_points: finalCSPoints,

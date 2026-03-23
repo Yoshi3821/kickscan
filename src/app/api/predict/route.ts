@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { userId, token, matchId, predictedResult, predictedScore, useBooster, homeTeam, awayTeam, marketFavorite } = body;
+    const { userId, token, matchId, predictedResult, predictedScore, useBooster, homeTeam, awayTeam, marketFavorite, lockedOdds } = body;
 
     // Validation
     if (!userId || !token || !matchId || !predictedResult) {
@@ -175,10 +175,15 @@ export async function POST(request: NextRequest) {
     const today = now.split('T')[0];
 
     if (existingPrediction) {
-      // Update existing prediction
+      // Update existing prediction — always record latest odds at time of update
       const updateData: any = {
         predicted_result: predictedResult,
         predicted_score: predictedScore || '',
+        ...(lockedOdds && {
+          locked_home_odds: lockedOdds.home,
+          locked_draw_odds: lockedOdds.draw,
+          locked_away_odds: lockedOdds.away,
+        }),
       };
 
       // Handle booster logic for updates
@@ -235,7 +240,7 @@ export async function POST(request: NextRequest) {
       });
 
     } else {
-      // Create new prediction
+      // Create new prediction — record odds at time of prediction
       const basePredictionData: any = {
         user_id: userId,
         match_id: matchId,
@@ -244,7 +249,12 @@ export async function POST(request: NextRequest) {
         boosted: useBooster || false,
         created_at: now,
         settled: false,
-        points_earned: 0
+        points_earned: 0,
+        ...(lockedOdds && {
+          locked_home_odds: lockedOdds.home,
+          locked_draw_odds: lockedOdds.draw,
+          locked_away_odds: lockedOdds.away,
+        }),
       };
 
       const newPredictionData: any = {

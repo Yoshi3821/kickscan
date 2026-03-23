@@ -742,7 +742,7 @@ function PredictPageContent() {
 
   const [submittingMatches, setSubmittingMatches] = useState<Set<string>>(new Set());
 
-  const handlePrediction = async (matchId: string, result: "home" | "draw" | "away", score: string, useBooster: boolean = false, homeTeam?: string, awayTeam?: string, marketFavorite?: string) => {
+  const handlePrediction = async (matchId: string, result: "home" | "draw" | "away", score: string, useBooster: boolean = false, homeTeam?: string, awayTeam?: string, marketFavorite?: string, lockedOdds?: { home: number; draw: number; away: number }) => {
     if (!userId || !token) {
       alert("Please log in or sign up to submit predictions!");
       return;
@@ -781,7 +781,8 @@ function PredictPageContent() {
           useBooster,
           homeTeam,
           awayTeam,
-          marketFavorite
+          marketFavorite,
+          lockedOdds
         })
       });
 
@@ -2057,7 +2058,7 @@ interface MatchCardProps {
   leagueFlag?: string;
   prediction?: Prediction;
   boostersRemaining: number;
-  onPredict: (matchId: string, result: "home" | "draw" | "away", score: string, useBooster: boolean, homeTeam?: string, awayTeam?: string, marketFavorite?: string) => void;
+  onPredict: (matchId: string, result: "home" | "draw" | "away", score: string, useBooster: boolean, homeTeam?: string, awayTeam?: string, marketFavorite?: string, lockedOdds?: { home: number; draw: number; away: number }) => void;
   kickoffISO?: string;
   liveScore?: { home: number; away: number; minute: number; status: string } | null;
   avgOdds?: AvgOdds | null;
@@ -2129,7 +2130,7 @@ function MatchCard({
     
     setIsSubmitting(true);
     try {
-      await onPredict(matchId, selectedResult, score, useBooster, home, away, marketIntel?.marketFavorite);
+      await onPredict(matchId, selectedResult, score, useBooster, home, away, marketIntel?.marketFavorite, avgOdds ? { home: avgOdds.home, draw: avgOdds.draw, away: avgOdds.away } : undefined);
     } catch (error) {
       console.error("Prediction submission failed:", error);
     } finally {

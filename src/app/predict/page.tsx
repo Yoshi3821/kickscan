@@ -137,6 +137,8 @@ function PredictPageContent() {
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
   const [joinGroupCode, setJoinGroupCode] = useState("");
+  
+
   const [createdGroupCode, setCreatedGroupCode] = useState("");
   const [selectedGroupLeaderboard, setSelectedGroupLeaderboard] = useState<GroupMember[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
@@ -945,36 +947,24 @@ function PredictPageContent() {
               {/* How It Works */}
               <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
                 <h3 className="text-xl font-bold text-center mb-4">📋 HOW IT WORKS</h3>
-                <div className="space-y-4 text-sm">
+                <div className="space-y-3 text-sm">
                   <div className="flex items-start gap-3">
                     <span className="text-purple-400 font-bold">1.</span>
-                    <span>Register with username, email & password</span>
+                    <span>Register your account</span>
                   </div>
                   <div className="flex items-start gap-3">
                     <span className="text-purple-400 font-bold">2.</span>
-                    <span>Predict match results + scores</span>
+                    <span>Predict result and optional exact score</span>
                   </div>
                   <div className="flex items-start gap-3">
                     <span className="text-purple-400 font-bold">3.</span>
                     <div>
-                      <div>Earn points:</div>
+                      <div>Earn points from:</div>
                       <div className="ml-4 mt-1 space-y-1 text-xs">
-                        <div className="flex justify-between">
-                          <span>✅ Correct 1X2:</span>
-                          <span className="text-green-400 font-bold">1-11 pts</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>❌ Wrong 1X2:</span>
-                          <span className="text-red-400 font-bold">-1 pt</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>🎯 Correct score:</span>
-                          <span className="text-green-400 font-bold">+3 to +7</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>⚡ Booster (1/day):</span>
-                          <span className="text-purple-400 font-bold">×2 1X2 only</span>
-                        </div>
+                        <div>• Correct 1X2 = odds-based points</div>
+                        <div>• Wrong 1X2 = -1</div>
+                        <div>• Exact score = bonus points</div>
+                        <div>• 1 booster per day</div>
                       </div>
                     </div>
                   </div>
@@ -984,7 +974,7 @@ function PredictPageContent() {
                   </div>
                   <div className="flex items-start gap-3">
                     <span className="text-purple-400 font-bold">5.</span>
-                    <span>Beat the AI 🧠</span>
+                    <span>Beat the AI</span>
                   </div>
                 </div>
               </div>
@@ -2411,6 +2401,7 @@ function MatchCard({
           )}
         </div>
       )}
+
     </div>
   );
 }

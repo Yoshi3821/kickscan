@@ -173,21 +173,12 @@ export async function POST(request: NextRequest) {
         .update({ last_login: now })
         .eq('id', user.id);
 
-      // Get all users to calculate rank
-      const { data: allUsers } = await supabaseAdmin
-        .from('users')
-        .select('*')
-        .order('total_points', { ascending: false });
-
-      const rank = calculateRank(user, allUsers || []);
-
       return NextResponse.json({
         success: true,
         user: {
           id: user.id,
           username: user.username,
-          totalPoints: user.total_points,
-          rank: rank
+          totalPoints: user.total_points
         },
         token: user.id
       });
@@ -277,14 +268,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
 
-    // Get all users to calculate rank
-    const { data: allUsers } = await supabaseAdmin
-      .from('users')
-      .select('*')
-      .order('total_points', { ascending: false });
-
-    const rank = calculateRank(user, allUsers || []);
-
     return NextResponse.json({
       success: true,
       user: {
@@ -297,7 +280,6 @@ export async function GET(request: NextRequest) {
         currentStreak: user.current_streak,
         bestStreak: user.best_streak,
         boostersUsedToday: user.last_booster_date === new Date().toISOString().split('T')[0] ? user.boosters_used_today : 0,
-        rank: rank,
         created_at: user.created_at
       }
     });

@@ -72,6 +72,7 @@ interface LeagueMatch {
   recommendation?: string;
   pick?: string;
   confidencePct?: number;
+  scoreExplanation?: string;
   matchStatus?: string;
   liveScore?: { home: number; away: number; minute: number; status: string } | null;
 }
@@ -82,6 +83,7 @@ interface MatchSignals {
   aiVerdict?: string; // BET/LEAN/SKIP/AVOID
   marketFavorite?: string;
   fanVote?: { home: number; draw: number; away: number };
+  aiReasoning?: string;
 }
 
 interface Group {
@@ -1619,6 +1621,7 @@ function PredictPageContent() {
                         if (match.pick) { s.aiPick = match.pick; }
                         if (match.confidencePct) { s.aiConfidence = match.confidencePct; }
                         if (match.recommendation) { s.aiVerdict = match.recommendation; }
+                        if (match.scoreExplanation) { s.aiReasoning = match.scoreExplanation; }
                         if (match.avgOdds) {
                           const o = match.avgOdds;
                           s.marketFavorite = o.home < o.away ? `${match.homeName} Win` : o.away < o.home ? `${match.awayName} Win` : "Even";
@@ -2249,14 +2252,13 @@ function MatchCard({
                   )}
                 </div>
                 
-                {/* Enhanced AI reasoning */}
+                {/* AI reasoning - use real analysis when available */}
                 <div className="text-sm text-gray-300 leading-relaxed">
-                  {(() => {
+                  {signals.aiReasoning || (() => {
                     const confidence = signals.aiConfidence || 50;
                     const verdict = signals.aiVerdict || 'ANALYZE';
                     const pick = signals.aiPick;
                     
-                    // Generate market-aware reasoning based on available data
                     const reasoning = `${pick} looks ${confidence > 60 ? 'strong' : confidence > 45 ? 'viable' : 'uncertain'} based on current market positioning. ` +
                       `${avgOdds ? `With odds of ${pick.includes(home) ? avgOdds.home.toFixed(2) : pick.includes('Draw') ? avgOdds.draw.toFixed(2) : avgOdds.away.toFixed(2)}, ` : ''}` +
                       `${marketIntel?.consensusLevel === 'strong' ? 'bookmakers strongly agree on this outcome' : marketIntel?.consensusLevel === 'moderate' ? 'bookmaker consensus is moderate' : 'market shows mixed signals'}. ` +

@@ -795,15 +795,15 @@ function PredictPageContent() {
           {/* Header */}
           <div className="text-center mb-12">
             <h1 className="text-4xl md:text-5xl font-bold mb-4">🎮 Predict & Compete</h1>
-            <p className="text-xl text-gray-400 mb-8">Can you beat the AI?</p>
+            <p className="text-xl text-gray-400 mb-4">Can you beat the AI?</p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
             {/* Left Column - Registration & Login */}
-            <div className="lg:col-span-1 space-y-8">
+            <div className="lg:col-span-1 space-y-4">
               {/* Registration Form */}
-              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8">
-                <div className="text-center mb-6">
+              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 lg:p-6">
+                <div className="text-center mb-4">
                   <h2 className="text-2xl font-bold mb-2">🎮 JOIN THE GAME</h2>
                 </div>
                 
@@ -945,8 +945,8 @@ function PredictPageContent() {
               </div>
 
               {/* How It Works */}
-              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-                <h3 className="text-xl font-bold text-center mb-4">📋 HOW IT WORKS</h3>
+              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 lg:p-5">
+                <h3 className="text-lg lg:text-xl font-bold text-center mb-3">📋 HOW IT WORKS</h3>
                 <div className="space-y-3 text-sm">
                   <div className="flex items-start gap-3">
                     <span className="text-purple-400 font-bold">1.</span>
@@ -982,8 +982,8 @@ function PredictPageContent() {
 
             {/* Right Column - Leaderboard */}
             <div className="lg:col-span-2" id="leaderboard">
-              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-                <h3 className="text-2xl font-bold text-center mb-6">🏆 GLOBAL LEADERBOARD</h3>
+              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 lg:p-5">
+                <h3 className="text-xl lg:text-2xl font-bold text-center mb-4">🏆 GLOBAL LEADERBOARD</h3>
                 
                 {/* Desktop View */}
                 <div className="hidden md:block">
@@ -1087,9 +1087,9 @@ function PredictPageContent() {
 
   return (
     <main className="min-h-screen bg-[#06060f] text-white">
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-4 lg:py-6">
         {/* Header — compact on mobile */}
-        <div className="text-center mb-6">
+        <div className="text-center mb-4">
           <h1 className="text-3xl md:text-4xl font-bold mb-1">🎮 Predict & Compete</h1>
           <p className="text-sm md:text-xl text-gray-400">Predict match results, earn points, beat the AI</p>
         </div>
@@ -1197,7 +1197,7 @@ function PredictPageContent() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
           {/* Left Column - Predictions */}
           <div className="lg:col-span-2">
             
@@ -1205,7 +1205,7 @@ function PredictPageContent() {
             {activeTab === 'wc2026' && (
               <>
                 {/* Private Groups Section for WC */}
-                <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 mb-8">
+                <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 lg:p-5 mb-4 lg:mb-6">
                   <h3 className="text-xl font-bold mb-6 text-purple-400">👥 Private Groups</h3>
                   
                   {/* My Groups */}
@@ -1537,7 +1537,7 @@ function PredictPageContent() {
                   );
 
                   return (
-                    <div className="space-y-6 mb-8">
+                    <div className="space-y-4 mb-6">
                       {/* Live Matches */}
                       {liveMatches.length > 0 && (
                         <div>

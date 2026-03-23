@@ -2250,6 +2250,13 @@ function MatchCard({
                   {signals.aiConfidence && (
                     <span className="text-gray-500 text-xs">({signals.aiConfidence}%)</span>
                   )}
+                  <a
+                    href={matchId.startsWith('league_') ? `/leagues/${matchId.replace('league_', '')}` : matchId.startsWith('wc_') ? `/match/${matchId.replace('wc_', '')}` : '#'}
+                    className="ml-auto text-purple-400 hover:text-purple-300 text-xs font-medium transition flex items-center gap-0.5"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Full Analysis <span className="text-sm">→</span>
+                  </a>
                 </div>
                 
                 {/* AI reasoning - use real analysis when available */}

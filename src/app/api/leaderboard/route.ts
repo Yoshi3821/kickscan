@@ -22,8 +22,8 @@ const BLOCKED_USERNAMES = new Set([
 // KickScan AI virtual participant — always present in leaderboard
 const KICKSCAN_AI: Omit<LeaderboardEntry, 'rank'> = {
   username: "kickscan_ai",
-  totalPoints: 0, // Will accumulate once WC matches are settled
-  predictions: 72,
+  totalPoints: 0,
+  predictions: 0,
   winRate: 0,
   streak: 0,
   isAI: true,

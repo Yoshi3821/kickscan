@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { allMatches, getKickoffISO } from "@/data/matches";
 
 interface Prediction {
   id: string;
@@ -27,11 +28,22 @@ function isValidScore(score: string): boolean {
 }
 
 function hasMatchStarted(matchId: string): boolean {
-  // For WC matches (numeric IDs 1-72), assume they haven't started yet since it's 2026
-  const numericId = Number(matchId.replace('wc_', '').replace('league_', ''));
-  if (!isNaN(numericId) && numericId >= 1 && numericId <= 72) {
-    // WC matches start June 11, 2026 - for now, all are in the future
-    return false;
+  // WC matches should NOT be predictable during pre-tournament period
+  if (matchId.startsWith('wc_')) {
+    // World Cup starts June 11, 2026 - block all WC predictions until tournament begins
+    const wcStartDate = new Date('2026-06-11T00:00:00Z');
+    const now = new Date();
+    if (now < wcStartDate) {
+      return true; // Block predictions - treat as "started"
+    }
+    
+    // During tournament, check individual match kickoffs
+    const numericId = Number(matchId.replace('wc_', ''));
+    const match = allMatches.find(m => m.id === numericId);
+    if (match) {
+      const kickoff = new Date(getKickoffISO(match.date, match.time));
+      return now >= kickoff;
+    }
   }
   
   // For league matches, we'd need to check fixture times
@@ -133,7 +145,7 @@ export async function POST(request: NextRequest) {
       }, { status: 401 });
     }
 
-    // Check booster usage
+    // Check booster usage - STRICT validation
     if (useBooster) {
       const { data: freshUser } = await supabaseAdmin
         .from('users')
@@ -142,8 +154,8 @@ export async function POST(request: NextRequest) {
         .single();
       
       if (freshUser) {
-        const todayCheck = new Date().toISOString().split('T')[0];
-        const currentUsed = freshUser.last_booster_date === todayCheck ? freshUser.boosters_used_today : 0;
+        const today = new Date().toISOString().split('T')[0];
+        const currentUsed = freshUser.last_booster_date === today ? freshUser.boosters_used_today : 0;
         if (currentUsed >= 1) {
           return NextResponse.json({ 
             error: "Maximum 1 booster per day already used" 
@@ -186,29 +198,35 @@ export async function POST(request: NextRequest) {
         }),
       };
 
-      // Handle booster logic for updates
+      // Handle booster logic for updates - STRICT daily limit
       if (useBooster && !existingPrediction.boosted) {
-        if (!canUseBooster(user)) {
+        // Double-check current booster usage before allowing
+        const { data: currentUser } = await supabaseAdmin
+          .from('users')
+          .select('boosters_used_today, last_booster_date')
+          .eq('id', userId)
+          .single();
+          
+        const currentUsed = currentUser.last_booster_date === today ? currentUser.boosters_used_today : 0;
+        if (currentUsed >= 1) {
           return NextResponse.json({ 
             error: "Maximum 1 booster per day already used" 
           }, { status: 400 });
         }
+        
         updateData.boosted = true;
-
         // Update user's booster count
-        const newBoostersUsed = user.last_booster_date === today ? user.boosters_used_today + 1 : 1;
         await supabaseAdmin
           .from('users')
           .update({
-            boosters_used_today: newBoostersUsed,
+            boosters_used_today: currentUsed + 1,
             last_booster_date: today
           })
           .eq('id', userId);
 
       } else if (!useBooster && existingPrediction.boosted) {
         // Removing booster - give it back if same day
-        const todayCheck = new Date().toISOString().split('T')[0];
-        if (user.last_booster_date === todayCheck && user.boosters_used_today > 0) {
+        if (user.last_booster_date === today && user.boosters_used_today > 0) {
           await supabaseAdmin
             .from('users')
             .update({
@@ -291,12 +309,27 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Failed to create prediction" }, { status: 500 });
       }
 
-      // Update user's total predictions only
+      // Update user's total predictions and handle booster for new predictions
+      const updateUserData: any = { 
+        total_predictions: (user.total_predictions || 0) + 1 
+      };
+      
+      // If booster was used, update booster count
+      if (useBooster) {
+        const { data: currentUser } = await supabaseAdmin
+          .from('users')
+          .select('boosters_used_today, last_booster_date')
+          .eq('id', userId)
+          .single();
+          
+        const currentUsed = currentUser.last_booster_date === today ? currentUser.boosters_used_today : 0;
+        updateUserData.boosters_used_today = currentUsed + 1;
+        updateUserData.last_booster_date = today;
+      }
+      
       const { error: userUpdateError } = await supabaseAdmin
         .from('users')
-        .update({ 
-          total_predictions: (user.total_predictions || 0) + 1 
-        })
+        .update(updateUserData)
         .eq('id', userId);
 
       if (userUpdateError) {

@@ -67,8 +67,7 @@ export async function GET(request: NextRequest) {
       ? Math.round((user.correct_results / user.total_predictions) * 100)
       : 0;
 
-    // Filter predictions: hide current picks for matches not yet started
-    const now = Date.now();
+    // Show ALL predictions to registered members - no hiding
     const visiblePredictions = (predictions || []).map((pred: any) => {
       // Generate match_label from team names or WC data
       let match_label = pred.match_id;
@@ -80,24 +79,8 @@ export async function GET(request: NextRequest) {
         if (match) match_label = `${match.home} vs ${match.away}`;
       }
 
-      const isVisible = isPredictionVisible(pred.match_id, now);
-      if (isVisible) {
-        return { ...pred, match_label };
-      }
-      // Hide the actual pick, show only that a prediction exists
-      return {
-        match_id: pred.match_id,
-        match_label,
-        predicted_result: null,
-        predicted_score: null,
-        boosted: null,
-        settled: pred.settled,
-        actual_result: pred.actual_result,
-        actual_score: pred.actual_score,
-        points_earned: pred.points_earned,
-        created_at: pred.created_at,
-        hidden: true,
-      };
+      // Return full prediction data - no hiding for registered users
+      return { ...pred, match_label };
     });
 
     return NextResponse.json({

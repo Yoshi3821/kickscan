@@ -207,7 +207,7 @@ export async function POST(request: NextRequest) {
           .eq('id', userId)
           .single();
           
-        const currentUsed = currentUser.last_booster_date === today ? currentUser.boosters_used_today : 0;
+        const currentUsed = currentUser?.last_booster_date === today ? (currentUser?.boosters_used_today || 0) : 0;
         if (currentUsed >= 1) {
           return NextResponse.json({ 
             error: "Maximum 1 booster per day already used" 
@@ -322,7 +322,7 @@ export async function POST(request: NextRequest) {
           .eq('id', userId)
           .single();
           
-        const currentUsed = currentUser.last_booster_date === today ? currentUser.boosters_used_today : 0;
+        const currentUsed = currentUser?.last_booster_date === today ? (currentUser?.boosters_used_today || 0) : 0;
         updateUserData.boosters_used_today = currentUsed + 1;
         updateUserData.last_booster_date = today;
       }

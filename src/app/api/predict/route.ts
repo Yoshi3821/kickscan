@@ -28,21 +28,14 @@ function isValidScore(score: string): boolean {
 }
 
 function hasMatchStarted(matchId: string): boolean {
-  // WC matches should NOT be predictable during pre-tournament period
   if (matchId.startsWith('wc_')) {
-    // World Cup starts June 11, 2026 - block all WC predictions until tournament begins
-    const wcStartDate = new Date('2026-06-11T00:00:00Z');
-    const now = new Date();
-    if (now < wcStartDate) {
-      return true; // Block predictions - treat as "started"
-    }
-    
-    // During tournament, check individual match kickoffs
     const numericId = Number(matchId.replace('wc_', ''));
     const match = allMatches.find(m => m.id === numericId);
     if (match) {
       const kickoff = new Date(getKickoffISO(match.date, match.time));
-      return now >= kickoff;
+      const now = new Date();
+      // Lock 5 minutes before kickoff (matches frontend logic)
+      return now >= new Date(kickoff.getTime() - 5 * 60 * 1000);
     }
   }
   

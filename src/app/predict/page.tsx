@@ -1846,18 +1846,14 @@ function PredictPageContent() {
                 <div>
                   <div className="text-white font-semibold text-xs mb-1.5">⚽ 1X2 RESULT (required)</div>
                   <div className="text-xs text-gray-400 mb-1.5">Pick Home (1), Draw (X), or Away (2). Points based on locked odds:</div>
-                  <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[11px]">
-                    <div className="flex justify-between"><span className="text-gray-500">1.01–1.29</span><span className="text-green-400">1 pt</span></div>
-                    <div className="flex justify-between"><span className="text-gray-500">2.70–3.19</span><span className="text-blue-400">7 pts</span></div>
-                    <div className="flex justify-between"><span className="text-gray-500">1.30–1.49</span><span className="text-green-400">2 pts</span></div>
-                    <div className="flex justify-between"><span className="text-gray-500">3.20–3.79</span><span className="text-blue-400">8 pts</span></div>
-                    <div className="flex justify-between"><span className="text-gray-500">1.50–1.74</span><span className="text-green-400">3 pts</span></div>
-                    <div className="flex justify-between"><span className="text-gray-500">3.80–4.49</span><span className="text-purple-400">9 pts</span></div>
-                    <div className="flex justify-between"><span className="text-gray-500">1.75–1.99</span><span className="text-green-400">4 pts</span></div>
-                    <div className="flex justify-between"><span className="text-gray-500">4.50–5.49</span><span className="text-purple-400">10 pts</span></div>
-                    <div className="flex justify-between"><span className="text-gray-500">2.00–2.29</span><span className="text-green-400">5 pts</span></div>
-                    <div className="flex justify-between"><span className="text-gray-500">5.50+</span><span className="text-yellow-400">11 pts</span></div>
-                    <div className="flex justify-between"><span className="text-gray-500">2.30–2.69</span><span className="text-green-400">6 pts</span></div>
+                  <div className="space-y-0.5 text-[11px]">
+                    <div className="flex justify-between"><span className="text-gray-500">1.01–1.24</span><span className="text-green-400">1 pt</span></div>
+                    <div className="flex justify-between"><span className="text-gray-500">1.25–1.59</span><span className="text-green-400">2 pts</span></div>
+                    <div className="flex justify-between"><span className="text-gray-500">1.60–1.99</span><span className="text-green-400">3 pts</span></div>
+                    <div className="flex justify-between"><span className="text-gray-500">2.00–2.49</span><span className="text-blue-400">4 pts</span></div>
+                    <div className="flex justify-between"><span className="text-gray-500">2.50–3.24</span><span className="text-blue-400">5 pts</span></div>
+                    <div className="flex justify-between"><span className="text-gray-500">3.25–4.49</span><span className="text-purple-400">6 pts</span></div>
+                    <div className="flex justify-between"><span className="text-gray-500">4.50+</span><span className="text-yellow-400">7 pts</span></div>
                     <div className="flex justify-between"><span className="text-red-400">Wrong 1X2</span><span className="text-red-400">-1 pt</span></div>
                   </div>
                 </div>

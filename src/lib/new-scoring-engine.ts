@@ -20,19 +20,15 @@ interface PredictionToScore {
   lockedAwayOdds: number;
 }
 
-// Calculate 1X2 points based on odds bands
+// Calculate 1X2 points based on odds bands (v2 — 7-tier system)
 export function calculate1X2Points(odds: number): number {
-  if (odds >= 1.01 && odds <= 1.29) return 1;
-  if (odds >= 1.30 && odds <= 1.49) return 2;
-  if (odds >= 1.50 && odds <= 1.74) return 3;
-  if (odds >= 1.75 && odds <= 1.99) return 4;
-  if (odds >= 2.00 && odds <= 2.29) return 5;
-  if (odds >= 2.30 && odds <= 2.69) return 6;
-  if (odds >= 2.70 && odds <= 3.19) return 7;
-  if (odds >= 3.20 && odds <= 3.79) return 8;
-  if (odds >= 3.80 && odds <= 4.49) return 9;
-  if (odds >= 4.50 && odds <= 5.49) return 10;
-  if (odds >= 5.50) return 11;
+  if (odds >= 1.01 && odds <= 1.24) return 1;
+  if (odds >= 1.25 && odds <= 1.59) return 2;
+  if (odds >= 1.60 && odds <= 1.99) return 3;
+  if (odds >= 2.00 && odds <= 2.49) return 4;
+  if (odds >= 2.50 && odds <= 3.24) return 5;
+  if (odds >= 3.25 && odds <= 4.49) return 6;
+  if (odds >= 4.50) return 7;
   return 0;
 }
 
@@ -45,19 +41,15 @@ export function calculateCSBonus(totalGoals: number): number {
   return 0;
 }
 
-// Get points band description for display
+// Get points band description for display (v2 — 7-tier system)
 export function getPointsBandDescription(odds: number): string {
-  if (odds >= 1.01 && odds <= 1.29) return '1.01-1.29 = 1pt';
-  if (odds >= 1.30 && odds <= 1.49) return '1.30-1.49 = 2pts';
-  if (odds >= 1.50 && odds <= 1.74) return '1.50-1.74 = 3pts';
-  if (odds >= 1.75 && odds <= 1.99) return '1.75-1.99 = 4pts';
-  if (odds >= 2.00 && odds <= 2.29) return '2.00-2.29 = 5pts';
-  if (odds >= 2.30 && odds <= 2.69) return '2.30-2.69 = 6pts';
-  if (odds >= 2.70 && odds <= 3.19) return '2.70-3.19 = 7pts';
-  if (odds >= 3.20 && odds <= 3.79) return '3.20-3.79 = 8pts';
-  if (odds >= 3.80 && odds <= 4.49) return '3.80-4.49 = 9pts';
-  if (odds >= 4.50 && odds <= 5.49) return '4.50-5.49 = 10pts';
-  if (odds >= 5.50) return '5.50+ = 11pts';
+  if (odds >= 1.01 && odds <= 1.24) return '1.01-1.24 = 1pt';
+  if (odds >= 1.25 && odds <= 1.59) return '1.25-1.59 = 2pts';
+  if (odds >= 1.60 && odds <= 1.99) return '1.60-1.99 = 3pts';
+  if (odds >= 2.00 && odds <= 2.49) return '2.00-2.49 = 4pts';
+  if (odds >= 2.50 && odds <= 3.24) return '2.50-3.24 = 5pts';
+  if (odds >= 3.25 && odds <= 4.49) return '3.25-4.49 = 6pts';
+  if (odds >= 4.50) return '4.50+ = 7pts';
   return 'Invalid odds';
 }
 

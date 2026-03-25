@@ -15,7 +15,7 @@ const ScoringRules = () => {
           <ul className="space-y-2 text-gray-300 text-sm">
             <li>• <strong className="text-white">1X2 Result pick is required:</strong> Home / Draw / Away</li>
             <li>• <strong className="text-white">Correct Score (CS) is optional</strong> - enter exact score or skip</li>
-            <li>• <strong className="text-white">1 Booster per day</strong> - doubles 1X2 points only</li>
+            <li>• <strong className="text-white">1 Booster per match day</strong> - doubles 1X2 points only</li>
             <li>• <strong className="text-white">Predictions lock 5 minutes before kickoff</strong></li>
           </ul>
         </div>
@@ -27,59 +27,38 @@ const ScoringRules = () => {
             Points awarded based on locked average odds for your pick:
           </div>
           
-          <div className="grid grid-cols-2 gap-3 text-xs">
-            <div className="space-y-1">
-              <div className="flex justify-between">
-                <span className="text-gray-400">1.01 - 1.29:</span>
-                <span className="text-green-400 font-semibold">1 pt</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">1.30 - 1.49:</span>
-                <span className="text-green-400 font-semibold">2 pts</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">1.50 - 1.74:</span>
-                <span className="text-green-400 font-semibold">3 pts</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">1.75 - 1.99:</span>
-                <span className="text-green-400 font-semibold">4 pts</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">2.00 - 2.29:</span>
-                <span className="text-green-400 font-semibold">5 pts</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">2.30 - 2.69:</span>
-                <span className="text-green-400 font-semibold">6 pts</span>
-              </div>
+          <div className="space-y-1 text-xs">
+            <div className="flex justify-between">
+              <span className="text-gray-400">1.01 – 1.24:</span>
+              <span className="text-green-400 font-semibold">1 pt</span>
             </div>
-            
-            <div className="space-y-1">
-              <div className="flex justify-between">
-                <span className="text-gray-400">2.70 - 3.19:</span>
-                <span className="text-blue-400 font-semibold">7 pts</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">3.20 - 3.79:</span>
-                <span className="text-blue-400 font-semibold">8 pts</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">3.80 - 4.49:</span>
-                <span className="text-purple-400 font-semibold">9 pts</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">4.50 - 5.49:</span>
-                <span className="text-purple-400 font-semibold">10 pts</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">5.50+:</span>
-                <span className="text-yellow-400 font-semibold">11 pts</span>
-              </div>
-              <div className="flex justify-between border-t border-white/10 pt-1">
-                <span className="text-red-400">Wrong 1X2:</span>
-                <span className="text-red-400 font-semibold">-1 pt</span>
-              </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">1.25 – 1.59:</span>
+              <span className="text-green-400 font-semibold">2 pts</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">1.60 – 1.99:</span>
+              <span className="text-green-400 font-semibold">3 pts</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">2.00 – 2.49:</span>
+              <span className="text-blue-400 font-semibold">4 pts</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">2.50 – 3.24:</span>
+              <span className="text-blue-400 font-semibold">5 pts</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">3.25 – 4.49:</span>
+              <span className="text-purple-400 font-semibold">6 pts</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">4.50+:</span>
+              <span className="text-yellow-400 font-semibold">7 pts</span>
+            </div>
+            <div className="flex justify-between border-t border-white/10 pt-1">
+              <span className="text-red-400">Wrong 1X2:</span>
+              <span className="text-red-400 font-semibold">-1 pt</span>
             </div>
           </div>
         </div>
@@ -160,7 +139,7 @@ const ScoringRules = () => {
             <div className="text-white font-medium">Scenario 2: Risky Pick + Correct Score</div>
             <div className="text-gray-300 text-xs mt-1">
               Predict Away @ 4.20 odds + Correct 2-1 score → 
-              <span className="text-blue-400 font-semibold ml-1">12 points</span> (9 pts + 3 pts CS bonus)
+              <span className="text-blue-400 font-semibold ml-1">9 points</span> (6 pts + 3 pts CS bonus)
             </div>
           </div>
           

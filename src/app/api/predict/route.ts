@@ -242,11 +242,17 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Failed to update prediction" }, { status: 500 });
       }
 
-      const remainingBoosters = Math.max(0, 1 - (user.boosters_used_today || 0));
+      // Calculate remaining boosters from fresh state
+      const { data: freshUserAfterUpdate } = await supabaseAdmin
+        .from('users')
+        .select('boosters_used_today, last_booster_date')
+        .eq('id', userId)
+        .single();
+      const usedTodayAfterUpdate = freshUserAfterUpdate?.last_booster_date === today ? (freshUserAfterUpdate?.boosters_used_today || 0) : 0;
 
       return NextResponse.json({
         prediction: updatedPrediction,
-        boostersRemaining: remainingBoosters,
+        boostersRemaining: Math.max(0, 1 - usedTodayAfterUpdate),
         updated: true
       });
 
@@ -329,11 +335,17 @@ export async function POST(request: NextRequest) {
         console.error("Error updating user stats:", userUpdateError);
       }
 
-      const remainingBoosters = 1;
+      // Calculate remaining boosters from fresh state
+      const { data: freshUserAfterCreate } = await supabaseAdmin
+        .from('users')
+        .select('boosters_used_today, last_booster_date')
+        .eq('id', userId)
+        .single();
+      const usedToday = freshUserAfterCreate?.last_booster_date === today ? (freshUserAfterCreate?.boosters_used_today || 0) : 0;
 
       return NextResponse.json({
         prediction: newPrediction,
-        boostersRemaining: remainingBoosters,
+        boostersRemaining: Math.max(0, 1 - usedToday),
         created: true
       });
     }

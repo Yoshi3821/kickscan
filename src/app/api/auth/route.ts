@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
           username: normalizedName.toLowerCase(),
           email: trimmedEmail,
           password_hash: passwordHash,
-          total_points: 0,
+          total_points: 20,
           total_predictions: 0,
           correct_results: 0,
           correct_scores: 0,

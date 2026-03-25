@@ -65,6 +65,7 @@ export default function ProfilePage() {
     try {
       const userData = JSON.parse(savedUser);
       if (!userData.id || !userData.token) {
+        // Malformed localStorage entry — this is safe to clear
         localStorage.removeItem("kickscan_user");
         router.push("/predict");
         return;
@@ -72,6 +73,7 @@ export default function ProfilePage() {
 
       fetchUserData(userData.id, userData.token);
     } catch (err) {
+      // JSON parse error — corrupted data, safe to clear
       localStorage.removeItem("kickscan_user");
       router.push("/predict");
     }
@@ -81,31 +83,59 @@ export default function ProfilePage() {
     try {
       // Fetch user profile
       const userResponse = await fetch(`/api/auth?token=${token}`);
+      
+      // Only logout on explicit 401 "Invalid token" — NOT on network errors or 500s
+      if (!userResponse.ok) {
+        if (userResponse.status === 401) {
+          localStorage.removeItem("kickscan_user");
+          window.dispatchEvent(new Event("kickscan_auth_change"));
+          router.push("/predict");
+          return;
+        }
+        // Server error — don't logout, just show what we can
+        console.error("Auth check failed with status:", userResponse.status);
+        setLoading(false);
+        return;
+      }
+      
       const userData = await userResponse.json();
       
       if (!userData.success) {
-        localStorage.removeItem("kickscan_user");
-        router.push("/predict");
+        // Only logout if explicitly invalid token
+        if (userData.error === "Invalid token") {
+          localStorage.removeItem("kickscan_user");
+          window.dispatchEvent(new Event("kickscan_auth_change"));
+          router.push("/predict");
+          return;
+        }
+        // Other errors — don't logout
+        console.error("Auth check error:", userData.error);
+        setLoading(false);
         return;
       }
 
       setUser(userData.user);
 
-      // Fetch recent predictions
-      const predictionsResponse = await fetch(`/api/predictions?userId=${userId}&limit=10`);
-      const predictionsData = await predictionsResponse.json();
+      // Fetch predictions and groups in parallel for speed
+      const [predictionsResponse, groupsResponse] = await Promise.all([
+        fetch(`/api/predictions?userId=${userId}&limit=10`),
+        fetch(`/api/groups?userId=${userId}`)
+      ]);
+
+      const [predictionsData, groupsData] = await Promise.all([
+        predictionsResponse.json(),
+        groupsResponse.json()
+      ]);
+      
       if (predictionsData.predictions) {
         setPredictions(predictionsData.predictions);
       }
-
-      // Fetch user groups
-      const groupsResponse = await fetch(`/api/groups?userId=${userId}`);
-      const groupsData = await groupsResponse.json();
       if (groupsData.groups) {
         setGroups(groupsData.groups);
       }
 
     } catch (err) {
+      // Network error — do NOT logout, user might just have flaky connection
       console.error("Failed to fetch user data:", err);
     } finally {
       setLoading(false);

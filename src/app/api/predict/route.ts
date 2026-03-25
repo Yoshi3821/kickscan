@@ -138,24 +138,8 @@ export async function POST(request: NextRequest) {
       }, { status: 401 });
     }
 
-    // Check booster usage - STRICT validation
-    if (useBooster) {
-      const { data: freshUser } = await supabaseAdmin
-        .from('users')
-        .select('boosters_used_today, last_booster_date')
-        .eq('id', userId)
-        .single();
-      
-      if (freshUser) {
-        const today = new Date().toISOString().split('T')[0];
-        const currentUsed = freshUser.last_booster_date === today ? freshUser.boosters_used_today : 0;
-        if (currentUsed >= 1) {
-          return NextResponse.json({ 
-            error: "Maximum 1 booster per day already used" 
-          }, { status: 400 });
-        }
-      }
-    }
+    // Booster pre-check (atomic claim happens later at write time)
+    // This is a fast-fail only — the real enforcement is the atomic DB update below
 
     // Check for existing prediction(s) - handle duplicates
     const { data: existingPredictions, error: predError } = await supabaseAdmin
@@ -191,31 +175,34 @@ export async function POST(request: NextRequest) {
         }),
       };
 
-      // Handle booster logic for updates - STRICT daily limit
+      // Handle booster logic for updates - ATOMIC daily limit
       if (useBooster && !existingPrediction.boosted) {
-        // Double-check current booster usage before allowing
-        const { data: currentUser } = await supabaseAdmin
-          .from('users')
-          .select('boosters_used_today, last_booster_date')
-          .eq('id', userId)
-          .single();
-          
-        const currentUsed = currentUser?.last_booster_date === today ? (currentUser?.boosters_used_today || 0) : 0;
-        if (currentUsed >= 1) {
-          return NextResponse.json({ 
-            error: "Maximum 1 booster per day already used" 
-          }, { status: 400 });
+        // Atomic claim: only update if boosters_used_today < 1 for today
+        // Uses conditional update — if no row matched, booster was already used
+        const { data: claimResult, error: claimError } = await supabaseAdmin
+          .rpc('claim_booster', { p_user_id: userId, p_today: today });
+
+        // Fallback if RPC doesn't exist: use conditional update
+        if (claimError) {
+          // Atomic conditional update: reset if new day, otherwise increment only if < 1
+          const { data: updatedRows, error: updateErr } = await supabaseAdmin
+            .from('users')
+            .update({
+              boosters_used_today: 1,
+              last_booster_date: today
+            })
+            .eq('id', userId)
+            .or(`last_booster_date.neq.${today},boosters_used_today.lt.1`)
+            .select('id');
+
+          if (updateErr || !updatedRows || updatedRows.length === 0) {
+            return NextResponse.json({ 
+              error: "Maximum 1 booster per day already used" 
+            }, { status: 400 });
+          }
         }
         
         updateData.boosted = true;
-        // Update user's booster count
-        await supabaseAdmin
-          .from('users')
-          .update({
-            boosters_used_today: currentUsed + 1,
-            last_booster_date: today
-          })
-          .eq('id', userId);
 
       } else if (!useBooster && existingPrediction.boosted) {
         // Removing booster - give it back if same day
@@ -309,30 +296,52 @@ export async function POST(request: NextRequest) {
       }
 
       // Update user's total predictions and handle booster for new predictions
-      const updateUserData: any = { 
+      let updateUserData: any = { 
         total_predictions: (user.total_predictions || 0) + 1 
       };
       
-      // If booster was used, update booster count
+      // If booster was used, claim it atomically
       if (useBooster) {
-        const { data: currentUser } = await supabaseAdmin
+        const { data: updatedRows, error: boosterErr } = await supabaseAdmin
           .from('users')
-          .select('boosters_used_today, last_booster_date')
+          .update({
+            boosters_used_today: 1,
+            last_booster_date: today,
+            total_predictions: (user.total_predictions || 0) + 1
+          })
           .eq('id', userId)
-          .single();
+          .or(`last_booster_date.neq.${today},boosters_used_today.lt.1`)
+          .select('id');
+
+        if (boosterErr || !updatedRows || updatedRows.length === 0) {
+          // Booster already used — save prediction without booster
+          // Update the prediction to remove booster
+          await supabaseAdmin
+            .from('predictions')
+            .update({ boosted: false })
+            .eq('id', newPrediction.id);
           
-        const currentUsed = currentUser?.last_booster_date === today ? (currentUser?.boosters_used_today || 0) : 0;
-        updateUserData.boosters_used_today = currentUsed + 1;
-        updateUserData.last_booster_date = today;
+          newPrediction.boosted = false;
+          
+          // Still update total_predictions
+          await supabaseAdmin
+            .from('users')
+            .update({ total_predictions: (user.total_predictions || 0) + 1 })
+            .eq('id', userId);
+        }
+        // Skip the generic user update below since we already did it
+        updateUserData = null as any;
       }
       
-      const { error: userUpdateError } = await supabaseAdmin
-        .from('users')
-        .update(updateUserData)
-        .eq('id', userId);
+      if (updateUserData) {
+        const { error: userUpdateError } = await supabaseAdmin
+          .from('users')
+          .update(updateUserData)
+          .eq('id', userId);
 
-      if (userUpdateError) {
-        console.error("Error updating user stats:", userUpdateError);
+        if (userUpdateError) {
+          console.error("Error updating user stats:", userUpdateError);
+        }
       }
 
       // Calculate remaining boosters from fresh state

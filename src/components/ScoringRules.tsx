@@ -124,10 +124,11 @@ const ScoringRules = () => {
 
         {/* Booster */}
         <div>
-          <h4 className="text-lg font-semibold text-white mb-3">⚡ Daily Booster</h4>
+          <h4 className="text-lg font-semibold text-white mb-3">⚡ Match Day Booster</h4>
           <div className="text-sm text-gray-300 space-y-2">
-            <div>• <strong>1 booster per day</strong></div>
+            <div>• <strong>1 booster per match day</strong> (tied to the fixture date, not the day you submit)</div>
             <div>• <strong>Doubles 1X2 points only</strong> (not CS bonus or penalties)</div>
+            <div>• You can move it to another match on the same day by removing it first</div>
             <div>• Use wisely on high-odds picks for maximum benefit</div>
           </div>
         </div>

@@ -14,6 +14,7 @@ interface Prediction {
   actual_result?: "home" | "draw" | "away" | null;
   actual_score?: string | null;
   points_earned: number;
+  fixture_date?: string;
 }
 
 interface User {
@@ -34,25 +35,104 @@ function hasMatchStarted(matchId: string): boolean {
     if (match) {
       const kickoff = new Date(getKickoffISO(match.date, match.time));
       const now = new Date();
-      // Lock 5 minutes before kickoff (matches frontend logic)
       return now >= new Date(kickoff.getTime() - 5 * 60 * 1000);
     }
   }
-  
-  // For league matches, we'd need to check fixture times
-  // For MVP, assume all matches are still open for predictions
   return false;
 }
 
-function canUseBooster(user: User): boolean {
-  const today = new Date().toISOString().split('T')[0];
-  
-  // Reset daily boosters if it's a new day
-  if (user.last_booster_date !== today) {
-    return true; // New day, so they get fresh boosters
+/**
+ * Derive the fixture date (YYYY-MM-DD) for a match.
+ * Backend is authoritative — frontend hint is only used as fallback for league matches.
+ */
+function deriveFixtureDate(matchId: string, frontendHint?: string): string | null {
+  // WC matches — derive from static match data (authoritative)
+  if (matchId.startsWith('wc_')) {
+    const numericId = Number(matchId.replace('wc_', ''));
+    const match = allMatches.find(m => m.id === numericId);
+    if (match) {
+      // getKickoffISO returns e.g. "2026-06-11T19:00:00Z"
+      const iso = getKickoffISO(match.date, match.time);
+      return iso.split('T')[0]; // "2026-06-11"
+    }
   }
-  
-  return user.boosters_used_today < 1;
+
+  // League matches — use frontend hint (kickoff ISO date portion)
+  // Frontend derives this from the fixture's kickoff time, which is authoritative
+  if (frontendHint && /^\d{4}-\d{2}-\d{2}$/.test(frontendHint)) {
+    return frontendHint;
+  }
+
+  // Last resort: no fixture date available
+  return null;
+}
+
+/**
+ * Check if user already has a boosted prediction on a given fixture date.
+ * Returns the match_id of the existing boosted prediction, or null.
+ */
+async function getExistingBoostForDate(
+  userId: string, 
+  fixtureDate: string, 
+  excludeMatchId?: string
+): Promise<string | null> {
+  let query = supabaseAdmin
+    .from('predictions')
+    .select('match_id')
+    .eq('user_id', userId)
+    .eq('fixture_date', fixtureDate)
+    .eq('boosted', true)
+    .limit(1);
+
+  if (excludeMatchId) {
+    query = query.neq('match_id', excludeMatchId);
+  }
+
+  const { data } = await query;
+  return data && data.length > 0 ? data[0].match_id : null;
+}
+
+/**
+ * Race-safe booster claim: after setting boosted=true on our prediction,
+ * verify we're the only boosted prediction for this fixture date.
+ * If a race caused two, undo ours and return false.
+ */
+async function verifyBoosterExclusive(
+  userId: string,
+  fixtureDate: string,
+  predictionId: string
+): Promise<boolean> {
+  const { data: boostedRows } = await supabaseAdmin
+    .from('predictions')
+    .select('id, created_at')
+    .eq('user_id', userId)
+    .eq('fixture_date', fixtureDate)
+    .eq('boosted', true)
+    .order('created_at', { ascending: true });
+
+  if (!boostedRows || boostedRows.length <= 1) {
+    return true; // We're the only one — good
+  }
+
+  // Race detected! Multiple boosted predictions for same fixture date.
+  // Keep the earliest one, undo the rest.
+  const keepId = boostedRows[0].id;
+  if (keepId === predictionId) {
+    // We won the race — undo the others
+    const otherIds = boostedRows.slice(1).map(r => r.id);
+    await supabaseAdmin
+      .from('predictions')
+      .update({ boosted: false })
+      .in('id', otherIds);
+    return true;
+  } else {
+    // We lost the race — undo ours
+    await supabaseAdmin
+      .from('predictions')
+      .update({ boosted: false })
+      .eq('id', predictionId);
+    return false;
+  }
 }
 
 export async function GET(request: NextRequest) {
@@ -72,7 +152,7 @@ export async function GET(request: NextRequest) {
       .eq('match_id', matchId)
       .single();
 
-    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
+    if (error && error.code !== 'PGRST116') {
       console.error("Error fetching prediction:", error);
       return NextResponse.json({ error: "Database error" }, { status: 500 });
     }
@@ -88,7 +168,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { userId, token, matchId, predictedResult, predictedScore, useBooster, homeTeam, awayTeam, marketFavorite, lockedOdds } = body;
+    const { userId, token, matchId, predictedResult, predictedScore, useBooster, homeTeam, awayTeam, marketFavorite, lockedOdds, fixtureDate: frontendFixtureDate } = body;
 
     // Validation
     if (!userId || !token || !matchId || !predictedResult) {
@@ -96,15 +176,6 @@ export async function POST(request: NextRequest) {
         error: "userId, token, matchId, and predictedResult required" 
       }, { status: 400 });
     }
-
-    // TODO: Re-enable prediction locking after odds data is populated
-    // const { checkPredictionLock } = await import('@/lib/odds-manager');
-    // const lockStatus = await checkPredictionLock(matchId);
-    // if (lockStatus.isLocked) {
-    //   return NextResponse.json({
-    //     error: "Predictions are locked for this match (less than 5 minutes until kickoff)"
-    //   }, { status: 400 });
-    // }
 
     if (!["home", "draw", "away"].includes(predictedResult)) {
       return NextResponse.json({ 
@@ -118,18 +189,20 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Check if match has started
     if (hasMatchStarted(matchId)) {
       return NextResponse.json({ 
         error: "Cannot predict after match has started" 
       }, { status: 400 });
     }
 
+    // Derive fixture date — backend authoritative, frontend as fallback
+    const fixtureDate = deriveFixtureDate(matchId, frontendFixtureDate);
+
     // Validate user token
     const { data: user, error: userError } = await supabaseAdmin
       .from('users')
       .select('*')
-      .eq('id', token) // token is the user ID
+      .eq('id', token)
       .single();
 
     if (userError || !user || user.id !== userId) {
@@ -137,9 +210,6 @@ export async function POST(request: NextRequest) {
         error: "Invalid user authentication. Please log in again." 
       }, { status: 401 });
     }
-
-    // Booster pre-check (atomic claim happens later at write time)
-    // This is a fast-fail only — the real enforcement is the atomic DB update below
 
     // Check for existing prediction(s) - handle duplicates
     const { data: existingPredictions, error: predError } = await supabaseAdmin
@@ -161,10 +231,9 @@ export async function POST(request: NextRequest) {
     }
 
     const now = new Date().toISOString();
-    const today = now.split('T')[0];
 
     if (existingPrediction) {
-      // Update existing prediction — always record latest odds at time of update
+      // === UPDATE existing prediction ===
       const updateData: any = {
         predicted_result: predictedResult,
         predicted_score: predictedScore || '',
@@ -173,47 +242,28 @@ export async function POST(request: NextRequest) {
           locked_draw_odds: lockedOdds.draw,
           locked_away_odds: lockedOdds.away,
         }),
+        // Backfill fixture_date if missing
+        ...(fixtureDate && !existingPrediction.fixture_date && { fixture_date: fixtureDate }),
       };
 
-      // Handle booster logic for updates - ATOMIC daily limit
+      const effectiveFixtureDate = existingPrediction.fixture_date || fixtureDate;
+
+      // --- Booster logic (fixture-date based) ---
       if (useBooster && !existingPrediction.boosted) {
-        // Atomic claim: only update if boosters_used_today < 1 for today
-        // Uses conditional update — if no row matched, booster was already used
-        const { data: claimResult, error: claimError } = await supabaseAdmin
-          .rpc('claim_booster', { p_user_id: userId, p_today: today });
-
-        // Fallback if RPC doesn't exist: use conditional update
-        if (claimError) {
-          // Atomic conditional update: reset if new day, otherwise increment only if < 1
-          const { data: updatedRows, error: updateErr } = await supabaseAdmin
-            .from('users')
-            .update({
-              boosters_used_today: 1,
-              last_booster_date: today
-            })
-            .eq('id', userId)
-            .or(`last_booster_date.neq.${today},boosters_used_today.lt.1`)
-            .select('id');
-
-          if (updateErr || !updatedRows || updatedRows.length === 0) {
+        // Check if user already has a booster on another match for this fixture date
+        if (effectiveFixtureDate) {
+          const conflictMatch = await getExistingBoostForDate(userId, effectiveFixtureDate, matchId);
+          if (conflictMatch) {
             return NextResponse.json({ 
-              error: "Maximum 1 booster per day already used" 
+              error: "You already used your booster on another match for this match day. Remove it first to move it here.",
+              boosterConflictMatch: conflictMatch
             }, { status: 400 });
           }
         }
-        
         updateData.boosted = true;
 
       } else if (!useBooster && existingPrediction.boosted) {
-        // Removing booster - give it back if same day
-        if (user.last_booster_date === today && user.boosters_used_today > 0) {
-          await supabaseAdmin
-            .from('users')
-            .update({
-              boosters_used_today: user.boosters_used_today - 1
-            })
-            .eq('id', userId);
-        }
+        // Removing booster — always allowed before lock
         updateData.boosted = false;
       }
 
@@ -229,31 +279,39 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Failed to update prediction" }, { status: 500 });
       }
 
-      // Calculate remaining boosters from fresh state
-      const { data: freshUserAfterUpdate } = await supabaseAdmin
-        .from('users')
-        .select('boosters_used_today, last_booster_date')
-        .eq('id', userId)
-        .single();
-      const usedTodayAfterUpdate = freshUserAfterUpdate?.last_booster_date === today ? (freshUserAfterUpdate?.boosters_used_today || 0) : 0;
+      // Race-safety: if we just set boosted=true, verify exclusivity
+      if (useBooster && !existingPrediction.boosted && effectiveFixtureDate) {
+        const isExclusive = await verifyBoosterExclusive(userId, effectiveFixtureDate, existingPrediction.id);
+        if (!isExclusive) {
+          // Our booster was undone by race resolution
+          updatedPrediction.boosted = false;
+        }
+      }
+
+      // Check booster availability for this fixture date
+      const boosterUsedOnDate = effectiveFixtureDate
+        ? !!(await getExistingBoostForDate(userId, effectiveFixtureDate))
+        : false;
 
       return NextResponse.json({
         prediction: updatedPrediction,
-        boostersRemaining: Math.max(0, 1 - usedTodayAfterUpdate),
+        boosterUsedOnDate,
+        fixtureDate: effectiveFixtureDate,
         updated: true
       });
 
     } else {
-      // Create new prediction — record odds at time of prediction
+      // === CREATE new prediction ===
       const basePredictionData: any = {
         user_id: userId,
         match_id: matchId,
         predicted_result: predictedResult,
         predicted_score: predictedScore || '',
-        boosted: useBooster || false,
+        boosted: false, // Start without booster — claim below if requested
         created_at: now,
         settled: false,
         points_earned: 0,
+        ...(fixtureDate && { fixture_date: fixtureDate }),
         ...(lockedOdds && {
           locked_home_odds: lockedOdds.home,
           locked_draw_odds: lockedOdds.draw,
@@ -268,6 +326,7 @@ export async function POST(request: NextRequest) {
         ...(marketFavorite && { market_favorite: marketFavorite })
       };
 
+      // Insert prediction (without booster first for safety)
       let newPrediction;
       let insertError;
 
@@ -295,72 +354,108 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Failed to create prediction" }, { status: 500 });
       }
 
-      // Update user's total predictions and handle booster for new predictions
-      let updateUserData: any = { 
-        total_predictions: (user.total_predictions || 0) + 1 
-      };
-      
-      // If booster was used, claim it atomically
-      if (useBooster) {
-        const { data: updatedRows, error: boosterErr } = await supabaseAdmin
-          .from('users')
-          .update({
-            boosters_used_today: 1,
-            last_booster_date: today,
-            total_predictions: (user.total_predictions || 0) + 1
-          })
-          .eq('id', userId)
-          .or(`last_booster_date.neq.${today},boosters_used_today.lt.1`)
-          .select('id');
-
-        if (boosterErr || !updatedRows || updatedRows.length === 0) {
-          // Booster already used — save prediction without booster
-          // Update the prediction to remove booster
+      // Now claim booster if requested
+      let boosterClaimed = false;
+      if (useBooster && fixtureDate) {
+        // Check for existing booster on this fixture date
+        const conflictMatch = await getExistingBoostForDate(userId, fixtureDate, matchId);
+        if (!conflictMatch) {
+          // No conflict — set boosted
           await supabaseAdmin
             .from('predictions')
-            .update({ boosted: false })
+            .update({ boosted: true })
             .eq('id', newPrediction.id);
-          
-          newPrediction.boosted = false;
-          
-          // Still update total_predictions
-          await supabaseAdmin
-            .from('users')
-            .update({ total_predictions: (user.total_predictions || 0) + 1 })
-            .eq('id', userId);
-        }
-        // Skip the generic user update below since we already did it
-        updateUserData = null as any;
-      }
-      
-      if (updateUserData) {
-        const { error: userUpdateError } = await supabaseAdmin
-          .from('users')
-          .update(updateUserData)
-          .eq('id', userId);
 
-        if (userUpdateError) {
-          console.error("Error updating user stats:", userUpdateError);
+          // Race-safety: verify we're still the only one
+          const isExclusive = await verifyBoosterExclusive(userId, fixtureDate, newPrediction.id);
+          if (isExclusive) {
+            newPrediction.boosted = true;
+            boosterClaimed = true;
+          }
+          // If not exclusive, verifyBoosterExclusive already undid our boost
         }
       }
 
-      // Calculate remaining boosters from fresh state
-      const { data: freshUserAfterCreate } = await supabaseAdmin
+      // Update user's total predictions
+      await supabaseAdmin
         .from('users')
-        .select('boosters_used_today, last_booster_date')
-        .eq('id', userId)
-        .single();
-      const usedToday = freshUserAfterCreate?.last_booster_date === today ? (freshUserAfterCreate?.boosters_used_today || 0) : 0;
+        .update({ total_predictions: (user.total_predictions || 0) + 1 })
+        .eq('id', userId);
+
+      // Check booster availability for this fixture date
+      const boosterUsedOnDate = fixtureDate
+        ? !!(await getExistingBoostForDate(userId, fixtureDate))
+        : false;
 
       return NextResponse.json({
         prediction: newPrediction,
-        boostersRemaining: Math.max(0, 1 - usedToday),
+        boosterUsedOnDate,
+        fixtureDate,
         created: true
       });
     }
 
   } catch (err) {
     console.error("POST prediction error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { userId, token, matchId } = body;
+
+    if (!userId || !token || !matchId) {
+      return NextResponse.json({ error: "userId, token, and matchId required" }, { status: 400 });
+    }
+
+    // Validate user
+    const { data: user, error: userError } = await supabaseAdmin
+      .from('users')
+      .select('id, total_predictions')
+      .eq('id', token)
+      .single();
+
+    if (userError || !user || user.id !== userId) {
+      return NextResponse.json({ error: "Invalid authentication" }, { status: 401 });
+    }
+
+    // Find the prediction
+    const { data: prediction } = await supabaseAdmin
+      .from('predictions')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('match_id', matchId)
+      .single();
+
+    if (!prediction) {
+      return NextResponse.json({ error: "Prediction not found" }, { status: 404 });
+    }
+
+    if (prediction.settled) {
+      return NextResponse.json({ error: "Cannot cancel a settled prediction" }, { status: 400 });
+    }
+
+    // Delete
+    await supabaseAdmin
+      .from('predictions')
+      .delete()
+      .eq('id', prediction.id);
+
+    // Decrement total_predictions
+    await supabaseAdmin
+      .from('users')
+      .update({ total_predictions: Math.max(0, (user.total_predictions || 1) - 1) })
+      .eq('id', userId);
+
+    return NextResponse.json({
+      success: true,
+      boosterRefunded: prediction.boosted
+    });
+
+  } catch (err) {
+    console.error("DELETE prediction error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

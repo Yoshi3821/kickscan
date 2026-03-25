@@ -75,6 +75,7 @@ interface Prediction {
   created_at: string;
   settled: boolean;
   points_earned: number;
+  fixture_date?: string;
 }
 
 interface LeaderboardEntry {
@@ -187,6 +188,8 @@ function PredictPageContent() {
   const [loadingMatches, setLoadingMatches] = useState<boolean>(true);
   const [predictions, setPredictions] = useState<Record<string, Prediction>>({});
   const [boostersRemaining, setBoostersRemaining] = useState<number>(1);
+  // Track which fixture dates already have a booster used (per match day rule)
+  const [boosterUsedDates, setBoosterUsedDates] = useState<Set<string>>(new Set());
 
   // Groups state
   const [userGroups, setUserGroups] = useState<Group[]>([]);
@@ -437,7 +440,7 @@ function PredictPageContent() {
         setUser(data.user);
         setUserId(uid);
         setToken(tok);
-        setBoostersRemaining(Math.max(0, 1 - (data.user.boostersUsedToday || 0)));
+        // Booster tracking is now per fixture date, loaded via predictions
       } else {
         // Only logout on explicit invalid token, not timeouts or server errors
         if (data && data.error === "Invalid token") {
@@ -485,10 +488,16 @@ function PredictPageContent() {
       
       if (data.predictions) {
         const userPredictions: Record<string, Prediction> = {};
+        const usedDates = new Set<string>();
         for (const pred of data.predictions) {
           userPredictions[pred.match_id] = pred;
+          // Track which fixture dates have a booster
+          if (pred.boosted && pred.fixture_date) {
+            usedDates.add(pred.fixture_date);
+          }
         }
         setPredictions(userPredictions);
+        setBoosterUsedDates(usedDates);
       }
     } catch (err) {
       console.error("Failed to load predictions:", err);
@@ -790,7 +799,7 @@ function PredictPageContent() {
 
   const [submittingMatches, setSubmittingMatches] = useState<Set<string>>(new Set());
 
-  const handlePrediction = async (matchId: string, result: "home" | "draw" | "away", score: string, useBooster: boolean = false, homeTeam?: string, awayTeam?: string, marketFavorite?: string, lockedOdds?: { home: number; draw: number; away: number }) => {
+  const handlePrediction = async (matchId: string, result: "home" | "draw" | "away", score: string, useBooster: boolean = false, homeTeam?: string, awayTeam?: string, marketFavorite?: string, lockedOdds?: { home: number; draw: number; away: number }, fixtureDate?: string) => {
     if (!userId || !token) {
       alert("Please log in or sign up to submit predictions!");
       return;
@@ -807,13 +816,17 @@ function PredictPageContent() {
       return;
     }
 
-    // Optimistic booster deduction — prevents rapid double-use
-    if (useBooster) {
-      if (boostersRemaining <= 0) {
-        alert("No boosters remaining today!");
+    // Optimistic booster tracking by fixture date
+    if (useBooster && fixtureDate) {
+      // Check if already used on this fixture date (different match)
+      const existingBoosted = Object.entries(predictions).find(
+        ([mid, p]) => p.boosted && (p as any).fixture_date === fixtureDate && mid !== matchId
+      );
+      if (existingBoosted) {
+        alert("You already used your booster on another match for this match day. Remove it first to move it here.");
+        setSubmittingMatches(prev => { const s = new Set(prev); s.delete(matchId); return s; });
         return;
       }
-      setBoostersRemaining(prev => Math.max(0, prev - 1));
     }
 
     try {
@@ -830,7 +843,8 @@ function PredictPageContent() {
           homeTeam,
           awayTeam,
           marketFavorite,
-          lockedOdds
+          lockedOdds,
+          fixtureDate
         })
       });
 
@@ -843,9 +857,18 @@ function PredictPageContent() {
           [matchId]: data.prediction
         }));
         
-        setBoostersRemaining(data.boostersRemaining ?? 1);
-        
-        // Skip expensive refreshes - prediction save already returns updated user data
+        // Update booster tracking per fixture date
+        if (data.fixtureDate) {
+          setBoosterUsedDates(prev => {
+            const next = new Set(prev);
+            if (data.boosterUsedOnDate) {
+              next.add(data.fixtureDate);
+            } else {
+              next.delete(data.fixtureDate);
+            }
+            return next;
+          });
+        }
       } else {
         alert(data.error || "Failed to save prediction");
       }
@@ -1060,7 +1083,7 @@ function PredictPageContent() {
                         <div>• Correct 1X2 = odds-based points</div>
                         <div>• Wrong 1X2 = -1</div>
                         <div>• Exact score = bonus points</div>
-                        <div>• 1 booster per day</div>
+                        <div>• 1 booster per match day</div>
                       </div>
                     </div>
                   </div>
@@ -1255,8 +1278,8 @@ function PredictPageContent() {
               <div className="text-[10px] md:text-xs text-gray-500">Streak</div>
             </div>
             <div className="text-center bg-white/[0.03] rounded-xl py-2">
-              <div className="text-lg md:text-xl font-bold text-purple-400">{boostersRemaining}</div>
-              <div className="text-[10px] md:text-xs text-gray-500">Boosters</div>
+              <div className="text-lg md:text-xl font-bold text-purple-400">⚡</div>
+              <div className="text-[10px] md:text-xs text-gray-500">1/match day</div>
             </div>
             <div className="text-center bg-white/[0.03] rounded-xl py-2">
               <div className="text-lg md:text-xl font-bold text-cyan-400">{userGroups.length}</div>
@@ -1465,7 +1488,10 @@ function PredictPageContent() {
                 <h2 className="text-2xl font-bold mb-4 text-yellow-400">🔥 WC Qualifiers — Playoffs</h2>
                 <p className="text-sm text-gray-400 mb-4">March 26-31 · UEFA & Inter-Confederation Playoffs</p>
                 <div className="space-y-4 mb-8">
-                  {allMatches.filter(m => m.group === "WCQ").map((match) => (
+                  {allMatches.filter(m => m.group === "WCQ").map((match) => {
+                    const kickoffISO = getKickoffISO(match.date, match.time);
+                    const fd = kickoffISO.split('T')[0];
+                    return (
                     <MatchCard
                       key={`wc_${match.id}_${userTz}`}
                       matchId={`wc_${match.id}`}
@@ -1473,26 +1499,32 @@ function PredictPageContent() {
                       away={match.away}
                       homeFlag={match.homeFlag}
                       awayFlag={match.awayFlag}
-                      date={formatDateTime(getKickoffISO(match.date, match.time), userTz)}
+                      date={formatDateTime(kickoffISO, userTz)}
                       time=""
                       league="WC 2026 Qualifier"
                       leagueFlag="🏆"
                       prediction={predictions[`wc_${match.id}`]}
                       boostersRemaining={boostersRemaining}
+                      boosterUsedOnDate={boosterUsedDates.has(fd)}
+                      fixtureDate={fd}
                       onPredict={handlePrediction}
-                      kickoffISO={getKickoffISO(match.date, match.time)}
+                      kickoffISO={kickoffISO}
                       avgOdds={wcMatchOdds[match.id] || null}
                       signals={wcMatchSignals[match.id] || null}
                       marketIntel={wcMatchIntel[match.id] || null}
                     />
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {/* Section 2: Pre-WC Friendlies */}
                 <h2 className="text-2xl font-bold mb-4 text-cyan-400">⚽ Pre-WC Friendlies</h2>
                 <p className="text-sm text-gray-400 mb-4">March 26-31 · World Cup warm-up matches</p>
                 <div className="space-y-4 mb-8">
-                  {allMatches.filter(m => m.group === "FRI").map((match) => (
+                  {allMatches.filter(m => m.group === "FRI").map((match) => {
+                    const kickoffISO = getKickoffISO(match.date, match.time);
+                    const fd = kickoffISO.split('T')[0];
+                    return (
                     <MatchCard
                       key={`wc_${match.id}_${userTz}`}
                       matchId={`wc_${match.id}`}
@@ -1500,26 +1532,32 @@ function PredictPageContent() {
                       away={match.away}
                       homeFlag={match.homeFlag}
                       awayFlag={match.awayFlag}
-                      date={formatDateTime(getKickoffISO(match.date, match.time), userTz)}
+                      date={formatDateTime(kickoffISO, userTz)}
                       time=""
                       league="Pre-WC Friendly"
                       leagueFlag="⚽"
                       prediction={predictions[`wc_${match.id}`]}
                       boostersRemaining={boostersRemaining}
+                      boosterUsedOnDate={boosterUsedDates.has(fd)}
+                      fixtureDate={fd}
                       onPredict={handlePrediction}
-                      kickoffISO={getKickoffISO(match.date, match.time)}
+                      kickoffISO={kickoffISO}
                       avgOdds={wcMatchOdds[match.id] || null}
                       signals={wcMatchSignals[match.id] || null}
                       marketIntel={wcMatchIntel[match.id] || null}
                     />
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {/* Section 3: Group Stage */}
                 <h2 className="text-2xl font-bold mb-4 text-purple-400">🏟️ World Cup 2026 — Group Stage</h2>
                 <p className="text-sm text-gray-400 mb-4">June 11 - June 27 · 12 Groups · 72 Matches</p>
                 <div className="space-y-4 mb-8">
-                  {allMatches.filter(m => !["WCQ", "FRI"].includes(m.group)).slice(0, 8).map((match) => (
+                  {allMatches.filter(m => !["WCQ", "FRI"].includes(m.group)).slice(0, 8).map((match) => {
+                    const kickoffISO = getKickoffISO(match.date, match.time);
+                    const fd = kickoffISO.split('T')[0];
+                    return (
                     <MatchCard
                       key={`wc_${match.id}_${userTz}`}
                       matchId={`wc_${match.id}`}
@@ -1527,18 +1565,21 @@ function PredictPageContent() {
                       away={match.away}
                       homeFlag={match.homeFlag}
                       awayFlag={match.awayFlag}
-                      date={formatDateTime(getKickoffISO(match.date, match.time), userTz)}
+                      date={formatDateTime(kickoffISO, userTz)}
                       time=""
                       league="World Cup 2026"
                       prediction={predictions[`wc_${match.id}`]}
                       boostersRemaining={boostersRemaining}
+                      boosterUsedOnDate={boosterUsedDates.has(fd)}
+                      fixtureDate={fd}
                       onPredict={handlePrediction}
-                      kickoffISO={getKickoffISO(match.date, match.time)}
+                      kickoffISO={kickoffISO}
                       avgOdds={wcMatchOdds[match.id] || null}
                       signals={wcMatchSignals[match.id] || null}
                       marketIntel={wcMatchIntel[match.id] || null}
                     />
-                  ))}
+                    );
+                  })}
                 </div>
               </>
             )}
@@ -1706,7 +1747,9 @@ function PredictPageContent() {
                     return !isLive && !isFinished;
                   });
 
-                  const renderMatchCard = (match: LeagueMatch) => (
+                  const renderMatchCard = (match: LeagueMatch) => {
+                    const fd = match.date ? match.date.split('T')[0] : undefined;
+                    return (
                     <MatchCard
                       key={`league_${match.id}_${userTz}`}
                       matchId={`league_${match.id}`}
@@ -1720,6 +1763,8 @@ function PredictPageContent() {
                       leagueFlag={match.leagueFlag}
                       prediction={predictions[`league_${match.id}`]}
                       boostersRemaining={boostersRemaining}
+                      boosterUsedOnDate={fd ? boosterUsedDates.has(fd) : false}
+                      fixtureDate={fd}
                       onPredict={handlePrediction}
                       kickoffISO={match.date}
                       liveScore={getMatchLiveScore(match)}
@@ -1739,7 +1784,8 @@ function PredictPageContent() {
                       })()}
                       marketIntel={match.marketIntel || null}
                     />
-                  );
+                    );
+                  };
 
                   return (
                     <div className="space-y-4 mb-6">
@@ -1839,9 +1885,9 @@ function PredictPageContent() {
 
                 {/* Booster */}
                 <div className="text-center">
-                  <p className="text-purple-400 font-bold text-xs">⚡ DAILY BOOSTER (×2)</p>
+                  <p className="text-purple-400 font-bold text-xs">⚡ BOOSTER (×2)</p>
                   <p className="text-[11px] text-gray-400 mt-1">
-                    1 per day • doubles 1X2 points only<br />
+                    1 booster per match day • doubles 1X2 points only<br />
                     Does NOT double CS bonus or penalties
                   </p>
                 </div>
@@ -2164,7 +2210,9 @@ interface MatchCardProps {
   leagueFlag?: string;
   prediction?: Prediction;
   boostersRemaining: number;
-  onPredict: (matchId: string, result: "home" | "draw" | "away", score: string, useBooster: boolean, homeTeam?: string, awayTeam?: string, marketFavorite?: string, lockedOdds?: { home: number; draw: number; away: number }) => void;
+  boosterUsedOnDate: boolean;
+  fixtureDate?: string;
+  onPredict: (matchId: string, result: "home" | "draw" | "away", score: string, useBooster: boolean, homeTeam?: string, awayTeam?: string, marketFavorite?: string, lockedOdds?: { home: number; draw: number; away: number }, fixtureDate?: string) => void;
   kickoffISO?: string;
   liveScore?: { home: number; away: number; minute: number; status: string } | null;
   avgOdds?: AvgOdds | null;
@@ -2184,6 +2232,8 @@ function MatchCard({
   leagueFlag,
   prediction, 
   boostersRemaining,
+  boosterUsedOnDate,
+  fixtureDate,
   onPredict,
   kickoffISO,
   liveScore,
@@ -2225,18 +2275,21 @@ function MatchCard({
   const isStarted = kickoffISO ? now >= kickoffMs : false;
   const minutesToLock = kickoffISO ? Math.max(0, Math.ceil((kickoffMs - LOCK_BEFORE_MS - now) / 60000)) : null;
 
+  // Booster availability: disabled if another match on this fixture date already has it
+  const boosterDisabled = boosterUsedOnDate && !prediction?.boosted;
+
   const handleSubmit = async () => {
     // Only create score if both fields are filled
     const score = (homeScore && awayScore) ? `${homeScore}-${awayScore}` : "";
     
-    if (useBooster && boostersRemaining === 0) {
-      alert("No boosters remaining today!");
+    if (useBooster && boosterDisabled) {
+      alert("You already used your booster on another match for this match day.");
       return;
     }
     
     setIsSubmitting(true);
     try {
-      await onPredict(matchId, selectedResult, score, useBooster, home, away, marketIntel?.marketFavorite, avgOdds ? { home: avgOdds.home, draw: avgOdds.draw, away: avgOdds.away } : undefined);
+      await onPredict(matchId, selectedResult, score, useBooster, home, away, marketIntel?.marketFavorite, avgOdds ? { home: avgOdds.home, draw: avgOdds.draw, away: avgOdds.away } : undefined, fixtureDate);
     } catch (error) {
       console.error("Prediction submission failed:", error);
     } finally {
@@ -2641,20 +2694,20 @@ function MatchCard({
                 type="checkbox"
                 checked={useBooster}
                 onChange={(e) => setUseBooster(e.target.checked)}
-                disabled={boostersRemaining === 0}
+                disabled={boosterDisabled}
                 className="sr-only"
               />
               <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition ${
                 useBooster 
                   ? "bg-purple-500 border-purple-500" 
                   : "border-gray-500 hover:border-purple-400"
-              } ${boostersRemaining === 0 ? "opacity-50 cursor-not-allowed" : ""}`}>
+              } ${boosterDisabled ? "opacity-50 cursor-not-allowed" : ""}`}>
                 {useBooster && <span className="text-white text-xs">✓</span>}
               </div>
               <span className={`text-sm font-medium transition ${
                 useBooster ? "text-purple-400" : "text-gray-400"
-              } ${boostersRemaining === 0 ? "opacity-50" : ""}`}>
-                ⚡ Booster {boostersRemaining === 0 ? "(0 left)" : `(${boostersRemaining} left)`}
+              } ${boosterDisabled ? "opacity-50" : ""}`}>
+                ⚡ Booster (1 per match day){boosterDisabled ? " — used" : ""}
               </span>
             </label>
           </div>

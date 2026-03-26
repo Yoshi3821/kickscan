@@ -5,14 +5,12 @@ import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 
 const links = [
-  { href: "/verdicts", label: "🎯 WC Verdicts", isNew: true },
-  { href: "/leagues", label: "⚽ Major Leagues" },
   { href: "/predict", label: "🎮 Predict", isHot: true },
   { href: "/leaderboard", label: "🏆 Leaderboard" },
-  { href: "/matches", label: "WC Fixtures" },
-  { href: "/live-scores", label: "Live Scores", badge: true },
-  { href: "/verdict-history", label: "📊 AI Verdict" },
-  { href: "/players", label: "⭐ Players" },
+  { href: "/verdicts", label: "🎯 WC Verdicts" },
+  { href: "/leagues", label: "⚽ Leagues" },
+  { href: "/matches", label: "Fixtures" },
+  { href: "/live-scores", label: "Live Scores" },
 ];
 
 interface User {
@@ -176,14 +174,8 @@ export default function Navbar() {
                   }`}
                 >
                   {l.label}
-                  {l.isNew && (
-                    <span className="ml-1 text-[7px] bg-purple-500/20 text-purple-400 px-1 py-0.5 rounded-full border border-purple-500/30 font-bold">NEW</span>
-                  )}
                   {l.isHot && (
                     <span className="ml-1 text-[7px] bg-orange-500/20 text-orange-400 px-1 py-0.5 rounded-full border border-orange-500/30 font-bold">HOT</span>
-                  )}
-                  {l.badge && (
-                    <span className="absolute -top-1 -right-2 w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
                   )}
                 </a>
               ))}
@@ -280,14 +272,8 @@ export default function Navbar() {
                 }`}
               >
                 {l.label}
-                {l.isNew && (
-                  <span className="ml-2 text-[9px] bg-purple-500/20 text-purple-400 px-1 py-0.5 rounded-full border border-purple-500/30 font-bold">NEW</span>
-                )}
                 {l.isHot && (
                   <span className="ml-2 text-[9px] bg-orange-500/20 text-orange-400 px-1 py-0.5 rounded-full border border-orange-500/30 font-bold">HOT</span>
-                )}
-                {l.badge && (
-                  <span className="ml-2 text-[10px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded-full">LIVE</span>
                 )}
               </a>
             ))}

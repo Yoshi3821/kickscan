@@ -8,10 +8,18 @@ import { getUserTimezone, formatDateTime } from "@/lib/timezone";
 /* ═══════════════════════════════════════════════════════════
    DATA — upcoming matches (WC qualifiers + friendlies first, then group stage)
    ═══════════════════════════════════════════════════════════ */
-const playoffMatches = allMatches.filter(m => m.group === "WCQ");
-const friendlyMatches = allMatches.filter(m => m.group === "FRI");
-const groupMatches = allMatches.filter(m => !["WCQ", "FRI"].includes(m.group)).slice(0, 4);
-const upcomingMatches = [...playoffMatches.slice(0, 4), ...friendlyMatches.slice(0, 2), ...groupMatches].slice(0, 6);
+// Filter to only future matches (kickoff > now, checked at render time)
+function getUpcomingMatches() {
+  const now = Date.now();
+  const isUpcoming = (m: typeof allMatches[0]) => {
+    const kickoff = new Date(getKickoffISO(m.date, m.time)).getTime();
+    return kickoff > now;
+  };
+  const playoffMatches = allMatches.filter(m => m.group === "WCQ" && isUpcoming(m));
+  const friendlyMatches = allMatches.filter(m => m.group === "FRI" && isUpcoming(m));
+  const groupMatches = allMatches.filter(m => !["WCQ", "FRI"].includes(m.group) && isUpcoming(m)).slice(0, 4);
+  return [...playoffMatches.slice(0, 4), ...friendlyMatches.slice(0, 2), ...groupMatches].slice(0, 6);
+}
 
 /* ═══════════════════════════════════════════════════════════
    COUNTDOWN
@@ -113,7 +121,7 @@ export default function HomePage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {upcomingMatches.map((match) => {
+          {getUpcomingMatches().map((match) => {
             const verdict = getVerdict(match.id);
             const kickoffISO = getKickoffISO(match.date, match.time);
             const isQualifier = match.group === "WCQ";

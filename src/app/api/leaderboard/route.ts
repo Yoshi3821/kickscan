@@ -1,5 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { allMatches } from "@/data/matches";
+
+// Build sets of match IDs by competition type from source data
+const wcGroupStageIds = new Set(
+  allMatches
+    .filter(m => !["WCQ", "FRI"].includes(m.group))
+    .map(m => `wc_${m.id}`)
+);
+// Everything else (WCQ, FRI, league) goes to global only
 
 interface LeaderboardEntry {
   rank: number;
@@ -61,7 +70,9 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: "Database error" }, { status: 500 });
       }
 
-      // Get WC prediction stats
+      // Get WC prediction stats — official group stage only (groups A-L)
+      // Excludes WCQ playoffs and FRI friendlies (those count toward Global only)
+      const wcMatchIds = Array.from(wcGroupStageIds);
       const { data: wcStats, error } = await supabaseAdmin
         .from('predictions')
         .select(`
@@ -69,7 +80,7 @@ export async function GET(request: NextRequest) {
           points_earned,
           users!inner(username)
         `)
-        .like('match_id', 'wc_%')
+        .in('match_id', wcMatchIds)
         .not('points_earned', 'is', null);
 
       if (error) {

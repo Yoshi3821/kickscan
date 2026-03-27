@@ -1501,7 +1501,7 @@ function PredictPageContent() {
                 <h2 className="text-2xl font-bold mb-4 text-yellow-400">🔥 WC Qualifiers — Playoffs</h2>
                 <p className="text-sm text-gray-400 mb-4">March 26-31 · UEFA & Inter-Confederation Playoffs</p>
                 <div className="space-y-4 mb-8">
-                  {allMatches.filter(m => m.group === "WCQ").map((match) => {
+                  {allMatches.filter(m => m.group === "WCQ" && new Date(getKickoffISO(m.date, m.time)).getTime() + 3 * 3600000 > Date.now()).map((match) => {
                     const kickoffISO = getKickoffISO(match.date, match.time);
                     const fd = getMatchFixtureDate(match.date);
                     return (
@@ -1534,7 +1534,7 @@ function PredictPageContent() {
                 <h2 className="text-2xl font-bold mb-4 text-cyan-400">⚽ Pre-WC Friendlies</h2>
                 <p className="text-sm text-gray-400 mb-4">March 26-31 · World Cup warm-up matches</p>
                 <div className="space-y-4 mb-8">
-                  {allMatches.filter(m => m.group === "FRI").map((match) => {
+                  {allMatches.filter(m => m.group === "FRI" && new Date(getKickoffISO(m.date, m.time)).getTime() + 3 * 3600000 > Date.now()).map((match) => {
                     const kickoffISO = getKickoffISO(match.date, match.time);
                     const fd = getMatchFixtureDate(match.date);
                     return (
@@ -1567,7 +1567,7 @@ function PredictPageContent() {
                 <h2 className="text-2xl font-bold mb-4 text-purple-400">🏟️ World Cup 2026 — Group Stage</h2>
                 <p className="text-sm text-gray-400 mb-4">June 11 - June 27 · 12 Groups · 72 Matches</p>
                 <div className="space-y-4 mb-8">
-                  {allMatches.filter(m => !["WCQ", "FRI"].includes(m.group)).slice(0, 8).map((match) => {
+                  {allMatches.filter(m => !["WCQ", "FRI"].includes(m.group) && new Date(getKickoffISO(m.date, m.time)).getTime() + 3 * 3600000 > Date.now()).slice(0, 8).map((match) => {
                     const kickoffISO = getKickoffISO(match.date, match.time);
                     const fd = getMatchFixtureDate(match.date);
                     return (

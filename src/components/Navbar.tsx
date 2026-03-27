@@ -221,18 +221,11 @@ export default function Navbar() {
                         My Profile
                       </a>
                       <a
-                        href="/predict"
+                        href="/profile"
                         className="block px-4 py-2 text-xs text-gray-300 hover:text-white hover:bg-gray-800/50 transition"
                         onClick={() => setDropdownOpen(false)}
                       >
-                        My Predictions
-                      </a>
-                      <a
-                        href="/predict"
-                        className="block px-4 py-2 text-xs text-gray-300 hover:text-white hover:bg-gray-800/50 transition"
-                        onClick={() => setDropdownOpen(false)}
-                      >
-                        My Groups
+                        My History
                       </a>
                       <div className="border-t border-gray-700 my-1"></div>
                       <button
@@ -312,18 +305,11 @@ export default function Navbar() {
                     My Profile
                   </a>
                   <a
-                    href="/predict"
+                    href="/profile"
                     onClick={() => setMenuOpen(false)}
                     className="block py-2 px-2 text-sm text-gray-300 hover:text-white transition"
                   >
-                    My Predictions
-                  </a>
-                  <a
-                    href="/predict"
-                    onClick={() => setMenuOpen(false)}
-                    className="block py-2 px-2 text-sm text-gray-300 hover:text-white transition"
-                  >
-                    My Groups
+                    My History
                   </a>
                   <button
                     onClick={() => {

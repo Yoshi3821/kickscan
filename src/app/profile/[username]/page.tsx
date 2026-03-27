@@ -33,6 +33,12 @@ interface PredictionEntry {
   created_at: string;
   hidden?: boolean;
   source?: string;
+  locked_home_odds?: number | null;
+  locked_draw_odds?: number | null;
+  locked_away_odds?: number | null;
+  final_1x2_points?: number | null;
+  final_cs_points?: number | null;
+  fixture_date?: string | null;
 }
 
 export default function PublicProfilePage() {
@@ -218,7 +224,7 @@ export default function PublicProfilePage() {
                       </div>
                     ) : (
                       <>
-                        {/* Pick + Score */}
+                        {/* Pick + Score + Odds */}
                         <div className="text-sm mb-2">
                           <span className="text-gray-400">Pick:</span>
                           <span className="font-semibold text-white ml-1">{resultLabel(pred.predicted_result)}</span>
@@ -233,6 +239,20 @@ export default function PublicProfilePage() {
                             <span className="text-purple-400 text-xs ml-2">⚡ Boosted</span>
                           )}
                         </div>
+                        {/* Locked odds display */}
+                        {pred.locked_home_odds && pred.locked_draw_odds && pred.locked_away_odds && (
+                          <div className="flex items-center gap-2 mb-2 text-[10px]">
+                            <span className={`px-1.5 py-0.5 rounded ${pred.predicted_result === 'home' ? 'bg-green-500/20 text-green-400 font-bold' : 'bg-white/5 text-gray-500'}`}>
+                              H {pred.locked_home_odds.toFixed(2)}
+                            </span>
+                            <span className={`px-1.5 py-0.5 rounded ${pred.predicted_result === 'draw' ? 'bg-green-500/20 text-green-400 font-bold' : 'bg-white/5 text-gray-500'}`}>
+                              D {pred.locked_draw_odds.toFixed(2)}
+                            </span>
+                            <span className={`px-1.5 py-0.5 rounded ${pred.predicted_result === 'away' ? 'bg-green-500/20 text-green-400 font-bold' : 'bg-white/5 text-gray-500'}`}>
+                              A {pred.locked_away_odds.toFixed(2)}
+                            </span>
+                          </div>
+                        )}
 
                         {/* Result row */}
                         {pred.settled ? (
@@ -262,7 +282,12 @@ export default function PublicProfilePage() {
                                   ? "bg-green-500/20 text-green-400"
                                   : "bg-red-500/20 text-red-400"
                               }`}>
-                                {isWin ? `Win · +${pred.points_earned} pts` : `Loss · ${pred.points_earned} pts`}
+                                {isWin ? `+${pred.points_earned} pts` : `${pred.points_earned} pts`}
+                                {pred.final_1x2_points != null && pred.final_cs_points != null && (
+                                  <span className="text-[9px] text-gray-500 ml-1">
+                                    (1X2:{pred.final_1x2_points > 0 ? '+' : ''}{pred.final_1x2_points} CS:{pred.final_cs_points > 0 ? '+' : ''}{pred.final_cs_points})
+                                  </span>
+                                )}
                               </div>
                             </div>
                           )

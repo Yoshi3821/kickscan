@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
     // Fetch all predictions for this user
     const { data: predictions, error: predError } = await supabaseAdmin
       .from("predictions")
-      .select("match_id, predicted_result, predicted_score, boosted, settled, actual_result, actual_score, points_earned, created_at, home_team, away_team")
+      .select("match_id, predicted_result, predicted_score, boosted, settled, actual_result, actual_score, points_earned, created_at, home_team, away_team, locked_home_odds, locked_draw_odds, locked_away_odds, final_1x2_points, final_cs_points, fixture_date")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 

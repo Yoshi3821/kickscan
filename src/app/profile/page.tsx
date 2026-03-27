@@ -362,7 +362,7 @@ export default function ProfilePage() {
 
                     const isVoid = prediction.settled && prediction.actual_result === 'void';
                     const isWin = prediction.settled && !isVoid && prediction.points_earned > 0;
-                    const isLoss = prediction.settled && !isVoid && prediction.points_earned === 0;
+                    const isLoss = prediction.settled && !isVoid && prediction.points_earned <= 0;
 
                     return (
                       <div key={prediction.id} className={`p-4 border rounded-xl ${
@@ -424,7 +424,7 @@ export default function ProfilePage() {
                                   ? "bg-green-500/20 text-green-400"
                                   : "bg-red-500/20 text-red-400"
                               }`}>
-                                {isWin ? `Win · +${prediction.points_earned} pts` : "Loss · 0 pts"}
+                                {isWin ? `Win · +${prediction.points_earned} pts` : `Loss · ${prediction.points_earned} pts`}
                               </div>
                             </div>
                           )

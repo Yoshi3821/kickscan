@@ -50,6 +50,19 @@ getAllMatchesWithOdds().forEach(m => {
   }
 });
 import { getUserTimezone, formatDateTime, getTimezoneLabel, setUserTimezone, TIMEZONE_OPTIONS } from "@/lib/timezone";
+
+// Derive fixture date from match calendar date (not UTC) — e.g. "June 11" → "2026-06-11"
+const monthMap: Record<string, string> = {
+  "January": "01", "February": "02", "March": "03", "April": "04",
+  "May": "05", "June": "06", "July": "07", "August": "08",
+  "September": "09", "October": "10", "November": "11", "December": "12"
+};
+function getMatchFixtureDate(matchDate: string): string {
+  const parts = matchDate.split(" ");
+  const month = monthMap[parts[0]] || "06";
+  const day = parts[1].padStart(2, "0");
+  return `2026-${month}-${day}`;
+}
 // removed useSearchParams/useRouter to prevent client-side bailout
 
 interface User {
@@ -1490,7 +1503,7 @@ function PredictPageContent() {
                 <div className="space-y-4 mb-8">
                   {allMatches.filter(m => m.group === "WCQ").map((match) => {
                     const kickoffISO = getKickoffISO(match.date, match.time);
-                    const fd = kickoffISO.split('T')[0];
+                    const fd = getMatchFixtureDate(match.date);
                     return (
                     <MatchCard
                       key={`wc_${match.id}_${userTz}`}
@@ -1523,7 +1536,7 @@ function PredictPageContent() {
                 <div className="space-y-4 mb-8">
                   {allMatches.filter(m => m.group === "FRI").map((match) => {
                     const kickoffISO = getKickoffISO(match.date, match.time);
-                    const fd = kickoffISO.split('T')[0];
+                    const fd = getMatchFixtureDate(match.date);
                     return (
                     <MatchCard
                       key={`wc_${match.id}_${userTz}`}
@@ -1556,7 +1569,7 @@ function PredictPageContent() {
                 <div className="space-y-4 mb-8">
                   {allMatches.filter(m => !["WCQ", "FRI"].includes(m.group)).slice(0, 8).map((match) => {
                     const kickoffISO = getKickoffISO(match.date, match.time);
-                    const fd = kickoffISO.split('T')[0];
+                    const fd = getMatchFixtureDate(match.date);
                     return (
                     <MatchCard
                       key={`wc_${match.id}_${userTz}`}
@@ -2095,7 +2108,7 @@ function PredictPageContent() {
 
                     const isSettled = pick.settled;
                     const isWin = isSettled && pick.points_earned > 0;
-                    const isLoss = isSettled && pick.points_earned === 0;
+                    const isLoss = isSettled && pick.points_earned <= 0;
                     const isPending = !isSettled;
 
                     // Check if cancel is possible — match not in liveScores as live/finished
@@ -2138,7 +2151,7 @@ function PredictPageContent() {
                             <span className={`text-xs font-bold px-2 py-0.5 rounded-lg ${
                               isWin ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
                             }`}>
-                              {isWin ? `Win · +${pick.points_earned} pts` : "Loss · 0 pts"}
+                              {isWin ? `Win · +${pick.points_earned} pts` : `Loss · ${pick.points_earned} pts`}
                             </span>
                           </div>
                         ) : isMatchLive ? (

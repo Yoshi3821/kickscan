@@ -187,7 +187,7 @@ export default function PublicProfilePage() {
 
                 const isVoid = pred.settled && pred.actual_result === 'void';
                 const isWin = pred.settled && !isVoid && pred.points_earned > 0;
-                const isLoss = pred.settled && !isVoid && pred.points_earned === 0;
+                const isLoss = pred.settled && !isVoid && pred.points_earned <= 0;
 
                 return (
                   <div
@@ -262,7 +262,7 @@ export default function PublicProfilePage() {
                                   ? "bg-green-500/20 text-green-400"
                                   : "bg-red-500/20 text-red-400"
                               }`}>
-                                {isWin ? `Win · +${pred.points_earned} pts` : "Loss · 0 pts"}
+                                {isWin ? `Win · +${pred.points_earned} pts` : `Loss · ${pred.points_earned} pts`}
                               </div>
                             </div>
                           )

@@ -19,12 +19,25 @@ function hasMatchStarted(matchId: string): boolean {
   return false;
 }
 
+/**
+ * Derive fixture date from the match's CALENDAR date (not UTC).
+ * "June 11 at 10PM ET" = fixture date June 11 (the matchday), not June 12 UTC.
+ */
 function deriveFixtureDate(matchId: string, frontendHint?: string): string | null {
   if (matchId.startsWith('wc_')) {
     const numericId = Number(matchId.replace('wc_', ''));
     const match = allMatches.find(m => m.id === numericId);
     if (match) {
-      return getKickoffISO(match.date, match.time).split('T')[0];
+      // Use the calendar date from match data (e.g. "June 11" → "2026-06-11")
+      const months: Record<string, string> = {
+        "January": "01", "February": "02", "March": "03", "April": "04",
+        "May": "05", "June": "06", "July": "07", "August": "08",
+        "September": "09", "October": "10", "November": "11", "December": "12"
+      };
+      const parts = match.date.split(" ");
+      const month = months[parts[0]] || "06";
+      const day = parts[1].padStart(2, "0");
+      return `2026-${month}-${day}`;
     }
   }
   if (frontendHint && /^\d{4}-\d{2}-\d{2}$/.test(frontendHint)) {

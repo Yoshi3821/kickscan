@@ -1,6 +1,7 @@
 import { getAllLeagueFixtures, LEAGUES } from "@/lib/league-api";
 import type { TeamForm, InjuryInfo } from "@/lib/league-api";
 import { generateAutoVerdict } from "@/lib/auto-verdict";
+import { checkOddsApiRateLimit, logOddsApiUsage } from "@/lib/odds-api-monitor";
 import { NextResponse } from "next/server";
 
 export const revalidate = 300; // 5 min — needs to be fresh for live scores
@@ -242,6 +243,11 @@ async function fetchBatchOdds(): Promise<Map<string, MarketData>> {
         `https://api.the-odds-api.com/v4/sports/${league.key}/odds?apiKey=${ODDS_API_KEY}&regions=uk,eu&markets=h2h,spreads,totals&oddsFormat=decimal`,
         { next: { revalidate: 7200 } }
       );
+      
+      // Monitor rate limits
+      const remaining = checkOddsApiRateLimit(res);
+      logOddsApiUsage(`league-fixtures/${league.key}`, remaining);
+      
       if (!res.ok) return [];
       return res.json();
     })
@@ -415,6 +421,11 @@ async function getOddsApiFallback(): Promise<any[]> {
         `https://api.the-odds-api.com/v4/sports/${league.key}/odds?apiKey=${ODDS_API_KEY}&regions=uk&markets=h2h&oddsFormat=decimal`,
         { next: { revalidate: 7200 } }
       );
+      
+      // Monitor rate limits for fallback calls too
+      const remaining = checkOddsApiRateLimit(res);
+      logOddsApiUsage(`league-fixtures-fallback/${league.key}`, remaining);
+      
       if (!res.ok) return [];
       const data = await res.json();
       return data.slice(0, 3).map((m: any) => {

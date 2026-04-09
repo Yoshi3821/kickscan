@@ -1,4 +1,5 @@
 import { allMatches, getFlag } from "@/data/matches";
+import { checkOddsApiRateLimit, logOddsApiUsage } from "@/lib/odds-api-monitor";
 
 const API_KEY = "2d76c480178eddba35634870e3420803";
 const MATCH_ODDS_URL = `https://api.the-odds-api.com/v4/sports/soccer_fifa_world_cup/odds?apiKey=${API_KEY}&regions=uk,eu,us&markets=h2h&oddsFormat=decimal`;
@@ -149,6 +150,10 @@ export async function fetchMatchOdds(): Promise<OddsData> {
       next: { revalidate: 7200 }, // 2 hours
     });
 
+    // Monitor rate limits
+    const remaining = checkOddsApiRateLimit(res);
+    logOddsApiUsage('match-odds', remaining);
+
     if (!res.ok) {
       console.error(`Odds API error: ${res.status} ${res.statusText}`);
       return { matchOdds: [], fetchedAt: new Date().toISOString() };
@@ -229,6 +234,10 @@ export async function fetchWinnerOdds(): Promise<WinnerOddsData> {
     const res = await fetch(WINNER_ODDS_URL, {
       next: { revalidate: 3600 }, // 1 hour
     });
+
+    // Monitor rate limits
+    const remaining = checkOddsApiRateLimit(res);
+    logOddsApiUsage('winner-odds', remaining);
 
     if (!res.ok) {
       console.error(`Winner Odds API error: ${res.status} ${res.statusText}`);
@@ -327,6 +336,10 @@ export async function fetchLeagueOdds(leagueId: number): Promise<LiveMatchOdds[]
     const res = await fetch(url, {
       next: { revalidate: 3600 }, // 1 hour cache
     });
+
+    // Monitor rate limits
+    const remaining = checkOddsApiRateLimit(res);
+    logOddsApiUsage(`league-odds/${sportKey}`, remaining);
 
     if (!res.ok) {
       console.error(`League Odds API error for ${sportKey}: ${res.status} ${res.statusText}`);

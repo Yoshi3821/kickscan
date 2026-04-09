@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { allMatches, wcFixtureIdMap } from "@/data/matches";
+import { checkOddsApiRateLimit, logOddsApiUsage } from "@/lib/odds-api-monitor";
 
 const ODDS_API_KEY = "2d76c480178eddba35634870e3420803";
 const API_FOOTBALL_KEY = "3408fed656308fb4ade76a6b3212a975";
@@ -82,6 +83,11 @@ export async function GET() {
     try {
       const url = `https://api.the-odds-api.com/v4/sports/${sport}/odds?apiKey=${ODDS_API_KEY}&regions=uk,eu,us&markets=h2h&oddsFormat=decimal`;
       const res = await fetch(url, { next: { revalidate: 3600 } });
+      
+      // Monitor rate limits
+      const remaining = checkOddsApiRateLimit(res);
+      logOddsApiUsage(`wc-playoff-odds/${sport}`, remaining);
+      
       if (!res.ok) {
         errors.push(`Odds API ${sport}: ${res.status}`);
         continue;

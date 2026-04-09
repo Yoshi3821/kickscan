@@ -5,6 +5,9 @@ import { allMatches, getKickoffISO, getAllMatchesWithOdds } from "@/data/matches
 import { getVerdict } from "@/data/verdicts";
 import { getUserTimezone, formatDateTime } from "@/lib/timezone";
 
+// Force dynamic rendering to prevent stale data
+export const dynamic = 'force-dynamic';
+
 /* ═══════════════════════════════════════════════════════════
    DATA — upcoming matches (WC qualifiers + friendlies first, then group stage)
    ═══════════════════════════════════════════════════════════ */
